@@ -1,0 +1,23 @@
+{
+  "name": "stratum",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "core",
+    "cli"
+  ],
+  "scripts": {
+    "stratum": "tsx cli/index.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
+  }
+}

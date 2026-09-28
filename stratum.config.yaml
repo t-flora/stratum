@@ -1,0 +1,22 @@
+# Stratum tunables. See DESIGN.md §6, §7 and §16.
+world:
+  seed: 20261002            # region geometry / noise seed (§8.4)
+
+writeup:
+  minWords: 250
+
+hardware:
+  available: [arm, llm-api]     # this Mac (M2). Heavy x86 work runs on a separate Linux server.
+
+visibility:
+  radiusBase: 150           # R(p) = radiusBase + radiusPerP * p
+  radiusPerP: 90
+  silhouetteFactor: 1.6
+  towerRadiusBonus: 300
+  towerRidgeBonus: 2
+  lightRadius: 220
+  glowRadius: 40
+  silhouetteTitleMinP: 3
+
+horizon:
+  farDistance: 450

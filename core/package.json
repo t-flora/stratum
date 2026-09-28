@@ -1,0 +1,14 @@
+{
+  "name": "@stratum/core",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "gray-matter": "^4.0.3",
+    "simplex-noise": "^4.0.3",
+    "yaml": "^2.9.1"
+  }
+}

@@ -1,0 +1,17 @@
+# Deliberately broken world: `stratum --root fixtures/planted-errors lint` should report each error.
+canvas: { width: 1600, height: 1000 }
+start:
+  vantage: [500, 500]
+  plateau: [a-one]
+regions:
+  - { id: west, layer: surface, name: "West", centroid: [500, 500] }
+  - { id: deep, layer: depths,  name: "Deep" }
+ridges:
+  default: 2
+shrines:
+  - { id: tower-west, title: "Tower W", region: west, kind: tower, prompt: p, done: d }
+  - { id: a-one, title: "A1", region: west, prompt: p, done: d, links: [no-such-shrine] }
+  - { id: a-one, title: "A1 again", region: west, prompt: p, done: d }
+  - { id: deep-one, title: "D1", region: deep, below: not-a-shrine, prompt: p, done: d }
+  - { id: deep-two, title: "D2", region: deep, below: deep-one, prompt: p, done: d }
+  - { id: a-two, title: "A2", region: west, below: a-one, prompt: p, done: d }

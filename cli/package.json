@@ -1,0 +1,11 @@
+{
+  "name": "@stratum/cli",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "stratum": "index.ts"
+  },
+  "dependencies": {
+    "commander": "^15.0.0"
+  }
+}

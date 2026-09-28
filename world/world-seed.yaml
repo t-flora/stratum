@@ -1,0 +1,2336 @@
+# Stratum: seed world
+# ----------------------------------------------------------------------------
+# The starter world for Stratum. It is written by hand, and it is meant to be
+# pruned, reworded and extended. DESIGN.md §4 has the schema and §6 has the
+# visibility rules that use `p` (prominence).
+#
+# Shrine fields:
+#   id        unique kebab-case slug (also the work folder name)
+#   title     short name shown on the map
+#   region    region id (the region decides the layer)
+#   kind      shrine (default) | tower | temple
+#   p         prominence 1..5 (default 2). Towers and temples are 5.
+#             High-p shrines "peek over ridges" (the triangle rule).
+#   size      S (2-3h) | M (4-6h, default) | L (8-12h)
+#   requires  optional hardware/tool tags: gpu, arm, avx512, linux, llm-api
+#   below     (depths only) id of the surface shrine this lightroot sits under
+#   links     optional ids across layers (chasms / launch points), or other related ids
+#   needs     (temples only) shrine ids that must be cleared before the temple opens
+#   prompt    what to build
+#   done      the clear condition, beyond the standard write-up (DESIGN.md §5)
+# ----------------------------------------------------------------------------
+
+canvas: { width: 1600, height: 1000 }
+
+start:
+  vantage: [800, 500]            # the "plateau": the cpp-core centroid
+  plateau:                       # revealed from the very first day
+    - tower-cpp-core
+    - cmake-modern
+    - benchmark-methodology
+    - value-categories
+
+regions:
+  # --- SURFACE ----------------------------------------------------------------
+  - { id: cpp-core,            layer: surface, name: "The Core Plateau",        centroid: [800, 500] }
+  - { id: metaprogramming,     layer: surface, name: "Template Highlands",      centroid: [560, 300] }
+  - { id: tooling-measurement, layer: surface, name: "Instrument Ridge",        centroid: [820, 190] }
+  - { id: concurrency,         layer: surface, name: "Atomic Steppes",          centroid: [1080, 300] }
+  - { id: parallel-simd,       layer: surface, name: "Vector Coast",            centroid: [1310, 520] }
+  - { id: gpu-programming,     layer: surface, name: "Kernel Jungle",           centroid: [1260, 810] }
+  - { id: interp-engineering,  layer: surface, name: "Activation Marsh",        centroid: [880, 830] }
+  - { id: data-structures,     layer: surface, name: "Cacheline Woods",         centroid: [520, 660] }
+  - { id: low-latency,         layer: surface, name: "Tick Canyon",             centroid: [250, 420] }
+  - { id: agent-harness,       layer: surface, name: "Agent Workshops",         centroid: [320, 830] }
+  # --- SKY (islands float above related surface regions) ------------------------
+  - { id: agentic-forge,       layer: sky, name: "The Agentic Forge",       centroid: [330, 760],  radius: 170 }
+  - { id: design-archipelago,  layer: sky, name: "Design Archipelago",      centroid: [540, 420],  radius: 190 }
+  - { id: interp-theory,       layer: sky, name: "Isles of Interpretation", centroid: [900, 770],  radius: 180 }
+  - { id: performance-theory,  layer: sky, name: "Roofline Heights",        centroid: [1190, 380], radius: 190 }
+  - { id: numerical-heights,   layer: sky, name: "Numerical Heights",       centroid: [1420, 740], radius: 140 }
+  # --- DEPTHS ("veins": thematic colours; each lightroot's position is its `below` shrine's) ---
+  - { id: isa-assembly,        layer: depths, name: "Vein of Instructions" }
+  - { id: microarchitecture,   layer: depths, name: "Pipeline Vein" }
+  - { id: memory-hierarchy,    layer: depths, name: "Cache Vein" }
+  - { id: compilers,           layer: depths, name: "Compiler Vein" }
+  - { id: gpu-metal,           layer: depths, name: "Silicon Vein" }
+  - { id: os-kernel,           layer: depths, name: "Kernel-space Vein" }
+  - { id: numerics-bits,       layer: depths, name: "Bit Vein" }
+
+# Ridge heights between adjacent surface regions (default 2). An override for
+# two regions that don't share a border is ignored, and the loader warns about it.
+ridges:
+  default: 2
+  overrides:
+    - { between: [cpp-core, metaprogramming], h: 1 }
+    - { between: [cpp-core, data-structures], h: 1 }
+    - { between: [cpp-core, tooling-measurement], h: 1 }
+    - { between: [gpu-programming, parallel-simd], h: 1 }
+    - { between: [gpu-programming, interp-engineering], h: 1 }
+    - { between: [concurrency, parallel-simd], h: 3 }
+    - { between: [tooling-measurement, concurrency], h: 3 }
+    - { between: [low-latency, agent-harness], h: 4 }
+    - { between: [low-latency, metaprogramming], h: 3 }
+
+shrines:
+
+# =============================================================================
+# SURFACE
+# =============================================================================
+
+# ---- The Core Plateau (cpp-core) ---------------------------------------------
+- id: tower-cpp-core
+  title: "Tower: the Core Plateau"
+  region: cpp-core
+  kind: tower
+  size: S
+  prompt: >-
+    Survey modern C++ (17/20/23/26) through a performance lens. Which features change
+    codegen, which change only ergonomics, and which are traps on a hot path?
+  done: >-
+    A one-page region survey plus at least 3 proposed new shrines (added to world/proposed.yaml).
+
+- id: value-categories
+  title: Value categories, witnessed
+  region: cpp-core
+  p: 3
+  size: S
+  prompt: >-
+    Write a `Noisy` type that logs every constructor, assignment and destructor. Write 12
+    expressions (returns, std::move, ternaries, braced init, function args) and predict
+    which special members fire before running them.
+  done: >-
+    A prediction-vs-actual table, with each miss explained in terms of lvalue/xvalue/prvalue
+    and C++17 guaranteed copy elision.
+
+- id: move-semantics-vector
+  title: A vector that moves correctly
+  region: cpp-core
+  p: 3
+  prompt: >-
+    Implement a minimal `vector<T>` (push_back, emplace_back, reserve) with the strong
+    exception guarantee, using std::move_if_noexcept during reallocation.
+  done: >-
+    A test showing that a type with a throwing move constructor gets copied on reallocation, and a
+    benchmark of noexcept vs non-noexcept element types.
+
+- id: raii-handles
+  title: RAII for everything
+  region: cpp-core
+  size: S
+  prompt: >-
+    Write a generic `unique_handle<Traits>` that wraps file descriptors, mmap regions and
+    (optionally) CUDA streams. Apply the rule of zero vs the rule of five.
+  done: >-
+    The wrapper holds a file descriptor and an mmap region with no leaks under ASan/valgrind, and
+    `sizeof` matches the raw handle.
+
+- id: smart-pointer-costs
+  title: What shared_ptr really costs
+  region: cpp-core
+  prompt: >-
+    Implement a simplified shared_ptr with a control block, plus make_shared with a single
+    allocation. Benchmark copy, move and destruction against unique_ptr and raw pointers
+    in a multi-threaded workload.
+  done: >-
+    Benchmark results that separate the cost of the atomic refcount from the cost of the allocation.
+
+- id: constexpr-tables
+  title: Tables built by the compiler
+  region: cpp-core
+  size: S
+  prompt: >-
+    Generate a CRC32 or 8-bit popcount lookup table at compile time with constexpr/consteval,
+    and verify that it lands in .rodata with no runtime initialisation.
+  done: >-
+    Disassembly/objdump showing the table in .rodata and no static-init code.
+
+- id: ranges-pipelines
+  title: Ranges, lazily
+  region: cpp-core
+  prompt: >-
+    Rewrite a filter-transform-accumulate loop with std::ranges views. Then write a custom
+    view adaptor (e.g. `stride_by` or `chunk_sum`) that composes with `|`.
+  done: >-
+    A codegen and timing comparison with the hand-written loop at -O2, plus a working custom adaptor.
+
+- id: coroutines-generator
+  title: A generator from scratch
+  region: cpp-core
+  p: 3
+  prompt: >-
+    Implement `generator<T>` by hand (promise_type, coroutine_handle, iterator), then compare it
+    with std::generator (C++23) on a lazy tokenizer.
+  done: >-
+    Both versions produce identical output. The write-up traces a coroutine's lifecycle from
+    initial_suspend to final_suspend.
+
+- id: std-expected-errors
+  title: Errors as values
+  region: cpp-core
+  prompt: >-
+    Write the same small parser twice, once with exceptions and once with std::expected
+    (C++23). Measure the happy-path and error-path costs at several error rates.
+  done: >-
+    A plot of time vs error rate for both versions, with the crossover explained.
+
+- id: variant-visit
+  title: Variant vs virtual
+  region: cpp-core
+  prompt: >-
+    Model an order-event state machine twice, once with std::variant + std::visit and once
+    with a virtual hierarchy. Compare dispatch codegen and throughput.
+  done: >-
+    Annotated disassembly of both dispatch paths (jump table vs indirect call) and a benchmark.
+
+- id: lambdas-closures
+  title: What a lambda is
+  region: cpp-core
+  size: S
+  prompt: >-
+    Show what lambdas compile to: closure layout, captures by value/ref, and generic lambdas.
+    Compare std::function, a function_ref (C++26 or hand-rolled) and a template parameter
+    as callback carriers.
+  done: >-
+    A sizeof table, an allocation count for std::function, and a benchmark of the three carriers.
+
+- id: contracts-26
+  title: Contracts in C++26
+  region: cpp-core
+  size: S
+  prompt: >-
+    Using a compiler with P2900 support (or a documented emulation), add pre/post
+    conditions to a small numeric library and compare the evaluation semantics
+    (ignore/observe/enforce).
+  done: >-
+    A demo of each evaluation semantic, plus the codegen difference between ignore and enforce.
+
+# ---- Template Highlands (metaprogramming) ------------------------------------
+- id: tower-metaprogramming
+  title: "Tower: Template Highlands"
+  region: metaprogramming
+  kind: tower
+  size: S
+  prompt: >-
+    Survey compile-time C++: traits, SFINAE, concepts, constexpr, and C++26 static reflection.
+    What problem does each generation of tools solve?
+  done: >-
+    A region survey plus at least 3 proposed shrines.
+
+- id: type-traits-from-scratch
+  title: Type traits from scratch
+  region: metaprogramming
+  size: S
+  prompt: >-
+    Implement is_same, remove_cvref, conditional, void_t-based detection, and is_convertible
+    without the standard library's traits.
+  done: >-
+    static_assert tests that pass against the std versions on at least 15 cases.
+
+- id: crtp-static-poly
+  title: CRTP and static polymorphism
+  region: metaprogramming
+  p: 3
+  prompt: >-
+    Build a CRTP mixin (e.g. comparison operators or instrumentation) and a CRTP-based strategy.
+    Compare it with a virtual version in a tight loop.
+  done: >-
+    A benchmark plus disassembly showing the inlined CRTP path versus the indirect call.
+
+- id: variadic-fold
+  title: Variadics and folds
+  region: metaprogramming
+  prompt: >-
+    Implement a minimal `tuple` with get<I>, apply and for_each using fold expressions and
+    index_sequence.
+  done: >-
+    Tests for heterogeneous types, and an explanation of how the empty base optimisation affects its layout.
+
+- id: concepts-constraints
+  title: Concepts as contracts
+  region: metaprogramming
+  p: 3
+  prompt: >-
+    Constrain a small numeric library with concepts, including subsumption-based overload
+    ordering. Rewrite one overload set in SFINAE for comparison.
+  done: >-
+    Side-by-side error messages (concepts vs SFINAE) and a working subsumption example.
+
+- id: expression-templates
+  title: Expression templates
+  region: metaprogramming
+  p: 3
+  prompt: >-
+    Write a vector type whose `a + b * c` builds an expression tree and evaluates it in one fused
+    loop without temporaries.
+  done: >-
+    A benchmark against the naive version with temporaries, and a check that the fused loop vectorizes.
+
+- id: policy-based-design
+  title: Policy-based design
+  region: metaprogramming
+  prompt: >-
+    Design a container or allocator with pluggable policies (locking, bounds checking,
+    growth) selected at compile time.
+  done: >-
+    Three policy combinations, with proof that the unused policies cost nothing (sizeof + asm).
+
+- id: type-erasure
+  title: Type erasure with small buffers
+  region: metaprogramming
+  p: 3
+  prompt: >-
+    Implement Sean Parent-style runtime polymorphism (a `drawable`/`any_callable`) with a
+    small-buffer optimisation.
+  done: >-
+    Allocation counts with and without SBO, and a benchmark against a virtual hierarchy.
+
+- id: static-reflection-26
+  title: Static reflection (C++26)
+  region: metaprogramming
+  p: 4
+  prompt: >-
+    Using a P2996-capable compiler (e.g. the Bloomberg clang-p2996 fork or current GCC trunk),
+    auto-generate enum_to_string and a struct-to-JSON serializer through reflection.
+  done: >-
+    Both utilities work on 3+ types with no macros, and the write-up compares this with the pre-reflection hacks.
+
+- id: compile-time-dispatch
+  title: Picking kernels at compile time
+  region: metaprogramming
+  size: S
+  prompt: >-
+    Use if constexpr / tag dispatch to select SIMD vs scalar vs specialised paths by element type
+    and alignment traits.
+  done: >-
+    One entry point, three paths, verified by asm for each instantiation.
+
+- id: template-instantiation-cost
+  title: What templates cost the build
+  region: metaprogramming
+  size: S
+  prompt: >-
+    Measure the compile time and binary size of a template-heavy header under clang
+    -ftime-trace. Reduce both with extern templates or type erasure.
+  done: >-
+    Before/after compile time and binary size, with the flame chart from -ftime-trace.
+
+# ---- Instrument Ridge (tooling-measurement) ----------------------------------
+- id: tower-tooling
+  title: "Tower: Instrument Ridge"
+  region: tooling-measurement
+  kind: tower
+  size: S
+  prompt: >-
+    Survey the measurement toolbox: benchmarks, profilers, sanitizers, fuzzers, and
+    CPU/GPU tracing. What question does each tool answer?
+  done: >-
+    A region survey plus at least 3 proposed shrines.
+
+- id: cmake-modern
+  title: The shrine template
+  region: tooling-measurement
+  p: 3
+  size: S
+  prompt: >-
+    Build the repo's shared C++ template: target-based CMake with presets for release,
+    asan/ubsan, tsan and bench, plus Google Benchmark and a test framework via FetchContent.
+  done: >-
+    `stratum start <id>` can copy this template, and all presets build a hello-benchmark.
+
+- id: benchmark-methodology
+  title: Benchmarks that don't lie
+  region: tooling-measurement
+  p: 4
+  prompt: >-
+    Take a deliberately noisy microbenchmark and stabilise it: DoNotOptimize/ClobberMemory,
+    frequency scaling, turbo, warmup, repetitions, and reporting medians and intervals.
+  done: >-
+    Coefficient of variation before vs after, and a checklist that you reuse for every later shrine.
+
+- id: perf-basics
+  title: perf and flame graphs
+  region: tooling-measurement
+  requires: [linux]
+  prompt: >-
+    Profile a real program (e.g. your matching engine or a JSON parser) with perf stat/record
+    and produce a flame graph. Find and fix one hotspot.
+  done: >-
+    Flame graphs before and after, with the counter deltas (cycles, IPC, cache misses) explained.
+
+- id: sanitizers
+  title: The sanitizers
+  region: tooling-measurement
+  size: S
+  prompt: >-
+    Plant five bugs (use-after-free, overflow, signed overflow, data race, uninitialised read)
+    and catch each one with ASan/UBSan/TSan/MSan. Measure the slowdown of each sanitizer.
+  done: >-
+    All five caught, plus an overhead table.
+
+- id: fuzzing
+  title: Fuzz a parser
+  region: tooling-measurement
+  prompt: >-
+    Fuzz a small binary or text parser with libFuzzer, using a corpus and a dictionary, until it finds a real bug.
+  done: >-
+    A minimised crashing input, the fix, and a coverage report.
+
+- id: godbolt-reading
+  title: Reading the compiler's mind
+  region: tooling-measurement
+  p: 3
+  size: S
+  prompt: >-
+    Pick 4 small functions and compare their output across -O0/-O2/-O3 and GCC vs Clang on
+    Compiler Explorer. Explain every difference.
+  done: >-
+    Annotated asm listings with one explanation per difference.
+
+- id: heaptrack-allocations
+  title: Where the allocations go
+  region: tooling-measurement
+  size: S
+  prompt: >-
+    Profile allocations in a real program with heaptrack (or a custom operator new hook), then
+    remove the top allocation site.
+  done: >-
+    Allocation counts before and after, and the latency impact.
+
+- id: nsight-systems-intro
+  title: The GPU timeline
+  region: tooling-measurement
+  requires: [gpu]
+  size: S
+  prompt: >-
+    Trace a PyTorch training step with Nsight Systems. Identify kernel gaps, CPU launch
+    overhead, and memcpy stalls.
+  done: >-
+    An annotated timeline screenshot and one optimisation that visibly closes a gap.
+
+- id: bench-regression-ci
+  title: Benchmarks in CI
+  region: tooling-measurement
+  prompt: >-
+    Run the repo's benchmarks in CI, compare them with a stored baseline, and flag statistically
+    significant regressions.
+  done: >-
+    A deliberately planted regression makes CI fail with a readable report.
+
+# ---- Atomic Steppes (concurrency) --------------------------------------------
+- id: tower-concurrency
+  title: "Tower: Atomic Steppes"
+  region: concurrency
+  kind: tower
+  size: S
+  prompt: >-
+    Survey C++ concurrency: threads, the memory model, lock-free structures, safe memory reclamation,
+    and std::execution. Where do the hard problems live?
+  done: >-
+    A region survey plus at least 3 proposed shrines.
+
+- id: threads-and-jthread
+  title: jthread and scaling
+  region: concurrency
+  size: S
+  prompt: >-
+    Write a parallel reduction over std::jthread with stop_token cancellation. Measure scaling
+    from 1 to N cores.
+  done: >-
+    A scaling plot, with the deviation from linear explained.
+
+- id: mutex-contention
+  title: Locks under contention
+  region: concurrency
+  p: 3
+  prompt: >-
+    Implement a TAS spinlock, a TTAS spinlock with pause/backoff, and a ticket lock. Benchmark them
+    against std::mutex at 1 to N threads.
+  done: >-
+    Throughput and fairness plots for every lock type.
+
+- id: memory-order-litmus
+  title: Litmus tests
+  region: concurrency
+  p: 4
+  prompt: >-
+    Write the store-buffering and message-passing litmus tests. Observe store-buffer reordering
+    on x86, and show which memory_order fixes each one (run on ARM if available).
+  done: >-
+    Observed outcome counts per test and ordering, explained with the C++ memory model.
+
+- id: spsc-ring-buffer
+  title: The SPSC ring buffer
+  region: concurrency
+  p: 4
+  prompt: >-
+    Build a bounded single-producer single-consumer queue with acquire/release, cached
+    head/tail indices and cache-line padding. Optimise it step by step.
+  done: >-
+    Throughput and latency after each optimisation, and TSan-clean tests.
+
+- id: mpmc-queue
+  title: Vyukov's MPMC queue
+  region: concurrency
+  prompt: >-
+    Implement Dmitry Vyukov's bounded MPMC queue with per-slot sequence numbers.
+  done: >-
+    A stress test under TSan and a throughput comparison against a mutex-protected deque.
+
+- id: false-sharing
+  title: False sharing
+  region: concurrency
+  p: 3
+  size: S
+  prompt: >-
+    Build per-thread counters packed together, then padded with
+    alignas(std::hardware_destructive_interference_size).
+  done: >-
+    A slowdown factor measured, and the perf c2c (or equivalent) evidence.
+
+- id: work-stealing-pool
+  title: A work-stealing pool
+  region: concurrency
+  p: 3
+  size: L
+  prompt: >-
+    Implement a thread pool with per-worker Chase–Lev deques and random stealing. Run
+    recursive fib/quicksort on it.
+  done: >-
+    A scaling comparison against a single-queue pool, with correctness under TSan.
+
+- id: hazard-pointers
+  title: Safe memory reclamation
+  region: concurrency
+  prompt: >-
+    Build a Treiber stack. Demonstrate the ABA problem and use-after-free, then fix them with hazard
+    pointers (hand-rolled, or C++26 std::hazard_pointer where available).
+  done: >-
+    A reproducible ABA failure, then a fixed version that passes a stress test.
+
+- id: seqlock
+  title: The seqlock
+  region: concurrency
+  size: S
+  prompt: >-
+    Implement a seqlock for a market-data snapshot with correct atomic fences, and justify
+    why the reader's copy is race-free under the C++ model.
+  done: >-
+    A stress test that detects no torn reads, and a write-up of the fence placement.
+
+- id: std-execution
+  title: Senders and receivers
+  region: concurrency
+  p: 3
+  prompt: >-
+    Build a small async pipeline with std::execution (C++26), via NVIDIA stdexec if your
+    compiler lacks it: schedule, then, when_all and a custom scheduler.
+  done: >-
+    The pipeline runs on a thread pool, and the write-up compares it with futures and callbacks.
+
+# ---- Cacheline Woods (data-structures) ----------------------------------------
+- id: tower-data-structures
+  title: "Tower: Cacheline Woods"
+  region: data-structures
+  kind: tower
+  size: S
+  prompt: >-
+    Survey data structures designed around the memory hierarchy: layouts, probing, allocation,
+    and intrusive designs.
+  done: >-
+    A region survey plus at least 3 proposed shrines.
+
+- id: soa-vs-aos
+  title: AoS, SoA, AoSoA
+  region: data-structures
+  p: 3
+  size: S
+  prompt: >-
+    Write a particle update in AoS, SoA and AoSoA layouts, updating one field and then all fields.
+  done: >-
+    A benchmark matrix (layout × access pattern), with the results explained by bytes moved.
+
+- id: open-addressing-hashmap
+  title: A flat hash map
+  region: data-structures
+  p: 3
+  prompt: >-
+    Implement an open-addressing hash map with linear probing and Robin Hood displacement.
+    Benchmark it against std::unordered_map.
+  done: >-
+    Lookup/insert/erase timings across load factors, plus a probe-length histogram.
+
+- id: swiss-table-probe
+  title: SIMD group probing
+  region: data-structures
+  prompt: >-
+    Add SwissTable-style control bytes and SSE2 group matching to your hash map.
+  done: >-
+    A speedup over scalar probing at high load, and the control-byte states explained.
+
+- id: arena-allocator
+  title: Arenas and pmr
+  region: data-structures
+  size: S
+  prompt: >-
+    Write a bump/arena allocator and plug it into std::pmr (and monotonic_buffer_resource) for an
+    allocation-heavy workload such as parsing into a tree.
+  done: >-
+    Time and allocation counts against the default allocator.
+
+- id: eytzinger-search
+  title: Eytzinger layout
+  region: data-structures
+  prompt: >-
+    Implement binary search over an Eytzinger (BFS) layout with prefetching, and compare it with
+    std::lower_bound on a sorted array at sizes from L1 to DRAM.
+  done: >-
+    A plot of time vs array size, with the cache-level transitions labelled.
+
+- id: radix-sort
+  title: Radix sort
+  region: data-structures
+  prompt: >-
+    Write an LSD radix sort for 32/64-bit keys with histogram prefetch, and compare it with std::sort
+    and pdqsort.
+  done: >-
+    Throughput vs N, with a bandwidth-bound analysis of the large-N regime.
+
+- id: order-book
+  title: The order book
+  region: data-structures
+  p: 4
+  prompt: >-
+    Implement a price-level order book: array levels near the touch, intrusive FIFO per level,
+    and O(1) cancel via an id→node map.
+  done: >-
+    p50/p99/p99.9 latency for add, cancel and execute on a replayed synthetic stream.
+
+- id: bloom-filter
+  title: Blocked Bloom filters
+  region: data-structures
+  size: S
+  prompt: >-
+    Implement a standard Bloom filter and a cache-line-blocked one, then measure the false-positive rate
+    against theory.
+  done: >-
+    FPR vs bits-per-key compared with the formula, plus lookup speed.
+
+- id: small-vector-sbo
+  title: small_vector
+  region: data-structures
+  size: S
+  prompt: >-
+    Implement a small_vector<T, N> with inline storage that spills to the heap.
+  done: >-
+    Tests (including exception safety), and allocation counts in a realistic workload.
+
+- id: intrusive-containers
+  title: Intrusive lists
+  region: data-structures
+  size: S
+  prompt: >-
+    Implement an intrusive doubly linked list (boost.intrusive style) and compare it with
+    std::list<T*> and std::list<T>.
+  done: >-
+    Traversal and splice benchmarks, and a discussion of pointer chasing.
+
+- id: lru-cache
+  title: A cache-friendly LRU
+  region: data-structures
+  size: S
+  prompt: >-
+    Build an LRU cache on your flat hash map with intrusive recency links, and compare it with the
+    textbook unordered_map + std::list version.
+  done: >-
+    Hit-path latency comparison and memory footprint per entry.
+
+# ---- Vector Coast (parallel-simd) ---------------------------------------------
+- id: tower-parallel-simd
+  title: "Tower: Vector Coast"
+  region: parallel-simd
+  kind: tower
+  size: S
+  prompt: >-
+    Survey CPU parallelism: vectorization (auto, intrinsics, std::simd), OpenMP, and parallel
+    algorithms, and how to reason about peak FLOPs on your machine.
+  done: >-
+    A region survey plus at least 3 proposed shrines.
+
+- id: auto-vectorization
+  title: When the compiler vectorizes
+  region: parallel-simd
+  p: 3
+  size: S
+  prompt: >-
+    Write 6 loops, some that vectorize and some that don't. Read the -fopt-info-vec / -Rpass=loop-vectorize
+    remarks, then fix the loops that fail.
+  done: >-
+    The remarks before and after, with the reason each loop failed.
+
+- id: simd-intrinsics-dot
+  title: The dot product, by hand
+  region: parallel-simd
+  p: 3
+  prompt: >-
+    Write an AVX2+FMA dot product with 1, 2, 4 and 8 independent accumulators, and compare it with the scalar
+    and auto-vectorized versions.
+  done: >-
+    GFLOP/s per variant, with the plateau explained by FMA latency and throughput.
+
+- id: std-simd
+  title: Portable SIMD
+  region: parallel-simd
+  size: S
+  prompt: >-
+    Port your dot product and one more kernel to std::simd (C++26 / std::experimental::simd).
+  done: >-
+    Performance parity (or not) with intrinsics, and asm comparison.
+
+- id: simd-stream-compaction
+  title: SIMD filtering
+  region: parallel-simd
+  prompt: >-
+    Filter an int array by a predicate with SIMD: a compress instruction on AVX-512, or a shuffle
+    LUT on AVX2.
+  done: >-
+    Throughput vs selectivity, compared with a branchy scalar version and a branchless one.
+
+- id: simd-parsing
+  title: Parsing at gigabytes per second
+  region: parallel-simd
+  p: 3
+  prompt: >-
+    Classify characters with SIMD (simdjson-style) to find delimiters/newlines in CSV,
+    and build a structural index.
+  done: >-
+    GB/s throughput and comparison with a scalar splitter.
+
+- id: openmp-basics
+  title: OpenMP, carefully
+  region: parallel-simd
+  size: S
+  prompt: >-
+    Parallelise an irregular loop with OpenMP. Compare the static, dynamic and guided schedules, and
+    use reductions.
+  done: >-
+    Scaling per schedule, with the load imbalance visualised.
+
+- id: cpu-gemm-tiling
+  title: CPU GEMM, climbing
+  region: parallel-simd
+  p: 4
+  size: L
+  prompt: >-
+    Optimise single-core SGEMM: loop order, cache blocking, packing, and an AVX2/AVX-512 register-tiled
+    microkernel.
+  done: >-
+    GFLOP/s at each step as a percentage of theoretical peak, compared with OpenBLAS.
+
+- id: parallel-stl
+  title: Parallel algorithms
+  region: parallel-simd
+  size: S
+  prompt: >-
+    Use std::execution::par / par_unseq algorithms (TBB backend) for sort, reduce and
+    transform_reduce, and compare them with hand-rolled threads.
+  done: >-
+    A scaling plot and a note on when par_unseq is legal.
+
+# ---- Kernel Jungle (gpu-programming) -----------------------------------------
+- id: tower-gpu
+  title: "Tower: Kernel Jungle"
+  region: gpu-programming
+  kind: tower
+  size: S
+  requires: [gpu]
+  prompt: >-
+    Survey the GPU programming model (grids, blocks, warps, memory spaces) and the tool
+    choices: CUDA C++, Triton, CUTLASS/CuTe, PyTorch extensions.
+  done: >-
+    A region survey plus at least 3 proposed shrines.
+
+- id: cuda-first-kernel
+  title: The first kernel
+  region: gpu-programming
+  p: 3
+  size: S
+  requires: [gpu]
+  prompt: >-
+    Write vector add and SAXPY in CUDA. Measure achieved bandwidth against the card's
+    theoretical peak across launch configurations.
+  done: >-
+    A bandwidth vs launch-config table, with the best config explained.
+
+- id: cuda-reduction
+  title: The reduction ladder
+  region: gpu-programming
+  p: 3
+  requires: [gpu]
+  prompt: >-
+    Walk the classic parallel reduction optimisation steps (Harris): divergent → sequential
+    addressing → first-add-during-load → unrolling → warp shuffles.
+  done: >-
+    GB/s after every step, and why each one helps.
+
+- id: cuda-transpose
+  title: Transpose and shared memory
+  region: gpu-programming
+  size: S
+  requires: [gpu]
+  prompt: >-
+    Write the matrix transpose three ways: naive, shared-memory tiled, and tiled with padding.
+  done: >-
+    Bandwidth for each version, and the coalescing and bank-conflict story told.
+
+- id: cuda-scan
+  title: Parallel scan
+  region: gpu-programming
+  requires: [gpu]
+  prompt: >-
+    Implement a Blelloch work-efficient scan and use it for stream compaction.
+  done: >-
+    Correct on non-power-of-two sizes, with throughput compared against CUB.
+
+- id: cuda-gemm-tiled
+  title: SGEMM, kernel by kernel
+  region: gpu-programming
+  p: 4
+  size: L
+  requires: [gpu]
+  prompt: >-
+    Work the SGEMM ladder: naive → coalesced → shared-memory tiling → 1D/2D blocktiling →
+    vectorised loads → warptiling, benchmarking against cuBLAS.
+  done: >-
+    GFLOP/s per kernel as a percentage of cuBLAS, with the limiting factor at each step identified.
+
+- id: online-softmax
+  title: Online softmax
+  region: gpu-programming
+  size: S
+  requires: [gpu]
+  prompt: >-
+    Implement softmax as a naive 3-pass version and as a one-pass version with the online max/normaliser trick.
+  done: >-
+    Numerical equivalence tests (including large logits) and a bandwidth comparison.
+
+- id: flash-attention-mini
+  title: FlashAttention, small
+  region: gpu-programming
+  p: 4
+  size: L
+  requires: [gpu]
+  prompt: >-
+    Write a tiled FlashAttention forward kernel for small head dims that uses online softmax and
+    never materialises the N×N matrix.
+  done: >-
+    Matches naive attention within tolerance, with memory use and speed compared as N grows.
+
+- id: triton-kernels
+  title: Triton
+  region: gpu-programming
+  p: 3
+  requires: [gpu]
+  prompt: >-
+    Write fused LayerNorm and fused softmax kernels in Triton, and compare them with PyTorch eager and
+    torch.compile.
+  done: >-
+    Benchmark table, and a note on what Triton decided for you (tiling, masking).
+
+- id: cuda-streams-overlap
+  title: Streams and overlap
+  region: gpu-programming
+  size: S
+  requires: [gpu]
+  prompt: >-
+    Overlap H2D copies, compute and D2H copies using multiple streams and pinned memory.
+  done: >-
+    An Nsight Systems timeline showing the overlap, and the end-to-end speedup.
+
+- id: pytorch-cpp-extension
+  title: A custom PyTorch op
+  region: gpu-programming
+  p: 3
+  requires: [gpu]
+  prompt: >-
+    Package one of your CUDA kernels as a PyTorch C++/CUDA extension with autograd support.
+  done: >-
+    gradcheck passes, and the op is callable from Python with no copies.
+
+- id: cuda-graphs
+  title: CUDA graphs
+  region: gpu-programming
+  size: S
+  requires: [gpu]
+  prompt: >-
+    Capture a sequence of many small kernels in a CUDA graph and measure the launch-overhead
+    savings.
+  done: >-
+    Per-iteration time with and without graphs, as kernel count grows.
+
+- id: cutlass-cute-intro
+  title: CuTe layouts
+  region: gpu-programming
+  requires: [gpu]
+  prompt: >-
+    Learn CuTe's layout algebra (shape, stride, composition, tiling) by expressing your
+    transpose and a GEMM tile with it.
+  done: >-
+    Working kernels, and an explanation of a layout composition in your own words.
+
+# ---- Activation Marsh (interp-engineering) -----------------------------------
+- id: tower-interp-engineering
+  title: "Tower: Activation Marsh"
+  region: interp-engineering
+  kind: tower
+  size: S
+  prompt: >-
+    Survey the engineering of interpretability: capturing activations, storing them, training dictionaries,
+    intervening, and visualising. Where are the throughput bottlenecks?
+  done: >-
+    A region survey plus at least 3 proposed shrines.
+
+- id: activation-hooks
+  title: Catching activations
+  region: interp-engineering
+  p: 3
+  size: S
+  prompt: >-
+    Capture residual-stream activations from GPT-2 small with forward hooks, without
+    TransformerLens first and then with it.
+  done: >-
+    Hook overhead and memory measured per layer, and activations verified identical across both methods.
+
+- id: activation-store
+  title: The activation store
+  region: interp-engineering
+  p: 4
+  prompt: >-
+    Stream activations to disk as memory-mapped bf16 shards, and write a shuffling loader
+    for dictionary training.
+  done: >-
+    Write and read GB/s against the disk's peak, with the loader keeping a GPU (or CPU trainer) fed.
+
+- id: logit-lens
+  title: The logit lens
+  region: interp-engineering
+  size: S
+  prompt: >-
+    Implement the logit lens on GPT-2: decode each layer's residual stream through the unembedding.
+  done: >-
+    Plots for 3 prompts, and a discussion of where predictions crystallise.
+
+- id: linear-probes
+  title: Probes and controls
+  region: interp-engineering
+  prompt: >-
+    Train linear probes for a property (e.g. part of speech or token position) at every layer, with
+    Hewitt & Liang style control tasks to measure selectivity.
+  done: >-
+    Accuracy and selectivity per layer, and what the controls change about the interpretation.
+
+- id: activation-patching
+  title: Activation patching
+  region: interp-engineering
+  p: 4
+  prompt: >-
+    Build a patching harness for an IOI-style task: clean/corrupted runs, patching per layer ×
+    position, batched efficiently.
+  done: >-
+    A patching heatmap, and a harness that runs all patches in batched forward passes.
+
+- id: attribution-patching
+  title: Attribution patching
+  region: interp-engineering
+  prompt: >-
+    Implement attribution patching (the gradient-based linear approximation) and compare it with the real patching
+    results from your harness.
+  done: >-
+    A correlation plot against real patching, the speedup, and where the approximation breaks.
+
+- id: toy-superposition
+  title: Toy models of superposition
+  region: interp-engineering
+  p: 3
+  links: [theory-superposition]
+  prompt: >-
+    Replicate the core toy model from Anthropic's "Toy Models of Superposition": sparse features,
+    a small bottleneck, and importance weighting.
+  done: >-
+    A phase diagram of feature sparsity vs superposition, and a feature-geometry plot.
+
+- id: sae-training
+  title: Training an SAE
+  region: interp-engineering
+  p: 4
+  size: L
+  prompt: >-
+    Train a ReLU + L1 sparse autoencoder on GPT-2 small residual activations from your activation
+    store.
+  done: >-
+    L0, reconstruction MSE, fraction of loss recovered, and dead-latent counts tracked over training.
+
+- id: topk-sae
+  title: TopK SAE
+  region: interp-engineering
+  p: 3
+  prompt: >-
+    Train a TopK SAE (Gao et al., 2024) with the AuxK loss and compare it with your ReLU SAE at matched L0.
+  done: >-
+    The sparsity–reconstruction frontier for both, and dead latents compared.
+
+- id: sae-encoder-kernel
+  title: A fused SAE encoder
+  region: interp-engineering
+  p: 3
+  requires: [gpu]
+  prompt: >-
+    Write a fused encoder (matmul + bias + top-k) and a sparse decoder that exploits k ≪ d,
+    as a Triton or CUDA kernel.
+  done: >-
+    Speedup over dense PyTorch at several k, with a correctness check.
+
+- id: feature-dashboard
+  title: Feature dashboards
+  region: interp-engineering
+  prompt: >-
+    For each SAE latent, stream a large token corpus and keep the top-k activating contexts
+    with a bounded heap per latent. Render a small HTML dashboard.
+  done: >-
+    Dashboards for 20 latents, with the streaming memory bound verified.
+
+- id: steering-vectors
+  title: Steering vectors
+  region: interp-engineering
+  size: S
+  prompt: >-
+    Build contrastive steering vectors (activation addition) and SAE-feature steering for one
+    behaviour, and compare the two.
+  done: >-
+    Generation samples at several coefficients, plus a simple quantitative effect measure.
+
+- id: transcoders
+  title: Transcoders
+  region: interp-engineering
+  prompt: >-
+    Train a transcoder that maps an MLP's input to its output through a sparse bottleneck, and compare its
+    interpretability and fidelity with an SAE on the same layer.
+  done: >-
+    Fidelity metrics, and 5 latents inspected in both.
+
+- id: induction-heads
+  title: Finding induction heads
+  region: interp-engineering
+  size: S
+  links: [theory-circuits]
+  prompt: >-
+    Detect induction heads in a small model using repeated random-token sequences and an
+    induction score per head.
+  done: >-
+    A heatmap of induction scores, and an ablation showing that the top heads matter.
+
+# ---- Tick Canyon (low-latency) ------------------------------------------------
+- id: tower-low-latency
+  title: "Tower: Tick Canyon"
+  region: low-latency
+  kind: tower
+  size: S
+  prompt: >-
+    Survey low-latency engineering: measurement, the hot path, networking, IPC, and OS tuning.
+    What dominates tick-to-trade?
+  done: >-
+    A region survey plus at least 3 proposed shrines.
+
+- id: latency-measurement
+  title: Measuring latency honestly
+  region: low-latency
+  p: 4
+  prompt: >-
+    Measure with rdtsc/rdtscp and steady_clock, record into an HdrHistogram-style structure, and
+    demonstrate coordinated omission.
+  done: >-
+    The same system measured naively and correctly, with percentiles that differ, and why.
+
+- id: hot-path-logging
+  title: Logging off the hot path
+  region: low-latency
+  prompt: >-
+    Build an async binary logger: format args are captured raw into an SPSC buffer and formatted on
+    a background thread.
+  done: >-
+    p50/p99 impact on a hot loop compared with spdlog async and printf.
+
+- id: core-pinning
+  title: Pinning and spinning
+  region: low-latency
+  size: S
+  requires: [linux]
+  prompt: >-
+    Pin threads with affinity (and isolcpus if possible), then compare busy-spinning, yielding and
+    blocking consumers.
+  done: >-
+    Latency histograms per configuration, and the CPU cost of each.
+
+- id: udp-multicast-feed
+  title: A market data feed handler
+  region: low-latency
+  p: 3
+  requires: [linux]
+  prompt: >-
+    Receive a synthetic UDP multicast feed with recvmmsg, detect sequence gaps, and decode
+    messages in place.
+  done: >-
+    Message rate and per-message latency, with gap handling tested.
+
+- id: binary-serialization
+  title: Flyweight codecs
+  region: low-latency
+  prompt: >-
+    Write an SBE-style flyweight codec (fixed layout, no allocation) and compare it with protobuf
+    and a naive struct memcpy.
+  done: >-
+    Encode and decode ns/msg, with the aliasing/alignment issues and how you handled them.
+
+- id: epoll-event-loop
+  title: An epoll event loop
+  region: low-latency
+  requires: [linux]
+  prompt: >-
+    Build an edge-triggered epoll TCP echo server with non-blocking sockets.
+  done: >-
+    Latency under load compared with a thread-per-connection version.
+
+- id: io-uring-server
+  title: io_uring
+  region: low-latency
+  requires: [linux]
+  prompt: >-
+    Rebuild the echo server on io_uring (liburing), then try SQPOLL.
+  done: >-
+    A syscall count and latency comparison against epoll.
+
+- id: shared-memory-ipc
+  title: Shared-memory IPC
+  region: low-latency
+  requires: [linux]
+  prompt: >-
+    Put your SPSC ring buffer in POSIX shared memory between two processes.
+  done: >-
+    Cross-process one-way latency compared with a Unix domain socket and a pipe.
+
+- id: branch-free-decoder
+  title: A branch-free decoder
+  region: low-latency
+  size: S
+  prompt: >-
+    Rewrite a message-type dispatch or varint decoder to remove data-dependent branches.
+  done: >-
+    Branch-miss counts and latency, compared on random vs predictable inputs.
+
+- id: cache-warming
+  title: Keeping the hot path warm
+  region: low-latency
+  size: S
+  prompt: >-
+    Model a trading loop that is idle most of the time. Show the cold-cache penalty on the first
+    event, then mitigate it with warm-up traffic or dummy work.
+  done: >-
+    First-event latency before and after warming.
+
+# ---- Agent Workshops (agent-harness) -----------------------------------------
+- id: tower-agent-harness
+  title: "Tower: Agent Workshops"
+  region: agent-harness
+  kind: tower
+  size: S
+  prompt: >-
+    Survey the practice of agentic coding for performance work: tool loops, verification, benchmarks
+    as oracles, and failure modes.
+  done: >-
+    A region survey plus at least 3 proposed shrines.
+
+- id: agent-tool-loop
+  title: A minimal agent loop
+  region: agent-harness
+  p: 4
+  requires: [llm-api]
+  links: [forge-verifier-ladder]
+  prompt: >-
+    Using the Claude API with tool use, build an agent loop with the tools compile, run_tests and
+    run_benchmark, and let it iterate on one slow function.
+  done: >-
+    A transcript of a successful optimisation, with a clean log of every tool call.
+
+- id: bench-as-oracle
+  title: The benchmark as oracle
+  region: agent-harness
+  p: 3
+  prompt: >-
+    Build a scoring harness: differential correctness against a reference, then speed with
+    repetitions and a significance test, giving a single verdict per candidate.
+  done: >-
+    The harness correctly ranks 5 hand-written candidates, including one that is wrong but fast.
+
+- id: differential-testing
+  title: Differential testing for kernels
+  region: agent-harness
+  prompt: >-
+    Build property-based and differential tests for numeric kernels: random shapes,
+    adversarial values, and ULP/relative tolerances.
+  done: >-
+    The tests catch 3 planted bugs, including an off-by-one on odd sizes.
+
+- id: llm-kernel-optimization
+  title: Letting the agent optimise a kernel
+  region: agent-harness
+  p: 3
+  requires: [llm-api]
+  prompt: >-
+    Let your agent optimise a SIMD or CUDA kernel against your oracle for N iterations, and log
+    every attempt.
+  done: >-
+    A taxonomy of the attempts (wins, regressions, broken code) and the final speedup.
+
+- id: reward-hacking-guards
+  title: Catching the agent cheating
+  region: agent-harness
+  prompt: >-
+    Red-team your oracle: write candidates that cache outputs, skip work on benchmark-shaped
+    inputs, or alter the timer. Add guards against each one.
+  done: >-
+    Every cheat is caught by a guard, and the guards are documented.
+
+- id: context-packing
+  title: What context helps the agent?
+  region: agent-harness
+  requires: [llm-api]
+  prompt: >-
+    Run the same optimisation task with different context: source only, source + perf counters,
+    and source + asm + counters.
+  done: >-
+    Success rate and speedup per condition over several runs, and what you'd conclude.
+
+- id: autotuner
+  title: Classic autotuning
+  region: agent-harness
+  prompt: >-
+    Autotune tile sizes and unroll factors for your GEMM with grid search and then Bayesian
+    optimisation, and compare with agent-driven tuning.
+  done: >-
+    Best configuration found by each method, and the evaluation budget each one needed.
+
+- id: claude-code-skill
+  title: A profiling skill
+  region: agent-harness
+  size: S
+  prompt: >-
+    Write a Claude Code skill or subagent for a "measure → hypothesise → change → re-measure"
+    workflow, and use it on one of your own shrines.
+  done: >-
+    The skill in the repo, plus one real session it improved (or failed to), analysed.
+
+# ---- Temples (capstones) ---------------------------------------------------------
+- id: temple-sae-engine
+  title: "Temple: the SAE Engine"
+  region: interp-engineering
+  kind: temple
+  size: L
+  needs: [activation-store, topk-sae, sae-encoder-kernel, feature-dashboard]
+  prompt: >-
+    Build an end-to-end high-throughput SAE pipeline: model → activation store → fused TopK training →
+    dashboards. Measure the throughput of every stage.
+  done: >-
+    A stage-by-stage throughput breakdown, with the bottleneck identified and one stage improved by ≥2×.
+
+- id: temple-mini-flash
+  title: "Temple: Flash, on tensor cores"
+  region: gpu-programming
+  kind: temple
+  size: L
+  requires: [gpu]
+  needs: [flash-attention-mini, cuda-gemm-tiled, gpu-tensor-cores]
+  prompt: >-
+    Upgrade your FlashAttention forward pass to tensor cores with software pipelining.
+  done: >-
+    Performance as a fraction of the reference FlashAttention implementation, with the remaining gap analysed.
+
+- id: temple-tick-to-trade
+  title: "Temple: Tick-to-Trade"
+  region: low-latency
+  kind: temple
+  size: L
+  needs: [udp-multicast-feed, order-book, latency-measurement, hot-path-logging]
+  prompt: >-
+    Wire a feed handler → order book → strategy stub → order encoder together, and measure
+    tick-to-trade latency.
+  done: >-
+    A tick-to-trade latency histogram and a budget table showing ns per stage.
+
+- id: temple-kernel-forge
+  title: "Temple: the Kernel Forge"
+  region: agent-harness
+  kind: temple
+  size: L
+  requires: [llm-api]
+  needs: [agent-tool-loop, bench-as-oracle, reward-hacking-guards, llm-kernel-optimization]
+  prompt: >-
+    Build an agentic kernel optimiser that takes a kernel plus a reference and returns a verified faster
+    kernel with a report. Run it on 10 kernels.
+  done: >-
+    Results over the 10 kernels (speedups, failures, cheats caught), written up as an essay.
+
+- id: temple-lockfree-runtime
+  title: "Temple: the Runtime"
+  region: concurrency
+  kind: temple
+  size: L
+  needs: [work-stealing-pool, hazard-pointers, std-execution]
+  prompt: >-
+    Build a small task runtime: a work-stealing scheduler exposed as a std::execution scheduler, with
+    lock-free internals.
+  done: >-
+    Runs a parallel benchmark suite competitively with TBB, and is TSan-clean.
+
+- id: temple-cpu-gemm
+  title: "Temple: 80% of Peak"
+  region: parallel-simd
+  kind: temple
+  size: L
+  needs: [cpu-gemm-tiling, simd-intrinsics-dot, uarch-ports-uops]
+  prompt: >-
+    Push single-core SGEMM to at least 80% of theoretical peak, then extend it to multi-core.
+  done: >-
+    Single-core and multi-core % of peak, compared with OpenBLAS/MKL.
+
+# =============================================================================
+# SKY
+# =============================================================================
+
+# ---- The Agentic Forge -------------------------------------------------------
+- id: tower-agentic-forge
+  title: "Tower: the Agentic Forge"
+  region: agentic-forge
+  kind: tower
+  size: S
+  prompt: >-
+    Survey the landscape of LLM agents for HPC and performance engineering: benchmarks, published
+    results, and open problems.
+  done: >-
+    A region survey plus at least 3 proposed shrines.
+
+- id: forge-verifier-ladder
+  title: The verification ladder
+  region: agentic-forge
+  p: 4
+  links: [agent-tool-loop, bench-as-oracle]
+  prompt: >-
+    Argue why performance work is unusually verifiable, and design a ladder of verification
+    strength (compiles → tests → differential → formal) with a prototype for two rungs.
+  done: >-
+    An essay-grade write-up and working prototypes for two rungs.
+
+- id: forge-kernel-benchmarks
+  title: Reading kernel-generation benchmarks
+  region: agentic-forge
+  p: 3
+  requires: [llm-api, gpu]
+  links: [llm-kernel-optimization]
+  prompt: >-
+    Reproduce a small slice of a public LLM kernel-generation benchmark (e.g. KernelBench level 1)
+    with a current model, and critique the benchmark's design.
+  done: >-
+    Your results, with the benchmark's blind spots identified.
+
+- id: forge-division-of-labor
+  title: Human and agent, divided
+  region: agentic-forge
+  prompt: >-
+    Propose a division of labour for HPC work: what to delegate, what to verify, and what to keep. Test it on
+    one real task from your coursework or a shrine.
+  done: >-
+    The framework, plus a retrospective on the test task.
+
+- id: forge-eval-design
+  title: Designing an eval
+  region: agentic-forge
+  p: 3
+  links: [reward-hacking-guards]
+  prompt: >-
+    Design an eval for "make this code faster without breaking it", covering task selection, scoring,
+    contamination and cheating, and implement 5 tasks.
+  done: >-
+    5 tasks runnable end-to-end, with a documented scoring rule.
+
+- id: forge-failure-atlas
+  title: An atlas of agent failures
+  region: agentic-forge
+  links: [memory-order-litmus]
+  prompt: >-
+    Collect cases where agents fail at low-level work (memory ordering, UB, numerical
+    tolerance) and categorise the failure modes.
+  done: >-
+    At least 10 documented cases, a taxonomy, and one mitigation tested.
+
+- id: forge-economics
+  title: The economics of automated optimisation
+  region: agentic-forge
+  p: 3
+  prompt: >-
+    Model the economics: agent cost per verified speedup vs engineer time vs compute saved.
+    Calibrate the model on your own agent runs.
+  done: >-
+    A parameterised model, with your data plugged in and the sensitivity discussed.
+
+# ---- Design Archipelago -----------------------------------------------------
+- id: tower-design
+  title: "Tower: Design Archipelago"
+  region: design-archipelago
+  kind: tower
+  size: S
+  prompt: >-
+    Survey software design for performance-critical C++: value semantics, data-oriented design,
+    ownership, error philosophy, and zero-cost abstraction.
+  done: >-
+    A region survey plus at least 3 proposed shrines.
+
+- id: design-value-semantics
+  title: Regular types
+  region: design-archipelago
+  p: 4
+  links: [move-semantics-vector]
+  prompt: >-
+    Explain Stepanov's regular types and value semantics, then redesign a reference-heavy API
+    around values.
+  done: >-
+    Before/after API with reasoning about local reasoning, testing and performance.
+
+- id: design-dod
+  title: Data-oriented design
+  region: design-archipelago
+  p: 4
+  links: [soa-vs-aos]
+  prompt: >-
+    Refactor a small OOP simulation into a data-oriented design and explain what the transformation is
+    in general.
+  done: >-
+    Performance delta, and a general recipe for the refactor.
+
+- id: design-ownership
+  title: Ownership architecture
+  region: design-archipelago
+  prompt: >-
+    Draw the ownership and lifetime graph of a real codebase (yours or a small OSS project). Find
+    one unclear ownership and fix it.
+  done: >-
+    The diagram and the fix, with the principle it illustrates.
+
+- id: design-error-philosophy
+  title: A philosophy of errors
+  region: design-archipelago
+  links: [std-expected-errors, contracts-26]
+  prompt: >-
+    Build a decision framework for exceptions vs expected vs contracts vs abort, and apply it to three
+    components of one system.
+  done: >-
+    The framework, plus the three applied cases.
+
+- id: design-zero-cost
+  title: Zero-cost, verified
+  region: design-archipelago
+  p: 3
+  links: [crtp-static-poly, policy-based-design]
+  prompt: >-
+    Design an abstraction that claims to be zero-overhead (e.g. strong typedefs for prices and
+    quantities) and prove it with asm and benchmarks.
+  done: >-
+    Identical asm to the raw version, and a list of what broke zero-cost along the way.
+
+- id: design-patterns-modern
+  title: The patterns, rewritten
+  region: design-archipelago
+  prompt: >-
+    Re-express 4 GoF patterns in modern C++ (visitor → variant, strategy → templates/lambdas,
+    observer → signals, factory → type erasure).
+  done: >-
+    Code for each one, and when the classic form is still better.
+
+- id: design-ecs
+  title: Entity–component–system
+  region: design-archipelago
+  links: [soa-vs-aos]
+  prompt: >-
+    Build a minimal ECS with archetype storage and run a simulation on it.
+  done: >-
+    Iteration throughput compared with an OOP version, and the design trade-offs discussed.
+
+- id: design-hexagonal-trading
+  title: Ports and adapters for trading
+  region: design-archipelago
+  links: [order-book]
+  prompt: >-
+    Separate a trading system's domain logic from IO (ports and adapters) without adding
+    hot-path overhead, and make it deterministic-replay testable.
+  done: >-
+    A replay test and hot-path latency parity.
+
+# ---- Isles of Interpretation ----------------------------------------------------
+- id: tower-interp-theory
+  title: "Tower: Isles of Interpretation"
+  region: interp-theory
+  kind: tower
+  size: S
+  prompt: >-
+    Survey mechanistic interpretability's main ideas: features, superposition, circuits, the
+    linear representation hypothesis, and causal interventions.
+  done: >-
+    A region survey plus at least 3 proposed shrines.
+
+- id: theory-superposition
+  title: Superposition
+  region: interp-theory
+  p: 4
+  links: [toy-superposition]
+  prompt: >-
+    Explain superposition and why sparsity makes it possible, grounded in your toy-model results.
+  done: >-
+    An explainer another MSFM student could follow, with your own plots.
+
+- id: theory-linear-representation
+  title: The linear representation hypothesis
+  region: interp-theory
+  p: 3
+  links: [linear-probes, steering-vectors]
+  prompt: >-
+    State the hypothesis precisely, find a concept that looks linear and one that doesn't, and
+    test both.
+  done: >-
+    Evidence for each case, and what would falsify the hypothesis.
+
+- id: theory-circuits
+  title: Circuits
+  region: interp-theory
+  p: 3
+  links: [induction-heads, activation-patching]
+  prompt: >-
+    Explain the circuits research program through the induction-head story, from mechanism to in-context learning.
+  done: >-
+    A write-up anchored in your own induction-head detection results.
+
+- id: theory-causal-abstraction
+  title: Causal abstraction
+  region: interp-theory
+  links: [activation-patching]
+  prompt: >-
+    Formalise activation patching as an intervention on a causal model, and map your patching harness
+    onto that formalism.
+  done: >-
+    The formalism, plus one experiment reinterpreted in it.
+
+- id: theory-sae-limits
+  title: Where SAEs fall short
+  region: interp-theory
+  p: 3
+  links: [sae-training, topk-sae]
+  prompt: >-
+    Investigate the known SAE pathologies (feature splitting, feature absorption, unexplained
+    "dark matter" in the residual), and demonstrate feature splitting across dictionary sizes.
+  done: >-
+    A splitting demo across 3 dictionary sizes, and a literature summary.
+
+- id: theory-probing-limits
+  title: When probes mislead
+  region: interp-theory
+  links: [linear-probes]
+  prompt: >-
+    Explain the difference between decodability and use, and show a probe that succeeds on information
+    the model provably doesn't use.
+  done: >-
+    The counterexample, with the causal test that exposes it.
+
+- id: theory-interp-at-scale
+  title: The cost of interpretability
+  region: interp-theory
+  p: 4
+  links: [activation-store, theory-arith-intensity]
+  prompt: >-
+    Estimate the FLOPs, storage and bandwidth needed to train SAEs across all layers of a frontier-scale
+    model, calibrated against your small-model measurements.
+  done: >-
+    A parameterised back-of-envelope with sensitivity analysis, and where HPC engineering changes the answer.
+
+# ---- Roofline Heights (performance-theory) -----------------------------------------
+- id: tower-performance-theory
+  title: "Tower: Roofline Heights"
+  region: performance-theory
+  kind: tower
+  size: S
+  prompt: >-
+    Survey the performance models: roofline, Amdahl/Gustafson, Little's law, work–span,
+    latency vs throughput, and the memory wall.
+  done: >-
+    A region survey plus at least 3 proposed shrines.
+
+- id: theory-roofline
+  title: Your machine's roofline
+  region: performance-theory
+  p: 5
+  links: [cpu-gemm-tiling, simd-intrinsics-dot]
+  prompt: >-
+    Measure your machine's peak FLOP/s and bandwidth, draw its roofline, and place 5 of your kernels
+    on it.
+  done: >-
+    The roofline plot, with each kernel's position explained.
+
+- id: theory-amdahl
+  title: Amdahl, measured
+  region: performance-theory
+  links: [threads-and-jthread]
+  prompt: >-
+    Measure the speedup curve of a parallel program, fit the serial fraction (Karp–Flatt), and
+    contrast Amdahl's view with Gustafson's.
+  done: >-
+    The fit, with the implied serial fraction located in the code.
+
+- id: theory-littles-law
+  title: Little's law and memory parallelism
+  region: performance-theory
+  p: 3
+  prompt: >-
+    Apply Little's law to memory (bandwidth = outstanding requests / latency) and measure
+    memory-level parallelism with parallel pointer chases.
+  done: >-
+    Bandwidth vs number of chains, matched against the Little's-law prediction.
+
+- id: theory-latency-numbers
+  title: Your own latency numbers
+  region: performance-theory
+  p: 3
+  size: S
+  prompt: >-
+    Measure your own "latency numbers every programmer should know" (L1/L2/L3/DRAM, mispredict,
+    syscall, mutex, context switch, SSD read) on your machine.
+  done: >-
+    A table with methods, compared against the folklore numbers.
+
+- id: theory-work-span
+  title: Work and span
+  region: performance-theory
+  links: [cuda-scan, work-stealing-pool]
+  prompt: >-
+    Analyse scan and quicksort under the work–span model and predict their speedup, then check the prediction against
+    your implementations.
+  done: >-
+    Predicted vs measured parallelism.
+
+- id: theory-arith-intensity
+  title: Arithmetic intensity of transformers
+  region: performance-theory
+  p: 4
+  links: [flash-attention-mini]
+  prompt: >-
+    Derive the arithmetic intensity of the attention and MLP blocks in prefill vs decode, and explain
+    why decode is memory-bound.
+  done: >-
+    The derivations, plus a measurement on a small model confirming the regime.
+
+- id: theory-memory-wall
+  title: The memory wall
+  region: performance-theory
+  prompt: >-
+    Trace compute vs memory bandwidth trends in hardware over two decades and argue what they imply for
+    algorithm design.
+  done: >-
+    A data-backed essay with one chart built from sourced data.
+
+# ---- Numerical Heights ----------------------------------------------------------
+- id: tower-numerics
+  title: "Tower: Numerical Heights"
+  region: numerical-heights
+  kind: tower
+  size: S
+  prompt: >-
+    Survey the numerics of high-performance and ML code: rounding, conditioning, precision formats,
+    reproducibility, and quantization.
+  done: >-
+    A region survey plus at least 3 proposed shrines.
+
+- id: num-fp-error
+  title: Floating-point error analysis
+  region: numerical-heights
+  p: 3
+  prompt: >-
+    Analyse the error bounds of naive, pairwise and Kahan summation, and verify them empirically.
+  done: >-
+    Theory vs measurement across input distributions.
+
+- id: num-mixed-precision
+  title: Mixed precision
+  region: numerical-heights
+  p: 3
+  requires: [gpu]
+  prompt: >-
+    Compare fp32, tf32, bf16 and fp16 matmul error and speed, and explain loss scaling.
+  done: >-
+    An error/speed table, and a small training run with and without loss scaling.
+
+- id: num-reproducibility
+  title: Reproducible reductions
+  region: numerical-heights
+  links: [parallel-stl]
+  prompt: >-
+    Show that parallel reductions are nondeterministic, then build a reproducible sum
+    (fixed-order tree or exact accumulator).
+  done: >-
+    Bitwise-identical results across thread counts, and the cost of that determinism.
+
+- id: num-quantization
+  title: Quantization
+  region: numerical-heights
+  p: 3
+  prompt: >-
+    Quantise a small model's weights to int8 and fp8 (per-tensor vs per-channel), and measure accuracy loss.
+  done: >-
+    Accuracy vs scheme, and one outlier-channel story.
+
+- id: num-stable-softmax
+  title: Stable softmax and log-sum-exp
+  region: numerical-heights
+  size: S
+  links: [online-softmax]
+  prompt: >-
+    Show the overflow and underflow failures of naive softmax, derive the stable form, and connect it to the
+    online normaliser.
+  done: >-
+    Failing inputs for the naive version and a proof sketch of stability.
+
+# =============================================================================
+# DEPTHS  (each lightroot sits under its `below` surface shrine)
+# =============================================================================
+
+# ---- Vein of Instructions (isa-assembly) --------------------------------------
+- id: asm-calling-convention
+  title: The System V ABI
+  region: isa-assembly
+  below: godbolt-reading
+  prompt: >-
+    Write 3 functions in x86-64 assembly that are callable from C++ (ints, doubles, a struct by
+    value), respecting the System V ABI.
+  done: >-
+    The functions work from C++, with register usage and stack alignment explained.
+
+- id: asm-loop-annotation
+  title: A hot loop, line by line
+  region: isa-assembly
+  below: auto-vectorization
+  size: S
+  prompt: >-
+    Annotate every instruction of a vectorized loop and its remainder handling.
+  done: >-
+    A fully annotated listing, including the prologue and epilogue.
+
+- id: asm-cmov-branchless
+  title: cmov and branchless code
+  region: isa-assembly
+  below: branch-free-decoder
+  size: S
+  prompt: >-
+    Find where the compiler emits cmov vs branches for your decoder, and force each form.
+  done: >-
+    Timing on predictable vs random data for both forms.
+
+- id: asm-avx512-masks
+  title: AVX-512 masks
+  region: isa-assembly
+  below: simd-stream-compaction
+  requires: [avx512]
+  prompt: >-
+    Hand-write a masked filter using k-registers and vpcompressd.
+  done: >-
+    A working kernel with the asm explained, compared with the AVX2 LUT version.
+
+- id: asm-atomics-codegen
+  title: What atomics compile to
+  region: isa-assembly
+  below: memory-order-litmus
+  p: 3
+  prompt: >-
+    Compile each memory_order for load, store, RMW and fence on x86-64 and AArch64, and tabulate
+    the instructions.
+  done: >-
+    The table (mov/xchg/lock-prefix vs ldar/stlr/dmb), explained from each hardware model.
+
+- id: asm-vtables
+  title: vtables in the flesh
+  region: isa-assembly
+  below: variant-visit
+  size: S
+  prompt: >-
+    Dump the vtable layout and the virtual call sequence, including multiple inheritance thunks.
+  done: >-
+    An annotated vtable dump and call sequence.
+
+- id: asm-exception-unwinding
+  title: Zero-cost exceptions
+  region: isa-assembly
+  below: std-expected-errors
+  prompt: >-
+    Trace a throw through .eh_frame, the personality routine and the landing pads.
+  done: >-
+    An explanation of why the happy path is free and the throw is expensive, backed by the metadata.
+
+- id: asm-coroutine-frames
+  title: Coroutine frames
+  region: isa-assembly
+  below: coroutines-generator
+  prompt: >-
+    Inspect how Clang lowers your generator: frame layout, resume/destroy functions, and when heap
+    allocation is elided.
+  done: >-
+    Evidence of allocation elision (or its absence), with the conditions explained.
+
+# ---- Pipeline Vein (microarchitecture) ---------------------------------------
+- id: uarch-branch-prediction
+  title: The branch predictor
+  region: microarchitecture
+  below: branch-free-decoder
+  p: 3
+  prompt: >-
+    Measure the misprediction penalty (the sorted vs unsorted classic) and probe the predictor's
+    pattern-history capacity with periodic patterns.
+  done: >-
+    The measured penalty in cycles, and the pattern length where prediction breaks.
+
+- id: uarch-ports-uops
+  title: Ports and uops
+  region: microarchitecture
+  below: simd-intrinsics-dot
+  p: 3
+  prompt: >-
+    Predict a loop's throughput with llvm-mca or uiCA, then measure it. Identify the port bottleneck.
+  done: >-
+    Predicted vs measured cycles/iteration, with the bottleneck named.
+
+- id: uarch-dependency-chains
+  title: Latency vs throughput
+  region: microarchitecture
+  below: cpu-gemm-tiling
+  size: S
+  prompt: >-
+    Measure FMA latency and throughput by varying the number of independent chains.
+  done: >-
+    A plot showing the latency-bound → throughput-bound transition.
+
+- id: uarch-store-forwarding
+  title: Store-to-load forwarding
+  region: microarchitecture
+  below: binary-serialization
+  prompt: >-
+    Trigger store-forwarding stalls (narrow stores → wide load, misaligned), and fix them in your
+    codec.
+  done: >-
+    Cycles with and without stalls, with the relevant perf counter shown.
+
+- id: uarch-smt
+  title: Hyperthreads
+  region: microarchitecture
+  below: core-pinning
+  size: S
+  prompt: >-
+    Measure the latency impact of an SMT sibling running a noisy workload vs a separate physical core.
+  done: >-
+    Latency histograms for each placement.
+
+- id: uarch-frontend-alignment
+  title: The front end and alignment
+  region: microarchitecture
+  below: benchmark-methodology
+  prompt: >-
+    Show a benchmark whose speed changes with code alignment alone (uop cache / DSB effects).
+  done: >-
+    A reproducible alignment-driven swing, and how to control for it.
+
+- id: uarch-pointer-chasing
+  title: Pointer chasing
+  region: microarchitecture
+  below: intrusive-containers
+  size: S
+  prompt: >-
+    Measure dependent-load latency through random linked lists of growing size.
+  done: >-
+    A latency staircase matching the cache levels.
+
+# ---- Cache Vein (memory-hierarchy) -----------------------------------------------
+- id: mem-stride-benchmark
+  title: Cache sizes by stride
+  region: memory-hierarchy
+  below: soa-vs-aos
+  p: 3
+  size: S
+  prompt: >-
+    Sweep array size and stride to reveal line size and L1/L2/L3 capacities.
+  done: >-
+    A heatmap, with the cache parameters read off it and checked against the specs.
+
+- id: mem-associativity
+  title: Conflict misses
+  region: memory-hierarchy
+  below: eytzinger-search
+  prompt: >-
+    Show power-of-two stride conflict misses from set associativity, and fix them with padding.
+  done: >-
+    Slowdown at critical strides, with the set-index arithmetic explained.
+
+- id: mem-tlb-hugepages
+  title: TLBs and huge pages
+  region: memory-hierarchy
+  below: open-addressing-hashmap
+  requires: [linux]
+  prompt: >-
+    Measure TLB misses on a large random-access hash table, then enable huge pages (THP or
+    explicit).
+  done: >-
+    dTLB miss counts and lookup latency before and after.
+
+- id: mem-prefetching
+  title: Prefetchers
+  region: memory-hierarchy
+  below: swiss-table-probe
+  prompt: >-
+    Characterise the hardware prefetchers (sequential vs strided vs random), then add software
+    prefetch to batched hash lookups.
+  done: >-
+    Speedup from batched software prefetching, with the prefetch distance tuned.
+
+- id: mem-coherence
+  title: MESI, observed
+  region: memory-hierarchy
+  below: false-sharing
+  p: 3
+  prompt: >-
+    Measure cache-line transfer latency between cores (ping-pong) and relate it to coherence states.
+  done: >-
+    A core-to-core latency matrix, with the topology visible in it.
+
+- id: mem-numa
+  title: NUMA
+  region: memory-hierarchy
+  below: openmp-basics
+  requires: [linux]
+  prompt: >-
+    On a multi-socket machine (e.g. a university cluster node), show first-touch placement and
+    remote-access penalties.
+  done: >-
+    Bandwidth and latency local vs remote, and a first-touch fix.
+
+- id: mem-stream-bandwidth
+  title: STREAM
+  region: memory-hierarchy
+  below: radix-sort
+  size: S
+  prompt: >-
+    Run and reimplement STREAM (copy/scale/add/triad), then find the thread count that saturates bandwidth.
+  done: >-
+    Bandwidth vs threads, compared with the platform's theoretical peak.
+
+- id: mem-nontemporal
+  title: Non-temporal stores
+  region: memory-hierarchy
+  below: activation-store
+  prompt: >-
+    Use streaming (non-temporal) stores for large buffer writes, and measure when they help and
+    when they hurt.
+  done: >-
+    Crossover buffer size, with read-for-ownership explained.
+
+# ---- Compiler Vein (compilers) -----------------------------------------------------
+- id: cc-llvm-ir
+  title: Reading LLVM IR
+  region: compilers
+  below: lambdas-closures
+  p: 3
+  prompt: >-
+    Follow a function through clang -emit-llvm at -O0 and -O2, covering SSA, mem2reg, phi nodes and inlining.
+  done: >-
+    An annotated IR diff, explained pass by pass (use -print-after-all for 3 passes).
+
+- id: cc-aliasing
+  title: Aliasing and restrict
+  region: compilers
+  below: auto-vectorization
+  prompt: >-
+    Show a loop that doesn't vectorize because of possible aliasing, then fix it with __restrict,
+    local copies, or runtime checks.
+  done: >-
+    Vectorizer remarks and asm before and after, with the strict-aliasing rule explained.
+
+- id: cc-devirtualization
+  title: Inlining and devirtualization
+  region: compilers
+  below: crtp-static-poly
+  prompt: >-
+    Get the compiler to devirtualize with final, LTO and speculative devirtualization, and
+    document when it can't.
+  done: >-
+    asm evidence for each technique.
+
+- id: cc-pgo-lto
+  title: PGO and LTO
+  region: compilers
+  below: perf-basics
+  p: 3
+  prompt: >-
+    Apply LTO and then PGO (instrumented or AutoFDO) to a real program.
+  done: >-
+    Speedup at each step, with what PGO changed identified (layout, inlining, branch weights).
+
+- id: cc-ub-optimizations
+  title: Undefined behaviour at work
+  region: compilers
+  below: sanitizers
+  prompt: >-
+    Write 4 programs where the optimiser exploits UB (signed overflow, null checks, infinite loops,
+    strict aliasing) to produce surprising results.
+  done: >-
+    Each surprise reproduced, with the compiler's reasoning explained.
+
+- id: cc-write-a-pass
+  title: Writing an LLVM pass
+  region: compilers
+  below: godbolt-reading
+  size: L
+  prompt: >-
+    Write an out-of-tree LLVM pass that instruments loads or counts loop trip counts, and run it on
+    your code.
+  done: >-
+    A working pass plugin, with its output on 2 programs.
+
+- id: cc-template-bloat
+  title: Identical code folding
+  region: compilers
+  below: template-instantiation-cost
+  size: S
+  prompt: >-
+    Measure how many identical instantiations the linker folds (ICF, COMDAT) in a template-heavy binary.
+  done: >-
+    Binary size with and without --icf, with symbol evidence.
+
+- id: cc-constexpr-evaluation
+  title: The constant evaluator
+  region: compilers
+  below: constexpr-tables
+  size: S
+  prompt: >-
+    Probe the compiler's constexpr evaluator: step limits, what's allowed (allocation in C++20),
+    and compile-time cost.
+  done: >-
+    The limits hit on purpose, and the compile time of a heavy constexpr computation.
+
+- id: cc-vectorizer-cost-model
+  title: The vectorizer's cost model
+  region: compilers
+  below: std-simd
+  prompt: >-
+    Contrast the SLP and loop vectorizers, and find a case where the cost model makes the wrong call.
+  done: >-
+    A mis-costed case, with its fix via pragmas or restructuring.
+
+- id: linker-elf
+  title: ELF, PLT and GOT
+  region: compilers
+  below: cmake-modern
+  prompt: >-
+    Trace a dynamic call through the PLT/GOT and measure its cost against static linking and -fno-plt.
+  done: >-
+    An annotated trace (readelf/objdump/gdb) and a benchmark.
+
+# ---- Silicon Vein (gpu-metal) ----------------------------------------------------
+- id: gpu-warps-divergence
+  title: Warps and divergence
+  region: gpu-metal
+  below: cuda-first-kernel
+  requires: [gpu]
+  size: S
+  prompt: >-
+    Measure the cost of intra-warp divergence as a function of the branch pattern.
+  done: >-
+    Time vs divergence pattern, explained through SIMT execution.
+
+- id: gpu-coalescing
+  title: Coalescing
+  region: gpu-metal
+  below: cuda-transpose
+  requires: [gpu]
+  size: S
+  prompt: >-
+    Measure bandwidth as a function of access stride and offset, and relate it to 32-byte sectors.
+  done: >-
+    A bandwidth vs stride plot, with the sectors-per-request metric from Nsight Compute.
+
+- id: gpu-bank-conflicts
+  title: Bank conflicts
+  region: gpu-metal
+  below: cuda-transpose
+  requires: [gpu]
+  size: S
+  prompt: >-
+    Construct N-way shared-memory bank conflicts deliberately, then remove them with padding or
+    swizzling.
+  done: >-
+    The conflict counter vs time for each N.
+
+- id: gpu-occupancy
+  title: Occupancy
+  region: gpu-metal
+  below: cuda-reduction
+  requires: [gpu]
+  prompt: >-
+    Vary register and shared-memory usage, measure achieved occupancy, and find a case where
+    lower occupancy is faster.
+  done: >-
+    The counterexample, with the reason (ILP) explained.
+
+- id: gpu-warp-shuffles
+  title: Warp-level primitives
+  region: gpu-metal
+  below: cuda-scan
+  requires: [gpu]
+  size: S
+  prompt: >-
+    Implement warp reduce and warp scan with __shfl_*_sync and compare them with shared-memory versions.
+  done: >-
+    Speedups, and a correct treatment of the participation masks.
+
+- id: gpu-ptx-sass
+  title: PTX and SASS
+  region: gpu-metal
+  below: cuda-gemm-tiled
+  p: 3
+  requires: [gpu]
+  prompt: >-
+    Read the PTX and the SASS (cuobjdump -sass) of your best SGEMM kernel's inner loop.
+  done: >-
+    An annotated SASS inner loop (FFMA density, LDS, register reuse).
+
+- id: gpu-tensor-cores
+  title: Tensor cores
+  region: gpu-metal
+  below: flash-attention-mini
+  p: 3
+  requires: [gpu]
+  prompt: >-
+    Write a GEMM tile with WMMA and then raw mma.sync PTX, and compare it with your SIMT kernel.
+  done: >-
+    Speedup over SIMT, with the fragment layout explained.
+
+- id: gpu-async-copy
+  title: Asynchronous copies
+  region: gpu-metal
+  below: cuda-gemm-tiled
+  requires: [gpu]
+  prompt: >-
+    Pipeline global→shared loads with cp.async (Ampere+) double buffering. On Hopper, try TMA.
+  done: >-
+    Speedup from overlapping loads with compute, and the pipeline stages drawn.
+
+- id: gpu-nsight-compute
+  title: Nsight Compute
+  region: gpu-metal
+  below: triton-kernels
+  requires: [gpu]
+  size: S
+  prompt: >-
+    Profile your Triton kernel with Nsight Compute and read the memory chart and warp stall reasons.
+  done: >-
+    Top stall reasons explained, and one change informed by them.
+
+- id: gpu-topk-selection
+  title: Top-k on the GPU
+  region: gpu-metal
+  below: sae-encoder-kernel
+  requires: [gpu]
+  prompt: >-
+    Implement warp-level and block-level top-k selection (bitonic or radix-select) for small k.
+  done: >-
+    Throughput vs k and d, compared with torch.topk.
+
+- id: gpu-launch-overhead
+  title: Launch overhead
+  region: gpu-metal
+  below: cuda-graphs
+  requires: [gpu]
+  size: S
+  prompt: >-
+    Measure kernel launch latency (empty kernels) from the CPU and the GPU side.
+  done: >-
+    Launch latency numbers, with where the time goes explained.
+
+# ---- Kernel-space Vein (os-kernel) ------------------------------------------------
+- id: os-page-faults
+  title: Page faults
+  region: os-kernel
+  below: activation-store
+  p: 4
+  requires: [linux]
+  prompt: >-
+    Measure minor vs major page faults for mmap vs read, the effects of MAP_POPULATE and madvise, and
+    first-touch cost on a huge buffer.
+  done: >-
+    Fault counts and timings per strategy, and why the first touch is slow.
+
+- id: os-syscall-cost
+  title: Syscalls and the vDSO
+  region: os-kernel
+  below: latency-measurement
+  requires: [linux]
+  size: S
+  prompt: >-
+    Measure clock_gettime through the vDSO vs raw syscall(), and getpid, and add the mitigation overheads if
+    visible.
+  done: >-
+    ns per call, with the vDSO mechanism explained.
+
+- id: os-scheduler-jitter
+  title: Scheduler jitter
+  region: os-kernel
+  below: core-pinning
+  requires: [linux]
+  prompt: >-
+    Measure OS jitter on a busy-spinning thread (e.g. with a hiccup meter) under default, isolcpus
+    and nohz_full settings.
+  done: >-
+    A jitter histogram per configuration, with the interrupts identified.
+
+- id: os-io-uring-internals
+  title: Inside io_uring
+  region: os-kernel
+  below: io-uring-server
+  requires: [linux]
+  prompt: >-
+    Drive io_uring through raw syscalls and mmap'd rings, without liburing.
+  done: >-
+    A working raw-ring echo server, with the SQ/CQ memory ordering explained.
+
+- id: os-epoll-internals
+  title: Inside epoll
+  region: os-kernel
+  below: epoll-event-loop
+  requires: [linux]
+  size: S
+  prompt: >-
+    Explain edge vs level triggering from the kernel's wait-queue perspective, and demonstrate the
+    edge-triggered starvation pitfall.
+  done: >-
+    A reproduction of the pitfall, and its fix.
+
+- id: os-packet-path
+  title: The packet's path
+  region: os-kernel
+  below: udp-multicast-feed
+  p: 3
+  requires: [linux]
+  prompt: >-
+    Trace a UDP packet from NIC to userspace (IRQ, NAPI, socket buffer), measure it with
+    SO_TIMESTAMPING, and survey kernel bypass (AF_XDP, DPDK).
+  done: >-
+    Timestamps at each available point, and a kernel-bypass comparison (measured or surveyed).
+
+- id: os-futex
+  title: The futex
+  region: os-kernel
+  below: mutex-contention
+  prompt: >-
+    Implement a mutex directly on futex(2) (the Drepper design) and compare it with std::mutex.
+  done: >-
+    A correct 3-state futex mutex, with benchmarks.
+
+- id: os-shm-internals
+  title: Shared memory internals
+  region: os-kernel
+  below: shared-memory-ipc
+  requires: [linux]
+  size: S
+  prompt: >-
+    Explore how shm_open/mmap map the same physical pages into two processes, and inspect /proc/pid/maps
+    and pagemap.
+  done: >-
+    Physical frame numbers shown to be shared (with root), and the explanation.
+
+- id: os-malloc-internals
+  title: Allocator internals
+  region: os-kernel
+  below: arena-allocator
+  prompt: >-
+    Compare glibc malloc, jemalloc and mimalloc on a multi-threaded workload, and explain arenas,
+    tcache and size classes.
+  done: >-
+    Benchmark results, with the internal mechanism that explains the winner.
+
+# ---- Bit Vein (numerics-bits) ------------------------------------------------------
+- id: bits-ieee754
+  title: IEEE 754 dissected
+  region: numerics-bits
+  below: differential-testing
+  size: S
+  prompt: >-
+    Write tools to decompose floats (sign, exponent, mantissa), step by ULPs, and compare with
+    ULP tolerance.
+  done: >-
+    The tools, used in your differential tests.
+
+- id: bits-fma-contraction
+  title: FMA contraction
+  region: numerics-bits
+  below: std-simd
+  size: S
+  prompt: >-
+    Show results changing with -ffp-contract=fast/on/off and -ffast-math, and why.
+  done: >-
+    Bit-level differences, and a policy for your repo.
+
+- id: bits-denormals
+  title: Denormals
+  region: numerics-bits
+  below: online-softmax
+  size: S
+  prompt: >-
+    Measure the slowdown of subnormal arithmetic on CPU, and the effect of FTZ/DAZ.
+  done: >-
+    Slowdown factor, with where subnormals arise in exp-heavy code.
+
+- id: bits-low-precision-formats
+  title: bf16, fp16, fp8
+  region: numerics-bits
+  below: sae-training
+  prompt: >-
+    Implement fp32↔bf16/fp16/fp8 (E4M3, E5M2) conversions with round-to-nearest-even in C++.
+  done: >-
+    Conversions that match hardware or reference implementations bit for bit, with the rounding explained.
+
+- id: bits-kahan-simd
+  title: Vectorized compensated summation
+  region: numerics-bits
+  below: parallel-stl
+  prompt: >-
+    Vectorise Kahan/Neumaier summation, and ensure -ffast-math doesn't delete the compensation.
+  done: >-
+    Accuracy and throughput versus naive and pairwise summation.
+
+- id: bits-float-parsing
+  title: Parsing floats fast
+  region: numerics-bits
+  below: binary-serialization
+  prompt: >-
+    Study the Eisel–Lemire algorithm (as in fast_float / std::from_chars), and benchmark it against strtod.
+  done: >-
+    Throughput, and the algorithm's fast path explained.
+
+- id: bits-integer-tricks
+  title: Bit tricks
+  region: numerics-bits
+  below: bloom-filter
+  size: S
+  prompt: >-
+    Use popcount/lzcnt/pdep, and fast division by constants (magic multipliers), in your
+    Bloom filter and hash reduction.
+  done: >-
+    Codegen showing the tricks, and the speedup from replacing modulo.
