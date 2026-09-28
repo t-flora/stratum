@@ -92,3 +92,9 @@ Added after the M1 review, at Tiago's request. These extend DESIGN.md §4.2 and 
 - **Silhouettes in the UI.** "???" for titles when p < 3, in tooltips, labels, chips and the panel. The panel hides the prompt, `done` and relations for silhouettes, except that a sealed temple shows its `needs` (the constellation of §5.2, in the panel rather than on the map). Theme labels appear once a member is revealed.
 - **`stratum start`** now refuses hidden shrines without `--force`; silhouettes may be started (§6.2). It runs the build pipeline without writing to get visibility.
 - **Search (§6.5)** isn't built yet; there's no search box. It belongs with the top-bar work in M5.
+
+## Atlas toggle (pulled forward from M5)
+
+- **Map half of §9.5, now.** Asked for after M3, to check the full world. Press **A** or the top-bar **Atlas** button, or open `?atlas=1`. A spoiler warning comes first every time, and A or the button again returns to the real view. The URL keeps `?atlas=1` while it's on.
+- **Presentation only.** `atlasView` marks every shrine revealed and named in the app's copy of map.json. MapView drops the fog and draws the depths terrain dimly everywhere, with a small glow at each lightroot, as the M1 atlas view did. Work state is unchanged, and nothing is stored in the browser.
+- **Still M5:** the sortable table of every shrine.

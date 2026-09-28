@@ -11,12 +11,15 @@
     map,
     layer,
     initialZoom = 1,
+    atlas = false,
     selected = null,
     onselect,
   }: {
     map: MapData;
     layer: Layer;
     initialZoom?: number;
+    /** Atlas mode (§9.5): no fog, no depths darkness. */
+    atlas?: boolean;
     selected?: string | null;
     onselect?: (id: string | null) => void;
   } = $props();
@@ -101,7 +104,12 @@
   const strata = $derived(map.geometry.depths.strata.map(multiPolygonPath));
   /** Surveyed regions (cleared tower) lose their fog wash entirely (§5.3). */
   const surveyedFills = $derived(regionFills.filter((r) => map.regions.find((x) => x.id === r.id)?.surveyed).map((r) => r.d));
-  const lights = $derived(map.sight.lights.map((l) => ({ ...l, r: l.kind === 'light' ? map.sight.lightRadius : map.sight.glowRadius })));
+  const lights = $derived(
+    atlas
+      ? // The atlas lights every lightroot dimly, so the depths read as a whole.
+        map.shrines.filter((s) => s.layer === 'depths').map((s) => ({ xy: s.xy, region: s.region, kind: 'light' as const, r: 70 }))
+      : map.sight.lights.map((l) => ({ ...l, r: l.kind === 'light' ? map.sight.lightRadius : map.sight.glowRadius })),
+  );
   /** Shrine titles on the map: silhouettes too faint to name stay anonymous (§6.2). */
   const labelled = (list: MapShrine[]) => list.filter((s) => s.titleKnown);
 
@@ -212,10 +220,12 @@
         <path class="ridge-line" d={r.d} />
         <path class="ridge-hatch" d={r.d} style:stroke-width={2.5 + 1.8 * r.h} />
       {/each}
-      <g class="fog" mask="url(#fog-mask)" clip-path="url(#land-clip)">
-        <rect width={W} height={H} fill="var(--fog)" />
-        <rect width={W} height={H} fill="#fff" filter="url(#grain)" />
-      </g>
+      {#if !atlas}
+        <g class="fog" mask="url(#fog-mask)" clip-path="url(#land-clip)">
+          <rect width={W} height={H} fill="var(--fog)" />
+          <rect width={W} height={H} fill="#fff" filter="url(#grain)" />
+        </g>
+      {/if}
       <path class="coast" d={coast} />
 
       {#if layer === 'surface'}
@@ -291,7 +301,7 @@
     {#if layer === 'depths'}
       <g class="depths-layer">
         <!-- Depths terrain: vein territories and rock strata, seen only where there is light -->
-        <g mask="url(#light-mask)">
+        <g mask={atlas ? undefined : 'url(#light-mask)'} class:atlas-dim={atlas}>
           {#each veinFills as v (v.id)}
             <path class="vein" d={v.d} fill={v.fill} />
           {/each}
@@ -441,6 +451,9 @@
   }
   .theme-label.sky {
     fill: #5b7697;
+  }
+  .atlas-dim {
+    opacity: 0.6;
   }
   .fog {
     opacity: 0.74;

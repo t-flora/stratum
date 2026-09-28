@@ -38,7 +38,7 @@ npm run dev                      # build, then Vite at http://127.0.0.1:5173
 scripts/screenshot.sh sky 1      # headless screenshot of the running dev server → build/debug/sky-1.png
 ```
 
-URL params: `?layer=sky|surface|depths`, `?zoom=<k>`, `?select=<id>` (opens the detail panel). The CLI takes `--root <dir>` to point at another world, for example `fixtures/tiny`.
+URL params: `?layer=sky|surface|depths`, `?zoom=<k>`, `?select=<id>` (opens the detail panel), `?atlas=1` (reveal everything, behind a spoiler warning; key A toggles). The CLI takes `--root <dir>` to point at another world, for example `fixtures/tiny`.
 
 To check UI work visually, run `npm run dev` in the background, run `scripts/screenshot.sh <layer> <zoom>`, and read the PNG. It lands under `build/` on purpose, since reads outside the repo may be blocked.
 

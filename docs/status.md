@@ -11,7 +11,8 @@
 | M1: geometry, placement, lockfile, static 3-layer map | ✅ done, reviewed | `56d05fa` |
 | (M1 revision) themes, follow-ups, archipelagos, depths territory | ✅ done, **awaiting review of drafted content** | `564188b` |
 | M2: work state (`start`, `clear`, WRITEUP, git touches, campfires, detail panel) | ✅ done, verified by Tiago | `6d2ef39` |
-| M3: visibility (triangle rule) | 🟡 implemented, **unverified here** (see below), awaiting review | on `main` |
+| M3: visibility (triangle rule) | ✅ done, verified by Tiago | `4085f22` |
+| (extra) Atlas toggle (map half of §9.5, pulled forward) | ✅ done, unverified here | on `main` |
 | M4: Horizon, pins, dev API, SSE | not started | |
 | M5: Hero's Path, hours, polish, Atlas mode, static build | not started | |
 
@@ -22,7 +23,7 @@
 
 ## Open items waiting on Tiago
 
-1. **The §6.2 visibility rule** (see M3 below and `docs/decisions.md`).
+1. **The §6.2 visibility rule**: implemented to match the narrative and acceptance tests rather than the formulas (see `docs/decisions.md` under M3). Tiago may still want the `p > H + 1` variant.
 2. **Review the drafted `theme` and `after` content** in `world/world-seed.yaml` (see `git show 564188b -- world/world-seed.yaml`). There are 136 themed shrines (3–4 themes per region) and 42 follow-up edges. He may rename, regroup or relink freely.
 3. **Regenerating the lockfile after his edits.** Once he's edited themes, offer to regenerate it so the layout follows his edits. That's safe only while no shrine has been started or cleared. Otherwise, new or changed themes get new anchors and locked shrines stay put.
 
@@ -55,4 +56,4 @@ DESIGN.md §7 and §11: the Horizon (three slots with their fallbacks, ISO-week 
 - **Cross-region `after` edges don't affect placement.** They're intended as a Horizon signal in M4.
 - **Stale lockfile entries** (removed ids) are kept on purpose; see decisions.
 - **Island ground shadows** on the surface are drawn from the archipelago outlines and look blotchy. This is cosmetic, to polish in M5.
-- **No Atlas mode yet** (M5). Since M3 the map always applies the triangle rule; there's no reveal-all view for reviewing the world.
+- **Atlas is map-only.** A / `?atlas=1` reveals everything on the map; the sortable table (§9.5) is M5.
