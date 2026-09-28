@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   Geometry, PLACEMENT, PROPOSED_PATH, SEED_PATH, buildMapData, lintGeometry, loadWorld, parseWorld, placeShrines, serializeLock,
-  type Vec2, type World,
+  themeKey, themesByRegion, type Vec2, type World,
 } from '../src/index.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..');
@@ -99,8 +99,9 @@ describe('placement (M1 acceptance)', () => {
       const shrines = world.shrines.filter((s) => s.layer === layer);
       for (const s of shrines) {
         const p = first.positions.get(s.id)!;
+        const region = world.regionById.get(s.region)!;
         if (layer === 'surface') expect(geo.regionAt(p[0], p[1]), s.id).toBe(s.region);
-        else expect(geo.islandSigned(world.regionById.get(s.region)!, p[0], p[1]), s.id).toBeGreaterThan(0);
+        else expect(dist(p, region.centroid!), s.id).toBeLessThanOrEqual(region.radius!);
       }
       for (let i = 0; i < shrines.length; i++) {
         for (let j = i + 1; j < shrines.length; j++) {
@@ -139,11 +140,61 @@ describe('placement (M1 acceptance)', () => {
   });
 });
 
+describe('theme clusters and follow-ups', () => {
+  it('every themed shrine is nearer its own theme anchor than any other in its region', () => {
+    const themes = themesByRegion(world);
+    for (const s of world.shrines.filter((x) => x.theme)) {
+      const p = first.positions.get(s.id)!;
+      const own = dist(p, first.anchors.get(themeKey(s.region, s.theme!))!);
+      for (const t of themes.get(s.region)!) {
+        if (t !== s.theme) expect(own, `${s.id} vs ${t}`).toBeLessThanOrEqual(dist(p, first.anchors.get(themeKey(s.region, t))!));
+      }
+    }
+  });
+
+  it('keeps sky islets apart: themed sky shrines are ≥ margin closer to their anchor than to other anchors or the tower rock', () => {
+    for (const s of world.shrines.filter((x) => x.layer === 'sky' && x.theme)) {
+      const p = first.positions.get(s.id)!;
+      const own = dist(p, first.anchors.get(themeKey(s.region, s.theme!))!);
+      const others = [world.regionById.get(s.region)!.centroid!, ...themesByRegion(world).get(s.region)!
+        .filter((t) => t !== s.theme).map((t) => first.anchors.get(themeKey(s.region, t))!)];
+      for (const o of others) expect(own + PLACEMENT.skyIsletMargin, s.id).toBeLessThanOrEqual(dist(p, o) + 0.2);
+    }
+  });
+
+  it('places follow-ups next to a same-theme predecessor', () => {
+    let checked = 0;
+    for (const s of world.shrines) {
+      const pred = s.after.map((id) => world.shrineById.get(id)!).find((p) => p.region === s.region && p.theme === s.theme);
+      if (!pred) continue;
+      const d = dist(first.positions.get(s.id)!, first.positions.get(pred.id)!);
+      expect(d, `${s.id} after ${pred.id}`).toBeLessThanOrEqual(PLACEMENT.spacing[s.layer as 'surface' | 'sky'] * PLACEMENT.followUpReach + 0.2);
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(20);
+  });
+
+  it('locks theme anchors; a new theme in proposed.yaml moves no anchor and no shrine', () => {
+    for (const [k, a] of first.anchors) expect(first.lock[k]).toEqual(a);
+    const proposed = 'shrines:\n  - { id: new-theme-one, title: N, region: cpp-core, theme: "Brand new", prompt: p, done: d, from: tower-cpp-core }\n';
+    const w2 = worldOf(seedText, proposed);
+    const res = placeShrines(w2, new Geometry(w2, SEED), first.lock);
+    for (const [k, a] of first.anchors) expect(res.anchors.get(k)).toEqual(a);
+    for (const s of world.shrines) expect(res.positions.get(s.id)).toEqual(first.positions.get(s.id));
+    expect(res.anchors.has(themeKey('cpp-core', 'Brand new'))).toBe(true);
+  });
+});
+
 describe('map data', () => {
   it('has outlines for every region and island, and ridges for every override', () => {
-    const map = buildMapData(world, geo, first.positions);
+    const map = buildMapData(world, geo, first.positions, first.anchors);
     for (const r of world.regions.filter((x) => x.layer === 'surface')) expect(map.geometry.regions[r.id]!.length, r.id).toBeGreaterThan(0);
-    for (const r of world.regions.filter((x) => x.layer === 'sky')) expect(map.geometry.islands[r.id]!.length).toBe(128);
+    // An archipelago: at least one islet per theme plus the tower's rock (bare rocks come on top).
+    for (const r of world.regions.filter((x) => x.layer === 'sky')) {
+      expect(map.geometry.islands[r.id]!.length, r.id).toBeGreaterThanOrEqual(themesByRegion(world).get(r.id)!.length + 1);
+    }
+    for (const v of world.regions.filter((x) => x.layer === 'depths')) expect(map.geometry.depths.veins[v.id]!.length, v.id).toBeGreaterThan(0);
+    expect(map.themes).toHaveLength([...themesByRegion(world).values()].flat().length);
     for (const o of world.ridges.overrides) {
       const ridge = map.geometry.ridges.find((x) => x.between.includes(o.between[0]) && x.between.includes(o.between[1]));
       expect(ridge?.h).toBe(o.h);

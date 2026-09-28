@@ -127,6 +127,8 @@ The world schema is documented in the header comment of `world/world-seed.yaml`.
 - `size`: `S | M | L`. Default M. The timebox is roughly S = 2–3h, M = 4–6h, L = 8–12h.
 - `requires`: optional list of tags: `gpu | arm | x86 | avx512 | linux | llm-api`
 - `below`: depths only, required. The id of a surface shrine.
+- `theme`: optional, surface and sky shrines only. A named sub-area of the region; shrines sharing a theme cluster together, and on the sky each theme is its own islet (see docs/decisions.md).
+- `after`: optional list of shrine ids this shrine follows up on. A same-region, same-theme follow-up is placed next to its predecessor.
 - `links`: optional list of shrine ids, treated as undirected for visibility purposes
 - `needs`: temples only. Shrine ids that must be cleared before the temple opens.
 - `prompt`: what to build

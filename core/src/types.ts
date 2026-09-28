@@ -30,6 +30,10 @@ export interface Shrine {
   size: Size;
   requires: RequireTag[];
   below?: string;
+  /** Named sub-area of the region; shrines sharing a theme cluster together. Surface/sky shrines only. */
+  theme?: string;
+  /** Shrines this one follows up on. Placed next to a same-region predecessor. */
+  after: string[];
   links: string[];
   needs: string[];
   prompt: string;

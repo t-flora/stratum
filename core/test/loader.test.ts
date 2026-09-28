@@ -53,10 +53,11 @@ describe('planted errors carry file/line context', () => {
   });
 
   it('duplicate id within the seed', () => {
-    const text = seedText.replace('- id: raii-handles', '- id: value-categories');
+    // ranges-pipelines is referenced by nothing, so renaming it produces exactly one error.
+    const text = seedText.replace('- id: ranges-pipelines', '- id: value-categories');
     const errs = errors(parseWorld(seed(text)).diagnostics);
     expect(errs).toHaveLength(1);
-    expect(errs[0]).toMatchObject({ code: 'duplicate-id', file: SEED_PATH, line: lineOf(text, '- id: value-categories', text.indexOf('id: move-semantics-vector')) });
+    expect(errs[0]).toMatchObject({ code: 'duplicate-id', file: SEED_PATH, line: lineOf(text, '- id: value-categories', text.indexOf('id: constexpr-tables')) });
   });
 
   it('bad below (unknown id)', () => {
@@ -126,8 +127,8 @@ describe('planted errors carry file/line context', () => {
 
   it('schema problems: bad p, size, requires tag, unknown field', () => {
     const text = seedText
-      .replace('- id: move-semantics-vector\n  title: A vector that moves correctly\n  region: cpp-core\n  p: 3',
-        '- id: move-semantics-vector\n  title: A vector that moves correctly\n  region: cpp-core\n  p: 7\n  size: XL\n  requires: [cuda]\n  colour: red');
+      .replace('  theme: "Ownership & lifetimes"\n  p: 3\n  after: [value-categories]',
+        '  theme: "Ownership & lifetimes"\n  p: 7\n  size: XL\n  requires: [cuda]\n  colour: red\n  after: [value-categories]');
     const ds = parseWorld(seed(text)).diagnostics;
     expect(errors(ds).map((d) => d.message)).toEqual([
       '"move-semantics-vector": p must be an integer 1..5',
@@ -148,6 +149,22 @@ describe('planted errors carry file/line context', () => {
     const errs = errors(parseWorld(seed(text)).diagnostics);
     expect(errs).toHaveLength(1);
     expect(errs[0]).toMatchObject({ code: 'unknown-region', line: lineOf(text, 'metaprogrammin]') });
+  });
+});
+
+describe('themes and follow-ups', () => {
+  it('reports unknown `after` ids and cycles', () => {
+    const unknown = seedText.replace('after: [value-categories]', 'after: [value-categorie]');
+    expect(errors(parseWorld(seed(unknown)).diagnostics)).toMatchObject([{ code: 'unknown-after', line: lineOf(unknown, 'value-categorie]') }]);
+    const cyclic = seedText.replace('- id: value-categories\n', '- id: value-categories\n  after: [move-semantics-vector]\n');
+    expect(errors(parseWorld(seed(cyclic)).diagnostics).map((d) => d.code)).toEqual(['after-cycle']);
+  });
+
+  it('ignores a theme on a tower, with a warning', () => {
+    const text = seedText.replace('  region: cpp-core\n  kind: tower\n', '  region: cpp-core\n  theme: "Nope"\n  kind: tower\n');
+    const { world, diagnostics } = parseWorld(seed(text));
+    expect(diagnostics).toMatchObject([{ severity: 'warning', code: 'schema' }]);
+    expect(world!.shrineById.get('tower-cpp-core')!.theme).toBeUndefined();
   });
 });
 

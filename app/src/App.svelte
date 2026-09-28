@@ -11,7 +11,9 @@
 
   let map = $state<MapData | null>(null);
   let error = $state<string | null>(null);
-  const initialLayer = new URLSearchParams(location.search).get('layer');
+  const params = new URLSearchParams(location.search);
+  const initialLayer = params.get('layer');
+  const initialZoom = Number(params.get('zoom')) || 1;
   let layer = $state<Layer>(LAYER_ORDER.some((l) => l.id === initialLayer) ? (initialLayer as Layer) : 'surface');
 
   async function load() {
@@ -66,7 +68,7 @@
         <pre>{error}</pre>
       </div>
     {:else if map}
-      <MapView {map} {layer} />
+      <MapView {map} {layer} {initialZoom} />
     {:else}
       <div class="message"><p>Loading map…</p></div>
     {/if}

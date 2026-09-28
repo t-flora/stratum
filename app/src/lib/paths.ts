@@ -1,4 +1,4 @@
-import type { MultiPolygon, Ring } from '@stratum/core/mapdata';
+import type { MultiPolygon } from '@stratum/core/mapdata';
 
 type Pt = readonly [number, number];
 
@@ -15,8 +15,4 @@ export function multiPolygonPath(mp: MultiPolygon): string {
 
 export function linePath(line: readonly Pt[]): string {
   return 'M' + line.map((p) => `${f(p[0])},${f(p[1])}`).join('L');
-}
-
-export function islandPath(ring: Ring): string {
-  return ringPath(ring);
 }

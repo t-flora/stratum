@@ -55,7 +55,7 @@ export function build(root: string, opts: { replace?: string[]; write?: boolean;
   const before = readLock(root);
   const placement = placeShrines(world, geo, before, opts.replace);
   const lockChanged = serializeLock(before) !== serializeLock(placement.lock);
-  const map = buildMapData(world, geo, placement.positions);
+  const map = buildMapData(world, geo, placement.positions, placement.anchors);
   if (opts.write !== false) {
     if (lockChanged) writeLock(root, placement.lock);
     mkdirSync(join(root, 'build'), { recursive: true });

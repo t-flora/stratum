@@ -22,7 +22,7 @@ export const PROPOSED_PATH = 'world/proposed.yaml';
 
 const REGION_KEYS = new Set(['id', 'layer', 'name', 'centroid', 'radius']);
 const SHRINE_KEYS = new Set([
-  'id', 'title', 'region', 'kind', 'p', 'size', 'requires', 'below', 'links', 'needs', 'prompt', 'done', 'xy', 'from',
+  'id', 'title', 'region', 'theme', 'kind', 'p', 'size', 'requires', 'below', 'after', 'links', 'needs', 'prompt', 'done', 'xy', 'from',
 ]);
 const ID_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
@@ -260,22 +260,39 @@ export function parseWorld(seedSrc: Source, proposedSrc?: Source): LoadResult {
         }
       }
     }
-    const refList = (field: 'links' | 'needs') => {
+    const refList = (field: 'links' | 'needs' | 'after') => {
       const listNode = get(node, field);
       s[field].forEach((ref, i) => {
         const itemNode = isSeq(listNode) ? (listNode.items[i] as Node) : listNode;
         if (ref === s.id) doc.report('warning', 'self-reference', `"${s.id}" lists itself in \`${field}\``, itemNode);
         else if (!shrineById.has(ref)) {
-          doc.report('error', field === 'links' ? 'unknown-link' : 'unknown-need', `"${s.id}": ${field} entry "${ref}" is not a known shrine`, itemNode);
+          const code = { links: 'unknown-link', needs: 'unknown-need', after: 'unknown-after' }[field];
+          doc.report('error', code, `"${s.id}": ${field} entry "${ref}" is not a known shrine`, itemNode);
         }
       });
     };
     refList('links');
     refList('needs');
+    refList('after');
     if (s.from !== undefined && !shrineById.has(s.from)) {
       doc.report('error', 'unknown-from', `"${s.id}": from "${s.from}" is not a known shrine`, get(node, 'from'));
     }
   }
+
+  // `after` must not form cycles (placement orders predecessors first).
+  const color = new Map<string, 0 | 1 | 2>();
+  const visit = (id: string, stack: string[]): void => {
+    color.set(id, 1);
+    for (const next of shrineById.get(id)?.after ?? []) {
+      if (!shrineById.has(next)) continue;
+      if (color.get(next) === 1) {
+        const r = firstSeen.get(id)!;
+        r.doc.report('error', 'after-cycle', `\`after\` cycle: ${[...stack.slice(stack.indexOf(next)), id, next].join(' → ')}`, get(r.node, 'after'));
+      } else if (!color.get(next)) visit(next, [...stack, id]);
+    }
+    color.set(id, 2);
+  };
+  for (const id of shrineById.keys()) if (!color.get(id)) visit(id, []);
 
   // Plateau ids.
   const plateauNode = isMap(startNode) ? get(startNode, 'plateau') : null;
@@ -354,7 +371,7 @@ function readShrine(doc: Doc, node: YAMLMap, source: Shrine['source'], order: nu
     else doc.report('error', 'schema', `"${id}": size must be one of ${SIZES.join(' | ')}`, at('size'));
   }
 
-  const list = (k: 'requires' | 'links' | 'needs'): string[] => {
+  const list = (k: 'requires' | 'links' | 'needs' | 'after'): string[] => {
     const v = f(k);
     if (v === undefined || v === null) return [];
     if (isStringList(v)) return v;
@@ -371,6 +388,16 @@ function readShrine(doc: Doc, node: YAMLMap, source: Shrine['source'], order: nu
   });
   const links = list('links');
   const needs = list('needs');
+  const after = list('after');
+
+  let theme: string | undefined;
+  const themeV = f('theme');
+  if (themeV !== undefined && themeV !== null) {
+    if (typeof themeV !== 'string' || !themeV.trim()) doc.report('error', 'schema', `"${id}": theme must be a non-empty string`, at('theme'));
+    else if (layer === 'depths' || kind !== 'shrine') {
+      doc.report('warning', 'schema', `"${id}": \`theme\` only applies to ordinary surface/sky shrines; ignored`, at('theme'));
+    } else theme = themeV.trim();
+  }
   if (needs.length && kind !== 'temple') doc.report('error', 'schema', `"${id}": \`needs\` is only allowed on temples`, at('needs'));
   if (kind === 'temple' && !needs.length) doc.report('warning', 'schema', `temple "${id}" has no \`needs\``, node);
 
@@ -400,8 +427,9 @@ function readShrine(doc: Doc, node: YAMLMap, source: Shrine['source'], order: nu
   const shrine: Shrine = {
     id, title, region: regionId, layer, kind, p, size,
     requires: requires.filter((t): t is RequireTag => REQUIRE_TAGS.includes(t as RequireTag)),
-    links, needs, prompt, done, source, order,
+    after, links, needs, prompt, done, source, order,
   };
+  if (theme !== undefined) shrine.theme = theme;
   if (below !== undefined) shrine.below = below;
   if (xy) shrine.xy = xy;
   if (from !== undefined) shrine.from = from;

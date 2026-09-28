@@ -1,5 +1,5 @@
 import { createNoise2D, type NoiseFunction2D } from 'simplex-noise';
-import { hash32, mulberry32 } from './prng.ts';
+import { mulberry32 } from './prng.ts';
 import type { Region, Vec2, World } from './types.ts';
 
 /** The landmass ellipse (§8.1). */
@@ -40,7 +40,7 @@ export class Geometry {
   private readonly nWarp: NoiseFunction2D[];
   private readonly nElev: NoiseFunction2D[];
   private readonly nIsland: NoiseFunction2D;
-  private readonly islandPhase = new Map<string, number>();
+  private readonly nRock: NoiseFunction2D;
 
   constructor(world: World, seed: number) {
     this.width = world.canvas.width;
@@ -57,7 +57,7 @@ export class Geometry {
     this.nWarp = [noise(2), noise(3), noise(4), noise(5)];
     this.nElev = [noise(6), noise(7)];
     this.nIsland = noise(8);
-    for (const r of this.sky) this.islandPhase.set(r.id, (hash32(r.id) % 1000) * 0.37);
+    this.nRock = noise(9);
 
     this.gw = Math.floor(this.width / GRID_STEP) + 1;
     this.gh = Math.floor(this.height / GRID_STEP) + 1;
@@ -171,32 +171,13 @@ export class Geometry {
     return base * shore + ridge;
   }
 
-  /** Signed distance to a sky island's edge: > 0 inside. The island's radius is perturbed ~15% (§8.2). */
-  islandSigned(region: Region, x: number, y: number): number {
-    const [cx, cy] = region.centroid!;
-    const dx = x - cx;
-    const dy = y - cy;
-    const d = Math.hypot(dx, dy);
-    return this.islandRadius(region, Math.atan2(dy, dx)) - d;
+  /** Rock-strata noise for the depths (rendering only). */
+  strata(x: number, y: number): number {
+    return 0.7 * this.nRock(x / 150, y / 150) + 0.3 * this.nRock(x / 50 + 31, y / 50 + 17);
   }
 
-  islandRadius(region: Region, theta: number): number {
-    const ph = this.islandPhase.get(region.id) ?? 0;
-    const c = Math.cos(theta);
-    const s = Math.sin(theta);
-    const n = this.nIsland;
-    const k = 0.1 * n(c * 1.4 + ph, s * 1.4 + ph) + 0.05 * n(c * 3.5 + ph + 50, s * 3.5 + ph + 50);
-    return region.radius! * (1 + k);
-  }
-
-  islandRing(region: Region, samples = 128): Vec2[] {
-    const [cx, cy] = region.centroid!;
-    const ring: Vec2[] = [];
-    for (let i = 0; i < samples; i++) {
-      const t = (2 * Math.PI * i) / samples;
-      const r = this.islandRadius(region, t);
-      ring.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]);
-    }
-    return ring;
+  /** Islet-shape noise for the sky (rendering only). */
+  isletNoise(x: number, y: number): number {
+    return this.nIsland(x / 35 + 101, y / 35 + 57);
   }
 }

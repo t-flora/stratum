@@ -14,6 +14,8 @@
 #   size      S (2-3h) | M (4-6h, default) | L (8-12h)
 #   requires  optional hardware/tool tags: gpu, arm, x86, avx512, linux, llm-api
 #   below     (depths only) id of the surface shrine this lightroot sits under
+#   theme     (surface/sky shrines) named sub-area of the region; shrines sharing a theme cluster together
+#   after     optional ids this shrine follows up on; placed next to its predecessor when in the same region
 #   links     optional ids across layers (chasms / launch points), or other related ids
 #   needs     (temples only) shrine ids that must be cleared before the temple opens
 #   prompt    what to build
@@ -93,6 +95,7 @@ shrines:
 - id: value-categories
   title: Value categories, witnessed
   region: cpp-core
+  theme: "Ownership & lifetimes"
   p: 3
   size: S
   prompt: >-
@@ -106,7 +109,9 @@ shrines:
 - id: move-semantics-vector
   title: A vector that moves correctly
   region: cpp-core
+  theme: "Ownership & lifetimes"
   p: 3
+  after: [value-categories]
   prompt: >-
     Implement a minimal `vector<T>` (push_back, emplace_back, reserve) with the strong
     exception guarantee, using std::move_if_noexcept during reallocation.
@@ -117,6 +122,7 @@ shrines:
 - id: raii-handles
   title: RAII for everything
   region: cpp-core
+  theme: "Ownership & lifetimes"
   size: S
   prompt: >-
     Write a generic `unique_handle<Traits>` that wraps file descriptors, mmap regions and
@@ -128,6 +134,8 @@ shrines:
 - id: smart-pointer-costs
   title: What shared_ptr really costs
   region: cpp-core
+  theme: "Ownership & lifetimes"
+  after: [raii-handles]
   prompt: >-
     Implement a simplified shared_ptr with a control block, plus make_shared with a single
     allocation. Benchmark copy, move and destruction against unique_ptr and raw pointers
@@ -138,6 +146,7 @@ shrines:
 - id: constexpr-tables
   title: Tables built by the compiler
   region: cpp-core
+  theme: "Abstraction & dispatch"
   size: S
   prompt: >-
     Generate a CRC32 or 8-bit popcount lookup table at compile time with constexpr/consteval,
@@ -148,6 +157,7 @@ shrines:
 - id: ranges-pipelines
   title: Ranges, lazily
   region: cpp-core
+  theme: "Lazy & async"
   prompt: >-
     Rewrite a filter-transform-accumulate loop with std::ranges views. Then write a custom
     view adaptor (e.g. `stride_by` or `chunk_sum`) that composes with `|`.
@@ -157,6 +167,7 @@ shrines:
 - id: coroutines-generator
   title: A generator from scratch
   region: cpp-core
+  theme: "Lazy & async"
   p: 3
   prompt: >-
     Implement `generator<T>` by hand (promise_type, coroutine_handle, iterator), then compare it
@@ -168,6 +179,7 @@ shrines:
 - id: std-expected-errors
   title: Errors as values
   region: cpp-core
+  theme: "Errors & contracts"
   prompt: >-
     Write the same small parser twice, once with exceptions and once with std::expected
     (C++23). Measure the happy-path and error-path costs at several error rates.
@@ -177,6 +189,7 @@ shrines:
 - id: variant-visit
   title: Variant vs virtual
   region: cpp-core
+  theme: "Abstraction & dispatch"
   prompt: >-
     Model an order-event state machine twice, once with std::variant + std::visit and once
     with a virtual hierarchy. Compare dispatch codegen and throughput.
@@ -186,6 +199,7 @@ shrines:
 - id: lambdas-closures
   title: What a lambda is
   region: cpp-core
+  theme: "Abstraction & dispatch"
   size: S
   prompt: >-
     Show what lambdas compile to: closure layout, captures by value/ref, and generic lambdas.
@@ -197,6 +211,7 @@ shrines:
 - id: contracts-26
   title: Contracts in C++26
   region: cpp-core
+  theme: "Errors & contracts"
   size: S
   prompt: >-
     Using a compiler with P2900 support (or a documented emulation), add pre/post
@@ -220,6 +235,7 @@ shrines:
 - id: type-traits-from-scratch
   title: Type traits from scratch
   region: metaprogramming
+  theme: "Traits & constraints"
   size: S
   prompt: >-
     Implement is_same, remove_cvref, conditional, void_t-based detection, and is_convertible
@@ -230,6 +246,7 @@ shrines:
 - id: crtp-static-poly
   title: CRTP and static polymorphism
   region: metaprogramming
+  theme: "Static polymorphism"
   p: 3
   prompt: >-
     Build a CRTP mixin (e.g. comparison operators or instrumentation) and a CRTP-based strategy.
@@ -240,6 +257,7 @@ shrines:
 - id: variadic-fold
   title: Variadics and folds
   region: metaprogramming
+  theme: "Traits & constraints"
   prompt: >-
     Implement a minimal `tuple` with get<I>, apply and for_each using fold expressions and
     index_sequence.
@@ -249,7 +267,9 @@ shrines:
 - id: concepts-constraints
   title: Concepts as contracts
   region: metaprogramming
+  theme: "Traits & constraints"
   p: 3
+  after: [type-traits-from-scratch]
   prompt: >-
     Constrain a small numeric library with concepts, including subsumption-based overload
     ordering. Rewrite one overload set in SFINAE for comparison.
@@ -259,6 +279,7 @@ shrines:
 - id: expression-templates
   title: Expression templates
   region: metaprogramming
+  theme: "Erasure & expressions"
   p: 3
   prompt: >-
     Write a vector type whose `a + b * c` builds an expression tree and evaluates it in one fused
@@ -269,6 +290,8 @@ shrines:
 - id: policy-based-design
   title: Policy-based design
   region: metaprogramming
+  theme: "Static polymorphism"
+  after: [crtp-static-poly]
   prompt: >-
     Design a container or allocator with pluggable policies (locking, bounds checking,
     growth) selected at compile time.
@@ -278,6 +301,7 @@ shrines:
 - id: type-erasure
   title: Type erasure with small buffers
   region: metaprogramming
+  theme: "Erasure & expressions"
   p: 3
   prompt: >-
     Implement Sean Parent-style runtime polymorphism (a `drawable`/`any_callable`) with a
@@ -288,6 +312,7 @@ shrines:
 - id: static-reflection-26
   title: Static reflection (C++26)
   region: metaprogramming
+  theme: "Reflection & build cost"
   p: 4
   prompt: >-
     Using a P2996-capable compiler (e.g. the Bloomberg clang-p2996 fork or current GCC trunk),
@@ -298,6 +323,7 @@ shrines:
 - id: compile-time-dispatch
   title: Picking kernels at compile time
   region: metaprogramming
+  theme: "Static polymorphism"
   size: S
   prompt: >-
     Use if constexpr / tag dispatch to select SIMD vs scalar vs specialised paths by element type
@@ -308,6 +334,7 @@ shrines:
 - id: template-instantiation-cost
   title: What templates cost the build
   region: metaprogramming
+  theme: "Reflection & build cost"
   size: S
   prompt: >-
     Measure the compile time and binary size of a template-heavy header under clang
@@ -330,6 +357,7 @@ shrines:
 - id: cmake-modern
   title: The shrine template
   region: tooling-measurement
+  theme: "The workbench"
   p: 3
   size: S
   prompt: >-
@@ -341,7 +369,9 @@ shrines:
 - id: benchmark-methodology
   title: Benchmarks that don't lie
   region: tooling-measurement
+  theme: "Benchmarking"
   p: 4
+  after: [cmake-modern]
   prompt: >-
     Take a deliberately noisy microbenchmark and stabilise it: DoNotOptimize/ClobberMemory,
     frequency scaling, turbo, warmup, repetitions, and reporting medians and intervals.
@@ -351,6 +381,7 @@ shrines:
 - id: perf-basics
   title: perf and flame graphs
   region: tooling-measurement
+  theme: "Profilers"
   requires: [linux]
   prompt: >-
     Profile a real program (e.g. your matching engine or a JSON parser) with perf stat/record
@@ -361,6 +392,7 @@ shrines:
 - id: sanitizers
   title: The sanitizers
   region: tooling-measurement
+  theme: "Bug hunting"
   size: S
   prompt: >-
     Plant five bugs (use-after-free, overflow, signed overflow, data race, uninitialised read)
@@ -371,6 +403,8 @@ shrines:
 - id: fuzzing
   title: Fuzz a parser
   region: tooling-measurement
+  theme: "Bug hunting"
+  after: [sanitizers]
   prompt: >-
     Fuzz a small binary or text parser with libFuzzer, using a corpus and a dictionary, until it finds a real bug.
   done: >-
@@ -379,6 +413,7 @@ shrines:
 - id: godbolt-reading
   title: Reading the compiler's mind
   region: tooling-measurement
+  theme: "The workbench"
   p: 3
   size: S
   prompt: >-
@@ -390,6 +425,7 @@ shrines:
 - id: heaptrack-allocations
   title: Where the allocations go
   region: tooling-measurement
+  theme: "Profilers"
   size: S
   prompt: >-
     Profile allocations in a real program with heaptrack (or a custom operator new hook), then
@@ -400,6 +436,7 @@ shrines:
 - id: nsight-systems-intro
   title: The GPU timeline
   region: tooling-measurement
+  theme: "Profilers"
   requires: [gpu]
   size: S
   prompt: >-
@@ -411,6 +448,8 @@ shrines:
 - id: bench-regression-ci
   title: Benchmarks in CI
   region: tooling-measurement
+  theme: "Benchmarking"
+  after: [benchmark-methodology]
   prompt: >-
     Run the repo's benchmarks in CI, compare them with a stored baseline, and flag statistically
     significant regressions.
@@ -432,6 +471,7 @@ shrines:
 - id: threads-and-jthread
   title: jthread and scaling
   region: concurrency
+  theme: "Threads & locks"
   size: S
   prompt: >-
     Write a parallel reduction over std::jthread with stop_token cancellation. Measure scaling
@@ -442,6 +482,7 @@ shrines:
 - id: mutex-contention
   title: Locks under contention
   region: concurrency
+  theme: "Threads & locks"
   p: 3
   prompt: >-
     Implement a TAS spinlock, a TTAS spinlock with pause/backoff, and a ticket lock. Benchmark them
@@ -452,6 +493,7 @@ shrines:
 - id: memory-order-litmus
   title: Litmus tests
   region: concurrency
+  theme: "The memory model"
   p: 4
   requires: [x86]
   prompt: >-
@@ -463,6 +505,7 @@ shrines:
 - id: spsc-ring-buffer
   title: The SPSC ring buffer
   region: concurrency
+  theme: "Lock-free queues"
   p: 4
   prompt: >-
     Build a bounded single-producer single-consumer queue with acquire/release, cached
@@ -473,6 +516,8 @@ shrines:
 - id: mpmc-queue
   title: Vyukov's MPMC queue
   region: concurrency
+  theme: "Lock-free queues"
+  after: [spsc-ring-buffer]
   prompt: >-
     Implement Dmitry Vyukov's bounded MPMC queue with per-slot sequence numbers.
   done: >-
@@ -481,6 +526,7 @@ shrines:
 - id: false-sharing
   title: False sharing
   region: concurrency
+  theme: "Threads & locks"
   p: 3
   size: S
   prompt: >-
@@ -492,6 +538,7 @@ shrines:
 - id: work-stealing-pool
   title: A work-stealing pool
   region: concurrency
+  theme: "Schedulers"
   p: 3
   size: L
   prompt: >-
@@ -503,6 +550,8 @@ shrines:
 - id: hazard-pointers
   title: Safe memory reclamation
   region: concurrency
+  theme: "The memory model"
+  after: [memory-order-litmus]
   prompt: >-
     Build a Treiber stack. Demonstrate the ABA problem and use-after-free, then fix them with hazard
     pointers (hand-rolled, or C++26 std::hazard_pointer where available).
@@ -512,7 +561,9 @@ shrines:
 - id: seqlock
   title: The seqlock
   region: concurrency
+  theme: "The memory model"
   size: S
+  after: [memory-order-litmus]
   prompt: >-
     Implement a seqlock for a market-data snapshot with correct atomic fences, and justify
     why the reader's copy is race-free under the C++ model.
@@ -522,6 +573,7 @@ shrines:
 - id: std-execution
   title: Senders and receivers
   region: concurrency
+  theme: "Schedulers"
   p: 3
   prompt: >-
     Build a small async pipeline with std::execution (C++26), via NVIDIA stdexec if your
@@ -544,6 +596,7 @@ shrines:
 - id: soa-vs-aos
   title: AoS, SoA, AoSoA
   region: data-structures
+  theme: "Layouts & search"
   p: 3
   size: S
   prompt: >-
@@ -554,6 +607,7 @@ shrines:
 - id: open-addressing-hashmap
   title: A flat hash map
   region: data-structures
+  theme: "Hash tables"
   p: 3
   prompt: >-
     Implement an open-addressing hash map with linear probing and Robin Hood displacement.
@@ -564,7 +618,9 @@ shrines:
 - id: swiss-table-probe
   title: SIMD group probing
   region: data-structures
+  theme: "Hash tables"
   requires: [x86]
+  after: [open-addressing-hashmap]
   prompt: >-
     Add SwissTable-style control bytes and SSE2 group matching to your hash map.
   done: >-
@@ -573,6 +629,7 @@ shrines:
 - id: arena-allocator
   title: Arenas and pmr
   region: data-structures
+  theme: "Nodes & containers"
   size: S
   prompt: >-
     Write a bump/arena allocator and plug it into std::pmr (and monotonic_buffer_resource) for an
@@ -583,6 +640,7 @@ shrines:
 - id: eytzinger-search
   title: Eytzinger layout
   region: data-structures
+  theme: "Layouts & search"
   prompt: >-
     Implement binary search over an Eytzinger (BFS) layout with prefetching, and compare it with
     std::lower_bound on a sorted array at sizes from L1 to DRAM.
@@ -592,6 +650,7 @@ shrines:
 - id: radix-sort
   title: Radix sort
   region: data-structures
+  theme: "Layouts & search"
   prompt: >-
     Write an LSD radix sort for 32/64-bit keys with histogram prefetch, and compare it with std::sort
     and pdqsort.
@@ -601,7 +660,9 @@ shrines:
 - id: order-book
   title: The order book
   region: data-structures
+  theme: "Nodes & containers"
   p: 4
+  after: [intrusive-containers]
   prompt: >-
     Implement a price-level order book: array levels near the touch, intrusive FIFO per level,
     and O(1) cancel via an id→node map.
@@ -611,6 +672,7 @@ shrines:
 - id: bloom-filter
   title: Blocked Bloom filters
   region: data-structures
+  theme: "Hash tables"
   size: S
   prompt: >-
     Implement a standard Bloom filter and a cache-line-blocked one, then measure the false-positive rate
@@ -621,6 +683,7 @@ shrines:
 - id: small-vector-sbo
   title: small_vector
   region: data-structures
+  theme: "Nodes & containers"
   size: S
   prompt: >-
     Implement a small_vector<T, N> with inline storage that spills to the heap.
@@ -630,6 +693,7 @@ shrines:
 - id: intrusive-containers
   title: Intrusive lists
   region: data-structures
+  theme: "Nodes & containers"
   size: S
   prompt: >-
     Implement an intrusive doubly linked list (boost.intrusive style) and compare it with
@@ -640,7 +704,9 @@ shrines:
 - id: lru-cache
   title: A cache-friendly LRU
   region: data-structures
+  theme: "Hash tables"
   size: S
+  after: [open-addressing-hashmap, intrusive-containers]
   prompt: >-
     Build an LRU cache on your flat hash map with intrusive recency links, and compare it with the
     textbook unordered_map + std::list version.
@@ -662,6 +728,7 @@ shrines:
 - id: auto-vectorization
   title: When the compiler vectorizes
   region: parallel-simd
+  theme: "Vectorization"
   p: 3
   size: S
   prompt: >-
@@ -673,8 +740,10 @@ shrines:
 - id: simd-intrinsics-dot
   title: The dot product, by hand
   region: parallel-simd
+  theme: "Vectorization"
   p: 3
   requires: [x86]
+  after: [auto-vectorization]
   prompt: >-
     Write an AVX2+FMA dot product with 1, 2, 4 and 8 independent accumulators, and compare it with the scalar
     and auto-vectorized versions.
@@ -684,7 +753,9 @@ shrines:
 - id: std-simd
   title: Portable SIMD
   region: parallel-simd
+  theme: "Vectorization"
   size: S
+  after: [simd-intrinsics-dot]
   prompt: >-
     Port your dot product and one more kernel to std::simd (C++26 / std::experimental::simd).
   done: >-
@@ -693,6 +764,7 @@ shrines:
 - id: simd-stream-compaction
   title: SIMD filtering
   region: parallel-simd
+  theme: "SIMD algorithms"
   requires: [x86]
   prompt: >-
     Filter an int array by a predicate with SIMD: a compress instruction on AVX-512, or a shuffle
@@ -703,6 +775,7 @@ shrines:
 - id: simd-parsing
   title: Parsing at gigabytes per second
   region: parallel-simd
+  theme: "SIMD algorithms"
   p: 3
   prompt: >-
     Classify characters with SIMD (simdjson-style) to find delimiters/newlines in CSV,
@@ -713,6 +786,7 @@ shrines:
 - id: openmp-basics
   title: OpenMP, carefully
   region: parallel-simd
+  theme: "Multicore"
   size: S
   prompt: >-
     Parallelise an irregular loop with OpenMP. Compare the static, dynamic and guided schedules, and
@@ -723,9 +797,11 @@ shrines:
 - id: cpu-gemm-tiling
   title: CPU GEMM, climbing
   region: parallel-simd
+  theme: "Vectorization"
   p: 4
   size: L
   requires: [x86]
+  after: [simd-intrinsics-dot]
   prompt: >-
     Optimise single-core SGEMM: loop order, cache blocking, packing, and an AVX2/AVX-512 register-tiled
     microkernel.
@@ -735,6 +811,7 @@ shrines:
 - id: parallel-stl
   title: Parallel algorithms
   region: parallel-simd
+  theme: "Multicore"
   size: S
   prompt: >-
     Use std::execution::par / par_unseq algorithms (TBB backend) for sort, reduce and
@@ -758,6 +835,7 @@ shrines:
 - id: cuda-first-kernel
   title: The first kernel
   region: gpu-programming
+  theme: "First kernels"
   p: 3
   size: S
   requires: [gpu]
@@ -770,8 +848,10 @@ shrines:
 - id: cuda-reduction
   title: The reduction ladder
   region: gpu-programming
+  theme: "First kernels"
   p: 3
   requires: [gpu]
+  after: [cuda-first-kernel]
   prompt: >-
     Walk the classic parallel reduction optimisation steps (Harris): divergent → sequential
     addressing → first-add-during-load → unrolling → warp shuffles.
@@ -781,8 +861,10 @@ shrines:
 - id: cuda-transpose
   title: Transpose and shared memory
   region: gpu-programming
+  theme: "First kernels"
   size: S
   requires: [gpu]
+  after: [cuda-first-kernel]
   prompt: >-
     Write the matrix transpose three ways: naive, shared-memory tiled, and tiled with padding.
   done: >-
@@ -791,7 +873,9 @@ shrines:
 - id: cuda-scan
   title: Parallel scan
   region: gpu-programming
+  theme: "First kernels"
   requires: [gpu]
+  after: [cuda-reduction]
   prompt: >-
     Implement a Blelloch work-efficient scan and use it for stream compaction.
   done: >-
@@ -800,9 +884,11 @@ shrines:
 - id: cuda-gemm-tiled
   title: SGEMM, kernel by kernel
   region: gpu-programming
+  theme: "Matmul & attention"
   p: 4
   size: L
   requires: [gpu]
+  after: [cuda-transpose]
   prompt: >-
     Work the SGEMM ladder: naive → coalesced → shared-memory tiling → 1D/2D blocktiling →
     vectorised loads → warptiling, benchmarking against cuBLAS.
@@ -812,6 +898,7 @@ shrines:
 - id: online-softmax
   title: Online softmax
   region: gpu-programming
+  theme: "Matmul & attention"
   size: S
   requires: [gpu]
   prompt: >-
@@ -822,9 +909,11 @@ shrines:
 - id: flash-attention-mini
   title: FlashAttention, small
   region: gpu-programming
+  theme: "Matmul & attention"
   p: 4
   size: L
   requires: [gpu]
+  after: [online-softmax]
   prompt: >-
     Write a tiled FlashAttention forward kernel for small head dims that uses online softmax and
     never materialises the N×N matrix.
@@ -834,6 +923,7 @@ shrines:
 - id: triton-kernels
   title: Triton
   region: gpu-programming
+  theme: "Beyond CUDA C++"
   p: 3
   requires: [gpu]
   prompt: >-
@@ -845,6 +935,7 @@ shrines:
 - id: cuda-streams-overlap
   title: Streams and overlap
   region: gpu-programming
+  theme: "Runtime & launch"
   size: S
   requires: [gpu]
   prompt: >-
@@ -855,8 +946,10 @@ shrines:
 - id: pytorch-cpp-extension
   title: A custom PyTorch op
   region: gpu-programming
+  theme: "Beyond CUDA C++"
   p: 3
   requires: [gpu]
+  after: [cuda-first-kernel]
   prompt: >-
     Package one of your CUDA kernels as a PyTorch C++/CUDA extension with autograd support.
   done: >-
@@ -865,6 +958,7 @@ shrines:
 - id: cuda-graphs
   title: CUDA graphs
   region: gpu-programming
+  theme: "Runtime & launch"
   size: S
   requires: [gpu]
   prompt: >-
@@ -876,7 +970,9 @@ shrines:
 - id: cutlass-cute-intro
   title: CuTe layouts
   region: gpu-programming
+  theme: "Matmul & attention"
   requires: [gpu]
+  after: [cuda-transpose]
   prompt: >-
     Learn CuTe's layout algebra (shape, stride, composition, tiling) by expressing your
     transpose and a GEMM tile with it.
@@ -898,6 +994,7 @@ shrines:
 - id: activation-hooks
   title: Catching activations
   region: interp-engineering
+  theme: "Capturing activations"
   p: 3
   size: S
   prompt: >-
@@ -909,7 +1006,9 @@ shrines:
 - id: activation-store
   title: The activation store
   region: interp-engineering
+  theme: "Capturing activations"
   p: 4
+  after: [activation-hooks]
   prompt: >-
     Stream activations to disk as memory-mapped bf16 shards, and write a shuffling loader
     for dictionary training.
@@ -919,7 +1018,9 @@ shrines:
 - id: logit-lens
   title: The logit lens
   region: interp-engineering
+  theme: "Capturing activations"
   size: S
+  after: [activation-hooks]
   prompt: >-
     Implement the logit lens on GPT-2: decode each layer's residual stream through the unembedding.
   done: >-
@@ -928,6 +1029,7 @@ shrines:
 - id: linear-probes
   title: Probes and controls
   region: interp-engineering
+  theme: "Probing & patching"
   prompt: >-
     Train linear probes for a property (e.g. part of speech or token position) at every layer, with
     Hewitt & Liang style control tasks to measure selectivity.
@@ -937,6 +1039,7 @@ shrines:
 - id: activation-patching
   title: Activation patching
   region: interp-engineering
+  theme: "Probing & patching"
   p: 4
   prompt: >-
     Build a patching harness for an IOI-style task: clean/corrupted runs, patching per layer ×
@@ -947,6 +1050,8 @@ shrines:
 - id: attribution-patching
   title: Attribution patching
   region: interp-engineering
+  theme: "Probing & patching"
+  after: [activation-patching]
   prompt: >-
     Implement attribution patching (the gradient-based linear approximation) and compare it with the real patching
     results from your harness.
@@ -956,6 +1061,7 @@ shrines:
 - id: toy-superposition
   title: Toy models of superposition
   region: interp-engineering
+  theme: "Dictionary learning"
   p: 3
   links: [theory-superposition]
   prompt: >-
@@ -967,8 +1073,10 @@ shrines:
 - id: sae-training
   title: Training an SAE
   region: interp-engineering
+  theme: "Dictionary learning"
   p: 4
   size: L
+  after: [activation-store]
   prompt: >-
     Train a ReLU + L1 sparse autoencoder on GPT-2 small residual activations from your activation
     store.
@@ -978,7 +1086,9 @@ shrines:
 - id: topk-sae
   title: TopK SAE
   region: interp-engineering
+  theme: "Dictionary learning"
   p: 3
+  after: [sae-training]
   prompt: >-
     Train a TopK SAE (Gao et al., 2024) with the AuxK loss and compare it with your ReLU SAE at matched L0.
   done: >-
@@ -987,8 +1097,10 @@ shrines:
 - id: sae-encoder-kernel
   title: A fused SAE encoder
   region: interp-engineering
+  theme: "Dictionary learning"
   p: 3
   requires: [gpu]
+  after: [topk-sae]
   prompt: >-
     Write a fused encoder (matmul + bias + top-k) and a sparse decoder that exploits k ≪ d,
     as a Triton or CUDA kernel.
@@ -998,6 +1110,8 @@ shrines:
 - id: feature-dashboard
   title: Feature dashboards
   region: interp-engineering
+  theme: "Using features"
+  after: [sae-training]
   prompt: >-
     For each SAE latent, stream a large token corpus and keep the top-k activating contexts
     with a bounded heap per latent. Render a small HTML dashboard.
@@ -1007,7 +1121,9 @@ shrines:
 - id: steering-vectors
   title: Steering vectors
   region: interp-engineering
+  theme: "Using features"
   size: S
+  after: [sae-training]
   prompt: >-
     Build contrastive steering vectors (activation addition) and SAE-feature steering for one
     behaviour, and compare the two.
@@ -1017,6 +1133,8 @@ shrines:
 - id: transcoders
   title: Transcoders
   region: interp-engineering
+  theme: "Dictionary learning"
+  after: [sae-training]
   prompt: >-
     Train a transcoder that maps an MLP's input to its output through a sparse bottleneck, and compare its
     interpretability and fidelity with an SAE on the same layer.
@@ -1026,6 +1144,7 @@ shrines:
 - id: induction-heads
   title: Finding induction heads
   region: interp-engineering
+  theme: "Probing & patching"
   size: S
   links: [theory-circuits]
   prompt: >-
@@ -1049,6 +1168,7 @@ shrines:
 - id: latency-measurement
   title: Measuring latency honestly
   region: low-latency
+  theme: "Measuring latency"
   p: 4
   requires: [x86]
   prompt: >-
@@ -1060,6 +1180,8 @@ shrines:
 - id: hot-path-logging
   title: Logging off the hot path
   region: low-latency
+  theme: "The hot path"
+  after: [spsc-ring-buffer]
   prompt: >-
     Build an async binary logger: format args are captured raw into an SPSC buffer and formatted on
     a background thread.
@@ -1069,6 +1191,7 @@ shrines:
 - id: core-pinning
   title: Pinning and spinning
   region: low-latency
+  theme: "Measuring latency"
   size: S
   requires: [linux]
   prompt: >-
@@ -1080,6 +1203,7 @@ shrines:
 - id: udp-multicast-feed
   title: A market data feed handler
   region: low-latency
+  theme: "Networking & IPC"
   p: 3
   requires: [linux]
   prompt: >-
@@ -1091,6 +1215,7 @@ shrines:
 - id: binary-serialization
   title: Flyweight codecs
   region: low-latency
+  theme: "The hot path"
   prompt: >-
     Write an SBE-style flyweight codec (fixed layout, no allocation) and compare it with protobuf
     and a naive struct memcpy.
@@ -1100,6 +1225,7 @@ shrines:
 - id: epoll-event-loop
   title: An epoll event loop
   region: low-latency
+  theme: "Networking & IPC"
   requires: [linux]
   prompt: >-
     Build an edge-triggered epoll TCP echo server with non-blocking sockets.
@@ -1109,7 +1235,9 @@ shrines:
 - id: io-uring-server
   title: io_uring
   region: low-latency
+  theme: "Networking & IPC"
   requires: [linux]
+  after: [epoll-event-loop]
   prompt: >-
     Rebuild the echo server on io_uring (liburing), then try SQPOLL.
   done: >-
@@ -1118,7 +1246,9 @@ shrines:
 - id: shared-memory-ipc
   title: Shared-memory IPC
   region: low-latency
+  theme: "Networking & IPC"
   requires: [linux]
+  after: [spsc-ring-buffer]
   prompt: >-
     Put your SPSC ring buffer in POSIX shared memory between two processes.
   done: >-
@@ -1127,6 +1257,7 @@ shrines:
 - id: branch-free-decoder
   title: A branch-free decoder
   region: low-latency
+  theme: "The hot path"
   size: S
   prompt: >-
     Rewrite a message-type dispatch or varint decoder to remove data-dependent branches.
@@ -1136,7 +1267,9 @@ shrines:
 - id: cache-warming
   title: Keeping the hot path warm
   region: low-latency
+  theme: "Measuring latency"
   size: S
+  after: [latency-measurement]
   prompt: >-
     Model a trading loop that is idle most of the time. Show the cold-cache penalty on the first
     event, then mitigate it with warm-up traffic or dummy work.
@@ -1158,6 +1291,7 @@ shrines:
 - id: agent-tool-loop
   title: A minimal agent loop
   region: agent-harness
+  theme: "Agent loops"
   p: 4
   requires: [llm-api]
   links: [forge-verifier-ladder]
@@ -1170,6 +1304,7 @@ shrines:
 - id: bench-as-oracle
   title: The benchmark as oracle
   region: agent-harness
+  theme: "Oracles"
   p: 3
   prompt: >-
     Build a scoring harness: differential correctness against a reference, then speed with
@@ -1180,6 +1315,7 @@ shrines:
 - id: differential-testing
   title: Differential testing for kernels
   region: agent-harness
+  theme: "Oracles"
   prompt: >-
     Build property-based and differential tests for numeric kernels: random shapes,
     adversarial values, and ULP/relative tolerances.
@@ -1189,8 +1325,10 @@ shrines:
 - id: llm-kernel-optimization
   title: Letting the agent optimise a kernel
   region: agent-harness
+  theme: "Agent loops"
   p: 3
   requires: [llm-api]
+  after: [agent-tool-loop, bench-as-oracle]
   prompt: >-
     Let your agent optimise a SIMD or CUDA kernel against your oracle for N iterations, and log
     every attempt.
@@ -1200,6 +1338,8 @@ shrines:
 - id: reward-hacking-guards
   title: Catching the agent cheating
   region: agent-harness
+  theme: "Oracles"
+  after: [bench-as-oracle]
   prompt: >-
     Red-team your oracle: write candidates that cache outputs, skip work on benchmark-shaped
     inputs, or alter the timer. Add guards against each one.
@@ -1209,7 +1349,9 @@ shrines:
 - id: context-packing
   title: What context helps the agent?
   region: agent-harness
+  theme: "Agent loops"
   requires: [llm-api]
+  after: [agent-tool-loop]
   prompt: >-
     Run the same optimisation task with different context: source only, source + perf counters,
     and source + asm + counters.
@@ -1219,6 +1361,8 @@ shrines:
 - id: autotuner
   title: Classic autotuning
   region: agent-harness
+  theme: "Tuning & tooling"
+  after: [cpu-gemm-tiling]
   prompt: >-
     Autotune tile sizes and unroll factors for your GEMM with grid search and then Bayesian
     optimisation, and compare with agent-driven tuning.
@@ -1228,6 +1372,7 @@ shrines:
 - id: claude-code-skill
   title: A profiling skill
   region: agent-harness
+  theme: "Tuning & tooling"
   size: S
   prompt: >-
     Write a Claude Code skill or subagent for a "measure → hypothesise → change → re-measure"
@@ -1328,6 +1473,7 @@ shrines:
 - id: forge-verifier-ladder
   title: The verification ladder
   region: agentic-forge
+  theme: "Verification"
   p: 4
   links: [agent-tool-loop, bench-as-oracle]
   prompt: >-
@@ -1339,6 +1485,7 @@ shrines:
 - id: forge-kernel-benchmarks
   title: Reading kernel-generation benchmarks
   region: agentic-forge
+  theme: "The field"
   p: 3
   requires: [llm-api, gpu]
   links: [llm-kernel-optimization]
@@ -1351,6 +1498,7 @@ shrines:
 - id: forge-division-of-labor
   title: Human and agent, divided
   region: agentic-forge
+  theme: "Practice"
   prompt: >-
     Propose a division of labour for HPC work: what to delegate, what to verify, and what to keep. Test it on
     one real task from your coursework or a shrine.
@@ -1360,6 +1508,7 @@ shrines:
 - id: forge-eval-design
   title: Designing an eval
   region: agentic-forge
+  theme: "Verification"
   p: 3
   links: [reward-hacking-guards]
   prompt: >-
@@ -1371,6 +1520,7 @@ shrines:
 - id: forge-failure-atlas
   title: An atlas of agent failures
   region: agentic-forge
+  theme: "The field"
   links: [memory-order-litmus]
   prompt: >-
     Collect cases where agents fail at low-level work (memory ordering, UB, numerical
@@ -1381,6 +1531,7 @@ shrines:
 - id: forge-economics
   title: The economics of automated optimisation
   region: agentic-forge
+  theme: "Practice"
   p: 3
   prompt: >-
     Model the economics: agent cost per verified speedup vs engineer time vs compute saved.
@@ -1403,6 +1554,7 @@ shrines:
 - id: design-value-semantics
   title: Regular types
   region: design-archipelago
+  theme: "Values & ownership"
   p: 4
   links: [move-semantics-vector]
   prompt: >-
@@ -1414,6 +1566,7 @@ shrines:
 - id: design-dod
   title: Data-oriented design
   region: design-archipelago
+  theme: "Data-oriented"
   p: 4
   links: [soa-vs-aos]
   prompt: >-
@@ -1425,6 +1578,7 @@ shrines:
 - id: design-ownership
   title: Ownership architecture
   region: design-archipelago
+  theme: "Values & ownership"
   prompt: >-
     Draw the ownership and lifetime graph of a real codebase (yours or a small OSS project). Find
     one unclear ownership and fix it.
@@ -1434,6 +1588,7 @@ shrines:
 - id: design-error-philosophy
   title: A philosophy of errors
   region: design-archipelago
+  theme: "Values & ownership"
   links: [std-expected-errors, contracts-26]
   prompt: >-
     Build a decision framework for exceptions vs expected vs contracts vs abort, and apply it to three
@@ -1444,6 +1599,7 @@ shrines:
 - id: design-zero-cost
   title: Zero-cost, verified
   region: design-archipelago
+  theme: "Abstraction & architecture"
   p: 3
   links: [crtp-static-poly, policy-based-design]
   prompt: >-
@@ -1455,6 +1611,7 @@ shrines:
 - id: design-patterns-modern
   title: The patterns, rewritten
   region: design-archipelago
+  theme: "Abstraction & architecture"
   prompt: >-
     Re-express 4 GoF patterns in modern C++ (visitor → variant, strategy → templates/lambdas,
     observer → signals, factory → type erasure).
@@ -1464,7 +1621,9 @@ shrines:
 - id: design-ecs
   title: Entity–component–system
   region: design-archipelago
+  theme: "Data-oriented"
   links: [soa-vs-aos]
+  after: [design-dod]
   prompt: >-
     Build a minimal ECS with archetype storage and run a simulation on it.
   done: >-
@@ -1473,6 +1632,7 @@ shrines:
 - id: design-hexagonal-trading
   title: Ports and adapters for trading
   region: design-archipelago
+  theme: "Abstraction & architecture"
   links: [order-book]
   prompt: >-
     Separate a trading system's domain logic from IO (ports and adapters) without adding
@@ -1495,6 +1655,7 @@ shrines:
 - id: theory-superposition
   title: Superposition
   region: interp-theory
+  theme: "Representations"
   p: 4
   links: [toy-superposition]
   prompt: >-
@@ -1505,6 +1666,7 @@ shrines:
 - id: theory-linear-representation
   title: The linear representation hypothesis
   region: interp-theory
+  theme: "Representations"
   p: 3
   links: [linear-probes, steering-vectors]
   prompt: >-
@@ -1516,6 +1678,7 @@ shrines:
 - id: theory-circuits
   title: Circuits
   region: interp-theory
+  theme: "Mechanisms"
   p: 3
   links: [induction-heads, activation-patching]
   prompt: >-
@@ -1526,6 +1689,7 @@ shrines:
 - id: theory-causal-abstraction
   title: Causal abstraction
   region: interp-theory
+  theme: "Mechanisms"
   links: [activation-patching]
   prompt: >-
     Formalise activation patching as an intervention on a causal model, and map your patching harness
@@ -1536,6 +1700,7 @@ shrines:
 - id: theory-sae-limits
   title: Where SAEs fall short
   region: interp-theory
+  theme: "Representations"
   p: 3
   links: [sae-training, topk-sae]
   prompt: >-
@@ -1547,6 +1712,7 @@ shrines:
 - id: theory-probing-limits
   title: When probes mislead
   region: interp-theory
+  theme: "Method & scale"
   links: [linear-probes]
   prompt: >-
     Explain the difference between decodability and use, and show a probe that succeeds on information
@@ -1557,6 +1723,7 @@ shrines:
 - id: theory-interp-at-scale
   title: The cost of interpretability
   region: interp-theory
+  theme: "Method & scale"
   p: 4
   links: [activation-store, theory-arith-intensity]
   prompt: >-
@@ -1580,6 +1747,7 @@ shrines:
 - id: theory-roofline
   title: Your machine's roofline
   region: performance-theory
+  theme: "Models"
   p: 5
   links: [cpu-gemm-tiling, simd-intrinsics-dot]
   prompt: >-
@@ -1591,6 +1759,7 @@ shrines:
 - id: theory-amdahl
   title: Amdahl, measured
   region: performance-theory
+  theme: "Parallelism"
   links: [threads-and-jthread]
   prompt: >-
     Measure the speedup curve of a parallel program, fit the serial fraction (Karp–Flatt), and
@@ -1601,6 +1770,7 @@ shrines:
 - id: theory-littles-law
   title: Little's law and memory parallelism
   region: performance-theory
+  theme: "Latency"
   p: 3
   prompt: >-
     Apply Little's law to memory (bandwidth = outstanding requests / latency) and measure
@@ -1611,6 +1781,7 @@ shrines:
 - id: theory-latency-numbers
   title: Your own latency numbers
   region: performance-theory
+  theme: "Latency"
   p: 3
   size: S
   prompt: >-
@@ -1622,6 +1793,7 @@ shrines:
 - id: theory-work-span
   title: Work and span
   region: performance-theory
+  theme: "Parallelism"
   links: [cuda-scan, work-stealing-pool]
   prompt: >-
     Analyse scan and quicksort under the work–span model and predict their speedup, then check the prediction against
@@ -1632,6 +1804,7 @@ shrines:
 - id: theory-arith-intensity
   title: Arithmetic intensity of transformers
   region: performance-theory
+  theme: "Models"
   p: 4
   links: [flash-attention-mini]
   prompt: >-
@@ -1643,6 +1816,7 @@ shrines:
 - id: theory-memory-wall
   title: The memory wall
   region: performance-theory
+  theme: "Models"
   prompt: >-
     Trace compute vs memory bandwidth trends in hardware over two decades and argue what they imply for
     algorithm design.
@@ -1664,6 +1838,7 @@ shrines:
 - id: num-fp-error
   title: Floating-point error analysis
   region: numerical-heights
+  theme: "Error"
   p: 3
   prompt: >-
     Analyse the error bounds of naive, pairwise and Kahan summation, and verify them empirically.
@@ -1673,6 +1848,7 @@ shrines:
 - id: num-mixed-precision
   title: Mixed precision
   region: numerical-heights
+  theme: "Precision"
   p: 3
   requires: [gpu]
   prompt: >-
@@ -1683,7 +1859,9 @@ shrines:
 - id: num-reproducibility
   title: Reproducible reductions
   region: numerical-heights
+  theme: "Error"
   links: [parallel-stl]
+  after: [num-fp-error]
   prompt: >-
     Show that parallel reductions are nondeterministic, then build a reproducible sum
     (fixed-order tree or exact accumulator).
@@ -1693,6 +1871,7 @@ shrines:
 - id: num-quantization
   title: Quantization
   region: numerical-heights
+  theme: "Precision"
   p: 3
   prompt: >-
     Quantise a small model's weights to int8 and fp8 (per-tensor vs per-channel), and measure accuracy loss.
@@ -1702,6 +1881,7 @@ shrines:
 - id: num-stable-softmax
   title: Stable softmax and log-sum-exp
   region: numerical-heights
+  theme: "Error"
   size: S
   links: [online-softmax]
   prompt: >-

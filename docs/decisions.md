@@ -27,7 +27,6 @@ Choices made where DESIGN.md is silent (§0: "choose the simplest thing that pre
 - **Elevation.** Base noise plus a ridge term `0.12·h·exp(−(d₂−d₁)/25)`, tapered to the coast. Tower placement uses this *without* the prominence field, since shrine positions aren't known yet when towers are placed. Rendered contours include the prominence field (Gaussians, σ = 45, weight p/5).
 - **Spacing is per layer.** Surface shrines keep 38 from other surface shrines, sky 26 from other sky shrines. Placement also keeps 10 units from the coast and 12 from island edges so glyphs don't hang off. The seed places with no relaxation.
 - **Already-fixed positions are placed first.** Every locked or `xy` shrine is fixed before new shrines are placed, so a new shrine keeps clear of locked shrines later in file order too.
-- **Sky towers** go to the in-island point nearest the centroid (there's no sky elevation).
 - **Temples** are rejection-sampled along random rays at 60–85% of the centroid-to-border distance. Tests verify the ratio.
 - **Depths joining a locked ring.** Existing lightroots are locked. When a new depths shrine joins a group whose members are locked, it takes the ring slot (for the new group size k) farthest from the locked members, rather than reshuffling the ring.
 - **The lockfile keeps stale ids.** Entries for removed shrines stay, so re-adding an id restores its position. Coordinates are rounded to 0.1 and keys sorted, one per line.
@@ -35,3 +34,22 @@ Choices made where DESIGN.md is silent (§0: "choose the simplest thing that pre
 - **App ↔ core.** The app imports only types, from `@stratum/core/mapdata`, never the Node-side code. `stratum dev` builds, then starts Vite with a middleware serving `build/map.json`. The watcher, API and SSE are M4. Until then, re-run `stratum build` and reload.
 - **`?layer=sky|surface|depths`** sets the initial layer (handy for links and screenshots).
 - **M1 is an atlas view.** Every shrine renders revealed and untouched. Depths show small vein-tinted glows around every lightroot; the real darkness and light rules are M3.
+
+## M1 revision: thematic clusters, archipelagos, depths territory
+
+Added after the M1 review, at Tiago's request. These extend DESIGN.md §4.2 and §8.2–8.3.
+
+- **`theme` (new field).** A free-text sub-area name per surface/sky shrine, grouped by exact string within a region. Towers and temples take no theme (a warning if given). Themes in the seed were drafted for review: 3–4 per region, 2–5 shrines each.
+- **`after` (new field).** A directed "follows up on" edge. It's validated (it must resolve and has no cycles). Placement puts predecessors first and lands a same-region, same-theme follow-up 1–1.5× spacing from its predecessor. Cross-region `after` edges are recorded but don't affect placement; the Horizon may use them later. 42 edges were drafted, mostly where a prompt says "your X".
+- **Theme anchors are locked** in `positions.lock.json` under `@<region>/<theme>` keys.
+  - On the first build, anchors are spread by angle around the centroid (in theme order, so consecutive themes are neighbours) and then Lloyd-relaxed over the region.
+  - A theme added later gets the free spot farthest from the existing anchors and the centre, so nothing moves.
+  - Each themed shrine is sampled around its anchor (Gaussian, σ ≈ 0.28 × half the distance to the nearest sibling anchor, clamped to 28–50) and must stay nearer its own anchor than any other.
+- **Temples** aim their 60–85% ray at the mean position of their same-region `needs` (a depths need counts at its `below` shrine), so the capstone sits at the end of its trail.
+- **Archipelagos replace the single sky blob (§8.2).**
+  - Theme anchors sit on a ring at 0.6 × radius. The sky tower stands on its own rock at the centre.
+  - Each themed sky shrine must be at least 60 units closer to its own anchor than to any other anchor or the centre, so islets never merge.
+  - Islet outlines are metaballs (σ ≈ 17, with noise) drawn *around placed shrines*: adding a shrine grows its islet and moves nothing. 3–5 seeded bare rocks per archipelago add texture.
+- **Depths territory.** Rendering only. Beneath the landmass, each point belongs to the vein of its nearest lightroot (domain-warped), which draws vein territories, plus rock-strata level lines. M3 will show it only inside light circles, per §6.4. The M1 atlas view shows it dimly everywhere.
+- **Labels.** Region names show at zoom < 1.5, placed by a small search around the centroid for the spot with the most clearance from glyphs. Theme names show at 1.5–2.4 on the surface (above the cluster) and always on the sky (below each islet). Shrine titles show at ≥ 2.4. `?zoom=<k>` sets the initial zoom.
+- The lockfile was regenerated for this change (no clears existed yet).

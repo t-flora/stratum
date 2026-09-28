@@ -25,6 +25,8 @@ export interface MapShrine {
   prompt: string;
   done: string;
   from?: string;
+  theme?: string;
+  after: string[];
   xy: Vec2;
   status: ShrineStatus;
   visibility: Visibility;
@@ -44,12 +46,26 @@ export interface MapRidge {
   lines: Vec2[][];
 }
 
+export interface MapTheme {
+  region: string;
+  layer: Layer;
+  name: string;
+  anchor: Vec2;
+  members: string[];
+}
+
 export interface MapGeometry {
   coast: MultiPolygon;
   regions: Record<string, MultiPolygon>;
   ridges: MapRidge[];
   contours: { value: number; polygons: MultiPolygon }[];
-  islands: Record<string, Ring>;
+  /** Each sky region is an archipelago: one islet per theme, a rock for the tower, and a few bare rocks. */
+  islands: Record<string, MultiPolygon>;
+  depths: {
+    /** Vein territories: each point belongs to the vein of its nearest lightroot. */
+    veins: Record<string, MultiPolygon>;
+    strata: MultiPolygon[];
+  };
 }
 
 export interface MapData {
@@ -58,5 +74,6 @@ export interface MapData {
   start: { vantage: Vec2; plateau: string[] };
   regions: MapRegion[];
   shrines: MapShrine[];
+  themes: MapTheme[];
   geometry: MapGeometry;
 }

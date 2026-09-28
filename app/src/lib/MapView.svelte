@@ -4,10 +4,10 @@
   import { zoom, type D3ZoomEvent } from 'd3-zoom';
   import type { Layer, MapData } from '@stratum/core/mapdata';
   import Glyph from './Glyph.svelte';
-  import { islandPath, linePath, multiPolygonPath } from './paths.ts';
+  import { linePath, multiPolygonPath } from './paths.ts';
   import { surfaceTint, veinColour } from './palette.ts';
 
-  let { map, layer }: { map: MapData; layer: Layer } = $props();
+  let { map, layer, initialZoom = 1 }: { map: MapData; layer: Layer; initialZoom?: number } = $props();
 
   let svg: SVGSVGElement;
   let t = $state({ k: 1, x: 0, y: 0 });
@@ -27,21 +27,52 @@
   const ridges = $derived(map.geometry.ridges.map((r) => ({ h: r.h, d: r.lines.map(linePath).join('') })));
   const islands = $derived(
     skyRegions.map((r) => {
-      const ring = map.geometry.islands[r.id] ?? [];
-      const top = ring.reduce((m, p) => Math.min(m, p[1]), r.centroid![1] - r.radius!);
-      return { region: r, d: islandPath(ring), labelY: top - 10 };
+      const mp = map.geometry.islands[r.id] ?? [];
+      const top = mp.flat(2).reduce((m, p) => Math.min(m, p[1]), r.centroid![1] - r.radius!);
+      return { region: r, d: multiPolygonPath(mp), labelY: top - 12 };
     }),
   );
   const regionName = $derived(new Map(map.regions.map((r) => [r.id, r.name])));
-  /** Region labels sit above the centroid, and above the tower if it's close by. */
+  /** Region labels: the spot near the centroid that keeps the label box farthest from any glyph. */
   const regionLabels = $derived(
     surfaceRegions.map((r) => {
       const [cx, cy] = r.centroid!;
-      const tower = map.shrines.find((s) => s.region === r.id && s.kind === 'tower');
-      const near = tower && Math.abs(tower.xy[0] - cx) < 90 && Math.abs(tower.xy[1] - cy) < 60;
-      return { id: r.id, name: r.name, x: cx, y: near ? Math.min(cy - 22, tower.xy[1] - 24) : cy - 22 };
+      const halfW = r.name.length * 5.2;
+      const halfH = 11;
+      const glyphs = map.shrines.filter((s) => s.layer === 'surface' && Math.abs(s.xy[0] - cx) < 260 && Math.abs(s.xy[1] - cy) < 200);
+      let best = { x: cx, y: cy - 22, score: -Infinity };
+      for (let dy = -90; dy <= 70; dy += 10) {
+        for (let dx = -70; dx <= 70; dx += 14) {
+          const x = cx + dx;
+          const y = cy - 22 + dy; // text baseline; box spans y-18..y+4
+          let clearance = Infinity;
+          for (const g of glyphs) {
+            const ox = Math.max(0, Math.abs(g.xy[0] - x) - halfW);
+            const oy = Math.max(0, Math.abs(g.xy[1] - (y - 7)) - halfH);
+            clearance = Math.min(clearance, Math.hypot(ox, oy));
+          }
+          const score = Math.min(clearance, 30) - 0.04 * Math.hypot(dx, dy);
+          if (score > best.score) best = { x, y, score };
+        }
+      }
+      return { id: r.id, name: r.name, x: best.x, y: best.y };
     }),
   );
+
+  /** Theme labels: above the cluster on the surface, below the islet in the sky. */
+  const byId = $derived(new Map(map.shrines.map((s) => [s.id, s])));
+  const themeLabels = $derived(
+    map.themes.map((th) => {
+      const pts = th.members.map((id) => byId.get(id)!.xy);
+      const x = pts.reduce((a, p) => a + p[0], 0) / pts.length;
+      const y = th.layer === 'sky' ? Math.max(...pts.map((p) => p[1])) + 30 : Math.min(...pts.map((p) => p[1])) - 16;
+      return { key: `${th.region}/${th.name}`, layer: th.layer, name: th.name, x, y };
+    }),
+  );
+  const veinFills = $derived(
+    Object.entries(map.geometry.depths.veins).map(([id, mp]) => ({ id, d: multiPolygonPath(mp), fill: veinColour(id) })),
+  );
+  const strata = $derived(map.geometry.depths.strata.map(multiPolygonPath));
 
   const shrinesOn = (l: Layer) => map.shrines.filter((s) => s.layer === l && s.visibility !== 'hidden');
   const surfaceShrines = $derived(shrinesOn('surface'));
@@ -51,6 +82,7 @@
   // Glyphs shrink less than the map grows, so they stay legible without swamping the terrain.
   const glyphScale = $derived(1 / Math.pow(t.k, 0.75));
   const showTitles = $derived(t.k >= 2.4);
+  const showThemes = $derived(t.k >= 1.5 && t.k < 2.4);
   const labelSize = (px: number) => px / Math.pow(t.k, 0.85);
 
   onMount(() => {
@@ -64,6 +96,7 @@
         t = { k: e.transform.k, x: e.transform.x, y: e.transform.y };
       });
     select(svg).call(z).on('dblclick.zoom', null);
+    if (initialZoom !== 1) select(svg).call(z.scaleTo, initialZoom);
   });
 </script>
 
@@ -125,7 +158,12 @@
         {#each islands as isl (isl.region.id)}
           <path class="island-ground-shadow" d={isl.d} />
         {/each}
-        {#if !showTitles}
+        {#if showThemes}
+          {#each themeLabels.filter((l) => l.layer === 'surface') as l (l.key)}
+            <text class="theme-label" x={l.x} y={l.y} font-size={labelSize(14)}>{l.name}</text>
+          {/each}
+        {/if}
+        {#if t.k < 1.5}
           {#each regionLabels as r (r.id)}
             <text class="region-label" x={r.x} y={r.y} font-size={labelSize(22)}>{r.name}</text>
           {/each}
@@ -155,6 +193,11 @@
             font-size={labelSize(20)}>{isl.region.name}</text
           >
         {/each}
+        {#if !showTitles}
+          {#each themeLabels.filter((l) => l.layer === 'sky') as l (l.key)}
+            <text class="theme-label sky" x={l.x} y={l.y} font-size={labelSize(12)}>{l.name}</text>
+          {/each}
+        {/if}
         {#each skyShrines as s (s.id)}
           <Glyph shrine={s} scale={glyphScale} regionName={regionName.get(s.region) ?? s.region} />
         {/each}
@@ -168,6 +211,13 @@
 
     {#if layer === 'depths'}
       <g class="depths-layer">
+        <!-- Depths terrain: vein territories and rock strata (M3 reveals these only under light) -->
+        {#each veinFills as v (v.id)}
+          <path class="vein" d={v.d} fill={v.fill} />
+        {/each}
+        {#each strata as d, i (i)}
+          <path class="strata" {d} />
+        {/each}
         {#each depthsShrines as s (s.id)}
           <circle cx={s.xy[0]} cy={s.xy[1]} r="70" fill="url(#glow-{s.region})" />
         {/each}
@@ -289,6 +339,30 @@
   }
   .island-label {
     fill: var(--sky-ink);
+  }
+  .theme-label {
+    font-family: var(--font-map);
+    font-style: italic;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    fill: #6b5a41;
+    paint-order: stroke;
+    stroke: rgba(255, 250, 238, 0.75);
+    stroke-width: 2.5px;
+  }
+  .theme-label.sky {
+    fill: #5b7697;
+  }
+  .vein {
+    fill-opacity: 0.1;
+    stroke: none;
+  }
+  .strata {
+    fill: none;
+    stroke: #c9d2dc;
+    stroke-opacity: 0.07;
+    stroke-width: 0.8;
+    vector-effect: non-scaling-stroke;
   }
   .shrine-label {
     font-family: var(--font-map);
