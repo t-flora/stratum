@@ -30,6 +30,10 @@ export interface MapShrine {
   xy: Vec2;
   status: ShrineStatus;
   visibility: Visibility;
+  /** False for silhouettes too faint to name (p below silhouetteTitleMinP): show "???" (§6.2). */
+  titleKnown: boolean;
+  /** Surface markers: `chasm` beside a shrine whose lightroot glows; `draft` on a launch point to the sky (§6.3, §6.4). */
+  marks: { chasm?: boolean; draft?: boolean };
   /** Derived work state (§4.4), from work/<id>/ and git. Dates are YYYY-MM-DD. */
   startedAt?: string;
   clearedAt?: string;
@@ -51,6 +55,8 @@ export interface MapRegion {
   name: string;
   centroid?: Vec2;
   radius?: number;
+  /** Surface regions whose tower is cleared: no fog wash (§5.3). */
+  surveyed?: boolean;
 }
 
 export interface MapRidge {
@@ -81,6 +87,18 @@ export interface MapGeometry {
   };
 }
 
+/** What the fog and the depths darkness are cut from (§6, §9.3). */
+export interface MapSight {
+  /** Surface vantages; the fog lifts within `fogRadius` of each (`towerFogRadius` for cleared towers). */
+  vantages: { xy: Vec2; tower: boolean }[];
+  fogRadius: number;
+  towerFogRadius: number;
+  /** Depths: light circles around cleared lightroots, and small glows under active surface shrines. */
+  lights: { xy: Vec2; region: string; kind: 'light' | 'glow' }[];
+  lightRadius: number;
+  glowRadius: number;
+}
+
 export interface MapData {
   version: 1;
   /** When map.json was built (ms since epoch). */
@@ -90,5 +108,6 @@ export interface MapData {
   regions: MapRegion[];
   shrines: MapShrine[];
   themes: MapTheme[];
+  sight: MapSight;
   geometry: MapGeometry;
 }

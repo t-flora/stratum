@@ -54,6 +54,7 @@ core/src/          all game logic; pure TS, no DOM. Imported by cli and (types o
   clear.ts         §5 clear validation, write-up sections/word count, frontmatter stamping, template choice (pure)
   git.ts           GitReader interface (injected; tests fake it or use a temp repo) and git log parsing
   work.ts          scan work/, derive status/committed/touches/campfire, `start` and `clear`
+  visibility.ts    §6 triangle rule: line of sight over ridges, vantages, sky launch points, depths light (pure; Terrain injected)
   geometry.ts      landmass, warped region classifier (2-unit grid), adjacency, elevation, noise
   placement.ts     §8.3 placement + theme anchors + follow-ups + lockfile I/O
   export.ts        map.json geometry: region outlines, ridges, contours, archipelagos, depths territory

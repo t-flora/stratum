@@ -7,7 +7,7 @@ import {
 } from './clear.ts';
 import type { Config } from './config.ts';
 import type { GitWorkInfo } from './git.ts';
-import type { ShrineStatus } from './mapdata.ts';
+import type { ShrineStatus, Visibility } from './mapdata.ts';
 import type { Diagnostic, Shrine, World } from './types.ts';
 import { parseWriteup } from './writeup.ts';
 
@@ -218,6 +218,8 @@ export function lintClears(work: Map<string, ShrineWork>): Diagnostic[] {
 export interface StartOptions {
   force?: boolean;
   template?: TemplateName;
+  /** Current visibility (§6); a hidden shrine can't be started without `force`. Omitted means all revealed. */
+  visibility?: Map<string, Visibility>;
   today?: string;
 }
 
@@ -253,8 +255,7 @@ function listFilesWithDotfiles(dir: string, prefix = ''): string[] {
 
 /**
  * `stratum start <id>` (§11): scaffold `work/<id>/` and mark it in progress.
- * Refuses a locked temple without `--force`. TODO(M3): also refuse hidden shrines without `--force`;
- * until visibility lands every shrine counts as revealed.
+ * Refuses a hidden shrine or a locked temple without `--force`. Silhouettes may be started (§6.2), which reveals them.
  */
 export function startShrine(root: string, world: World, work: Map<string, ShrineWork>, id: string, opts: StartOptions = {}): StartResult {
   const shrine = world.shrineById.get(id);
@@ -264,6 +265,9 @@ export function startShrine(root: string, world: World, work: Map<string, Shrine
   const current = work.get(id);
   if (existsSync(wfile)) {
     return { outcome: 'already', status: current?.status ?? 'in-progress', note: current?.campfire?.note ?? null };
+  }
+  if (opts.visibility?.get(id) === 'hidden' && !opts.force) {
+    return { outcome: 'refused', reason: "it's hidden: you haven't seen it from anywhere yet (use --force to start anyway)" };
   }
   if (shrine.kind === 'temple' && !opts.force) {
     const missing = shrine.needs.filter((n) => work.get(n)?.status !== 'cleared');

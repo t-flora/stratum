@@ -8,6 +8,7 @@ import { loadWorld, SEED_PATH } from './loader.ts';
 import type { MapData } from './mapdata.ts';
 import { placeShrines, readLock, serializeLock, writeLock, type PlacementResult } from './placement.ts';
 import type { Diagnostic, World } from './types.ts';
+import { computeVisibility } from './visibility.ts';
 import { readWorkState, type ShrineWork } from './work.ts';
 
 export const MAP_PATH = 'build/map.json';
@@ -59,7 +60,8 @@ export function build(root: string, opts: { replace?: string[]; write?: boolean;
   const placement = placeShrines(world, geo, before, opts.replace);
   const lockChanged = serializeLock(before) !== serializeLock(placement.lock);
   const work = readWorkState(root, world, config, readGitWork(opts.git ?? gitReader(root)));
-  const map = buildMapData(world, geo, placement.positions, placement.anchors, work, opts.now);
+  const sight = computeVisibility(world, placement.positions, (id) => work.get(id)?.status ?? 'untouched', geo, config.visibility);
+  const map = buildMapData(world, geo, placement.positions, placement.anchors, { work, sight, config: config.visibility }, opts.now);
   if (opts.write !== false) {
     if (lockChanged) writeLock(root, placement.lock);
     mkdirSync(join(root, 'build'), { recursive: true });

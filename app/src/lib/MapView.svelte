@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { select } from 'd3-selection';
   import { zoom, type D3ZoomEvent } from 'd3-zoom';
-  import type { Layer, MapData } from '@stratum/core/mapdata';
+  import type { Layer, MapData, MapShrine } from '@stratum/core/mapdata';
   import Glyph from './Glyph.svelte';
   import { linePath, multiPolygonPath } from './paths.ts';
   import { surfaceTint, veinColour } from './palette.ts';
@@ -84,18 +84,26 @@
 
   /** Theme labels: above the cluster on the surface, below the islet in the sky. */
   const byId = $derived(new Map(map.shrines.map((s) => [s.id, s])));
+  /** Theme names show only once one of their shrines is revealed, placed over the members you can see. */
   const themeLabels = $derived(
-    map.themes.map((th) => {
-      const pts = th.members.map((id) => byId.get(id)!.xy);
-      const x = pts.reduce((a, p) => a + p[0], 0) / pts.length;
-      const y = th.layer === 'sky' ? Math.max(...pts.map((p) => p[1])) + 30 : Math.min(...pts.map((p) => p[1])) - 16;
-      return { key: `${th.region}/${th.name}`, layer: th.layer, name: th.name, x, y };
-    }),
+    map.themes
+      .filter((th) => th.members.some((id) => byId.get(id)?.visibility === 'revealed'))
+      .map((th) => {
+        const pts = th.members.filter((id) => byId.get(id)!.visibility !== 'hidden').map((id) => byId.get(id)!.xy);
+        const x = pts.reduce((a, p) => a + p[0], 0) / pts.length;
+        const y = th.layer === 'sky' ? Math.max(...pts.map((p) => p[1])) + 30 : Math.min(...pts.map((p) => p[1])) - 16;
+        return { key: `${th.region}/${th.name}`, layer: th.layer, name: th.name, x, y };
+      }),
   );
   const veinFills = $derived(
     Object.entries(map.geometry.depths.veins).map(([id, mp]) => ({ id, d: multiPolygonPath(mp), fill: veinColour(id) })),
   );
   const strata = $derived(map.geometry.depths.strata.map(multiPolygonPath));
+  /** Surveyed regions (cleared tower) lose their fog wash entirely (§5.3). */
+  const surveyedFills = $derived(regionFills.filter((r) => map.regions.find((x) => x.id === r.id)?.surveyed).map((r) => r.d));
+  const lights = $derived(map.sight.lights.map((l) => ({ ...l, r: l.kind === 'light' ? map.sight.lightRadius : map.sight.glowRadius })));
+  /** Shrine titles on the map: silhouettes too faint to name stay anonymous (§6.2). */
+  const labelled = (list: MapShrine[]) => list.filter((s) => s.titleKnown);
 
   const shrinesOn = (l: Layer) => map.shrines.filter((s) => s.layer === l && s.visibility !== 'hidden');
   const surfaceShrines = $derived(shrinesOn('surface'));
@@ -149,6 +157,33 @@
       <feGaussianBlur stdDeviation="9" />
     </filter>
     <clipPath id="land-clip"><path d={coast} /></clipPath>
+    <!-- Fog (§9.3): a wash over land outside every vantage's R(2) radius. Holes are black with soft edges, so overlaps only clear more. -->
+    <radialGradient id="fog-hole">
+      <stop offset="0" stop-color="#000" stop-opacity="1" />
+      <stop offset="0.72" stop-color="#000" stop-opacity="1" />
+      <stop offset="1" stop-color="#000" stop-opacity="0" />
+    </radialGradient>
+    <mask id="fog-mask" maskUnits="userSpaceOnUse" x={-W} y={-H} width={W * 3} height={H * 3}>
+      <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="#fff" />
+      {#each surveyedFills as d, i (i)}
+        <path {d} fill="#000" />
+      {/each}
+      {#each map.sight.vantages as v, i (i)}
+        <circle cx={v.xy[0]} cy={v.xy[1]} r={v.tower ? map.sight.towerFogRadius : map.sight.fogRadius} fill="url(#fog-hole)" />
+      {/each}
+    </mask>
+    <!-- Depths (§6.4): black except inside light circles and glows. -->
+    <radialGradient id="light-hole">
+      <stop offset="0" stop-color="#fff" stop-opacity="1" />
+      <stop offset="0.6" stop-color="#fff" stop-opacity="0.85" />
+      <stop offset="1" stop-color="#fff" stop-opacity="0" />
+    </radialGradient>
+    <mask id="light-mask" maskUnits="userSpaceOnUse" x={-W} y={-H} width={W * 3} height={H * 3}>
+      <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="#000" />
+      {#each lights as l, i (i)}
+        <circle cx={l.xy[0]} cy={l.xy[1]} r={l.r} fill="url(#light-hole)" />
+      {/each}
+    </mask>
     {#each veins as v (v.id)}
       <radialGradient id="glow-{v.id}">
         <stop offset="0" stop-color={veinColour(v.id)} stop-opacity="0.55" />
@@ -177,6 +212,10 @@
         <path class="ridge-line" d={r.d} />
         <path class="ridge-hatch" d={r.d} style:stroke-width={2.5 + 1.8 * r.h} />
       {/each}
+      <g class="fog" mask="url(#fog-mask)" clip-path="url(#land-clip)">
+        <rect width={W} height={H} fill="var(--fog)" />
+        <rect width={W} height={H} fill="#fff" filter="url(#grain)" />
+      </g>
       <path class="coast" d={coast} />
 
       {#if layer === 'surface'}
@@ -205,7 +244,7 @@
           />
         {/each}
         {#if showTitles}
-          {#each surfaceShrines as s (s.id)}
+          {#each labelled(surfaceShrines) as s (s.id)}
             <text class="shrine-label" x={s.xy[0]} y={s.xy[1] + 16 * glyphScale} font-size={labelSize(12)}>{s.title}</text>
           {/each}
         {/if}
@@ -242,7 +281,7 @@
           />
         {/each}
         {#if showTitles}
-          {#each skyShrines as s (s.id)}
+          {#each labelled(skyShrines) as s (s.id)}
             <text class="shrine-label sky" x={s.xy[0]} y={s.xy[1] + 16 * glyphScale} font-size={labelSize(12)}>{s.title}</text>
           {/each}
         {/if}
@@ -251,15 +290,17 @@
 
     {#if layer === 'depths'}
       <g class="depths-layer">
-        <!-- Depths terrain: vein territories and rock strata (M3 reveals these only under light) -->
-        {#each veinFills as v (v.id)}
-          <path class="vein" d={v.d} fill={v.fill} />
-        {/each}
-        {#each strata as d, i (i)}
-          <path class="strata" {d} />
-        {/each}
-        {#each depthsShrines as s (s.id)}
-          <circle cx={s.xy[0]} cy={s.xy[1]} r="70" fill="url(#glow-{s.region})" />
+        <!-- Depths terrain: vein territories and rock strata, seen only where there is light -->
+        <g mask="url(#light-mask)">
+          {#each veinFills as v (v.id)}
+            <path class="vein" d={v.d} fill={v.fill} />
+          {/each}
+          {#each strata as d, i (i)}
+            <path class="strata" {d} />
+          {/each}
+        </g>
+        {#each lights as l, i (i)}
+          <circle class="light {l.kind}" cx={l.xy[0]} cy={l.xy[1]} r={l.kind === 'light' ? l.r : l.r * 1.4} fill="url(#glow-{l.region})" />
         {/each}
         {#each depthsShrines as s (s.id)}
           <Glyph
@@ -273,7 +314,7 @@
           />
         {/each}
         {#if showTitles}
-          {#each depthsShrines as s (s.id)}
+          {#each labelled(depthsShrines) as s (s.id)}
             <text class="shrine-label depths" x={s.xy[0]} y={s.xy[1] + 16 * glyphScale} font-size={labelSize(12)}>{s.title}</text>
           {/each}
         {/if}
@@ -401,14 +442,37 @@
   .theme-label.sky {
     fill: #5b7697;
   }
+  .fog {
+    opacity: 0.74;
+    pointer-events: none;
+  }
+  .light {
+    pointer-events: none;
+  }
+  .light.glow {
+    animation: pulse 2.8s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 0.55;
+      transform: scale(0.9);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+  }
   .vein {
-    fill-opacity: 0.1;
+    fill-opacity: 0.22;
     stroke: none;
   }
   .strata {
     fill: none;
     stroke: #c9d2dc;
-    stroke-opacity: 0.07;
+    stroke-opacity: 0.18;
     stroke-width: 0.8;
     vector-effect: non-scaling-stroke;
   }

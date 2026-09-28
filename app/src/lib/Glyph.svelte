@@ -30,8 +30,10 @@
   const flame = $derived(campfire ? campfireBrightness(shrine.campfire?.since ?? null, now) : 0);
   /** Halo radius for the selection ring and the dashed "not committed" outline. */
   const halo = $derived(shrine.kind === 'tower' ? 14 : shrine.kind === 'temple' ? 12 : 9.5);
+  /** Silhouettes too faint to name show "???" (§6.2). */
+  const name = $derived(shrine.titleKnown ? shrine.title : '???');
   const tooltip = $derived(
-    [shrine.title, regionName, campfire && shrine.campfire?.note ? `Campfire: ${shrine.campfire.note}` : '', uncommitted ? 'Cleared, not committed yet' : '']
+    [name, regionName, campfire && shrine.campfire?.note ? `Campfire: ${shrine.campfire.note}` : '', uncommitted ? 'Cleared, not committed yet' : '']
       .filter(Boolean)
       .join(' · '),
   );
@@ -53,7 +55,7 @@
   style:--c={colour}
   role="button"
   tabindex="0"
-  aria-label="{shrine.title}, {regionName}, {shrine.status.replace('-', ' ')}"
+  aria-label="{name}, {regionName}, {shrine.visibility === 'revealed' ? shrine.status.replace('-', ' ') : 'seen from afar'}"
   aria-pressed={selected}
   onclick={() => onselect?.(shrine.id)}
   {onkeydown}
@@ -61,7 +63,10 @@
   <title>{tooltip}</title>
   {#if selected}<circle class="select-ring" r={halo + 3} />{/if}
   {#if uncommitted}<circle class="pending" r={halo} />{/if}
-  {#if shrine.layer === 'depths'}
+  {#if shrine.layer === 'depths' && state === 'silhouette'}
+    <!-- A glow: something down here, lit faintly from above (§6.4) -->
+    <circle class="glow-point" r="2.6" />
+  {:else if shrine.layer === 'depths'}
     <!-- Lightroot: starburst -->
     <polygon
       class="lightroot"
@@ -82,6 +87,14 @@
     <!-- Shrine: rotated square with an inner dot -->
     <rect class="body" x="-4.6" y="-4.6" width="9.2" height="9.2" transform="rotate(45)" />
     <circle class="dot" r="1.6" />
+  {/if}
+  {#if shrine.marks.chasm}
+    <!-- Chasm: an opening beside a shrine whose lightroot glows below (§6.4) -->
+    <path class="chasm" d="M-13.5,6.5 C-11.5,4.6 -8.5,4.4 -6.5,6.2 C-8.6,7.6 -11.4,7.8 -13.5,6.5 Z" />
+  {/if}
+  {#if shrine.marks.draft && state !== 'silhouette'}
+    <!-- Updraft: a launch point to a sky shrine (§6.3) -->
+    <path class="draft" d="M-13,-6 l2.2,-2.4 l2.2,2.4 M-13,-10 l2.2,-2.4 l2.2,2.4" />
   {/if}
   {#if campfire}
     <!-- Campfire: a small flame that fades over 14 days since it was last fed (§10.1) -->
@@ -185,11 +198,37 @@
     stroke: var(--sky-ink);
   }
 
-  /* Depths */
+  /* Depths: glows are faint points; revealed lightroots are dim until cleared, then bright nodes (§9.3) */
   .lightroot {
     fill: var(--c, #fff);
     stroke: rgba(255, 255, 255, 0.7);
     stroke-width: 0.6;
+  }
+  .depths.revealed .lightroot {
+    fill-opacity: 0.45;
+  }
+  .depths.cleared .lightroot {
+    stroke: #fff;
+    stroke-width: 1;
+    filter: drop-shadow(0 0 3px var(--c, #fff));
+  }
+  .glow-point {
+    fill: var(--c, #fff);
+    opacity: 0.85;
+  }
+
+  /* Surface markers */
+  .chasm {
+    fill: #2b2216;
+    opacity: 0.55;
+  }
+  .draft {
+    fill: none;
+    stroke: var(--sky-ink);
+    stroke-width: 1.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.8;
   }
 
   .glyph:hover .body,

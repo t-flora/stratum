@@ -22,6 +22,7 @@
   const counts = $derived({
     cleared: map?.shrines.filter((s) => s.status === 'cleared').length ?? 0,
     campfires: map?.shrines.filter((s) => s.status === 'in-progress').length ?? 0,
+    inSight: map?.shrines.filter((s) => s.visibility !== 'hidden').length ?? 0,
   });
 
   /** Select a shrine (or close the panel). Following a chip to another layer switches layers. */
@@ -79,8 +80,8 @@
     <div class="spacer"></div>
     {#if map}
       <span class="readout">
-        {counts.cleared} cleared · {counts.campfires} campfire{counts.campfires === 1 ? '' : 's'} · {map.shrines.length} shrines · atlas
-        view (all revealed)
+        {counts.cleared} cleared · {counts.campfires} campfire{counts.campfires === 1 ? '' : 's'} ·
+        {counts.inSight} of {map.shrines.length} in sight
       </span>
     {/if}
   </header>

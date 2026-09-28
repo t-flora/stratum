@@ -91,6 +91,8 @@ program
       `${work.filter((w) => w.status === 'cleared').length} cleared${uncommitted ? ` (${uncommitted} not committed)` : ''}, ` +
         `${work.filter((w) => w.status === 'in-progress').length} in progress`,
     );
+    const vis = res.map.shrines.map((s) => s.visibility);
+    console.log(`${vis.filter((v) => v === 'revealed').length} revealed, ${vis.filter((v) => v === 'silhouette').length} silhouettes, ${vis.filter((v) => v === 'hidden').length} hidden`);
     console.log(`wrote ${MAP_PATH} in ${Math.round(performance.now() - t0)} ms`);
   });
 
@@ -140,7 +142,7 @@ function printChecklist(checks: ClearCheck[]) {
 program
   .command('start <id>')
   .description('Scaffold work/<id>/ from a template and light a campfire')
-  .option('--force', 'start a locked temple anyway')
+  .option('--force', 'start a hidden shrine or a locked temple anyway')
   .option('--template <name>', `template to scaffold: ${TEMPLATES.join(' | ')} (default: by region)`)
   .action((id: string, opts: { force?: boolean; template?: string }) => {
     const dir = root();
@@ -151,8 +153,18 @@ program
       process.exitCode = 1;
       return;
     }
-    const work = readWorkState(dir, world, loadConfig(dir));
-    const res = startShrine(dir, world, work, id, { force: opts.force, template: opts.template as TemplateName | undefined });
+    // Visibility needs positions and geometry, so run the build pipeline without writing anything.
+    const built = build(dir, { write: false });
+    if (!built.map || !built.work) {
+      printDiagnostics(built.diagnostics);
+      console.log('build failed; run `stratum build`');
+      process.exitCode = 1;
+      return;
+    }
+    const visibility = new Map(built.map.shrines.map((s) => [s.id, s.visibility]));
+    const res = startShrine(dir, world, built.work, id, {
+      force: opts.force, template: opts.template as TemplateName | undefined, visibility,
+    });
     if (res.outcome === 'refused') {
       console.log(`can't start ${id}: ${res.reason}`);
       process.exitCode = 1;

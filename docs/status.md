@@ -10,49 +10,42 @@
 | (extra) `x86` tag, `stratum setup`, `stratum.local.yaml` | ✅ done | `91bf5e9` |
 | M1: geometry, placement, lockfile, static 3-layer map | ✅ done, reviewed | `56d05fa` |
 | (M1 revision) themes, follow-ups, archipelagos, depths territory | ✅ done, **awaiting review of drafted content** | `564188b` |
-| M2: work state (`start`, `clear`, WRITEUP, git touches, campfires, detail panel) | 🟡 implemented, **unverified: needs `npm install`, tests, typecheck and a visual check** (see below), then review | this branch |
-| M3: visibility (triangle rule) | not started, waits for M2 review | |
+| M2: work state (`start`, `clear`, WRITEUP, git touches, campfires, detail panel) | ✅ done, verified by Tiago | `6d2ef39` |
+| M3: visibility (triangle rule) | 🟡 implemented, **unverified here** (see below), awaiting review | on `main` |
 | M4: Horizon, pins, dev API, SSE | not started | |
 | M5: Hero's Path, hours, polish, Atlas mode, static build | not started | |
 
 **Acceptance evidence:**
-- M0 and M1 criteria are covered by tests in `core/test/` (44 tests). M2 adds 20 in `core/test/work.test.ts`.
+- M0 and M1 criteria are covered by tests in `core/test/` (44 tests). M2 adds 21 in `core/test/work.test.ts`, M3 adds 17 in `core/test/visibility.test.ts`.
 - `stratum lint` on the seed reports 217 entries and 22 regions, with 0 errors and 0 warnings.
 - Placement needs no spacing relaxation.
 
 ## Open items waiting on Tiago
 
-1. **Review the drafted `theme` and `after` content** in `world/world-seed.yaml` (see `git show 564188b -- world/world-seed.yaml`). There are 136 themed shrines (3–4 themes per region) and 42 follow-up edges. He may rename, regroup or relink freely.
-2. **Regenerating the lockfile after his edits.** Once he's edited themes, offer to regenerate it so the layout follows his edits. That's safe only while no shrine has been started or cleared. Otherwise, new or changed themes get new anchors and locked shrines stay put.
+1. **The §6.2 visibility rule** (see M3 below and `docs/decisions.md`).
+2. **Review the drafted `theme` and `after` content** in `world/world-seed.yaml` (see `git show 564188b -- world/world-seed.yaml`). There are 136 themed shrines (3–4 themes per region) and 42 follow-up edges. He may rename, regroup or relink freely.
+3. **Regenerating the lockfile after his edits.** Once he's edited themes, offer to regenerate it so the layout follows his edits. That's safe only while no shrine has been started or cleared. Otherwise, new or changed themes get new anchors and locked shrines stay put.
 
-## M2: what was built and what still needs checking
+## M3: what was built and what still needs checking
 
-Built in the cloud session on branch `claude/eager-sagan-rj0gm3`. That environment's network policy blocked the npm registry, so **no dependency could be installed**. `npm test`, `npm run typecheck`, `stratum` itself and the app were never run there.
+Built in a cloud session whose network policy blocks the npm registry, so `npm test`, `npm run typecheck`, the CLI and the app weren't run there. What did run, under Node's built-in TypeScript support with scratch shims: 16 of 17 tests in `core/test/visibility.test.ts` and all 21 in `core/test/work.test.ts`. The one skipped visibility test (a fresh repo on the tiny fixture with real geometry) needs the real `yaml` and `simplex-noise`.
 
-**What was verified.** `core/test/work.test.ts` (20 tests) ran under Node's built-in TypeScript support with small scratch shims for `vitest` and `gray-matter` and a JSON copy of `fixtures/tiny`. All 20 passed. That covers the clear checks, frontmatter stamping, start/clear against a temp world, temples, and committed/touches against a real temp git repo. Not exercised: `build()` and map.json (the test's `mapShrine` helper), the real `yaml`/`gray-matter` packages, the CLI, and all Svelte code.
+**Review first: a spec conflict.** The §6.2 formulas contradict §6.2's own narrative and the M3 acceptance tests. I followed the tests: only an unobstructed line reveals, and peeking over a ridge needs `p > H`. Details and a one-line alternative are in `docs/decisions.md` under M3.
 
-**To do on the Mac before review:**
-1. `npm install`. `app/package.json` gained `markdown-it`, `highlight.js` and `@types/markdown-it`, so this updates `package-lock.json` (commit it).
-2. `npm test` and `npm run typecheck`. Fix anything that surfaces.
-3. Walk the acceptance criteria by hand on a scratch shrine, then remove it:
-   - `npm run stratum -- start spsc-ring-buffer`: this should scaffold `work/spsc-ring-buffer/` (cpp).
-   - `npm run dev`: a flame shows on the Atomic Steppes (`?select=spsc-ring-buffer` opens the panel).
-   - `npm run stratum -- clear spsc-ring-buffer` should fail with a checklist. Fill in the write-up and add a file, and it should clear.
-   - After a rebuild the glyph is filled with a dashed halo (not committed yet). After committing and rebuilding, the halo goes.
-   - Don't commit the scratch shrine unless Tiago wants to keep it.
+**To do on the Mac:**
+1. `npm test` and `npm run typecheck`.
+2. `npm run dev` and look at each layer: fog over most of the surface, the plateau clear around the start vantage, towers as silhouettes, sky shrines as grey rings, the depths black. (`?select=<id>` on a silhouette shows the "seen from afar" panel.)
+3. `npm run stratum -- start <some hidden id>` should refuse; `--force` overrides.
 
-**What M2 added:**
-- `templates/`: WRITEUP.md, NEXT.md, and the cpp and python stubs.
-- `core/src/clear.ts` (pure): sections, word count, `validateClear`, `setFrontmatter`, template choice.
-- `core/src/git.ts`: a `GitReader` interface, a real reader, and the log parser.
-- `core/src/work.ts`: scanning `work/`, `deriveWorkState`, `startShrine`, `clearShrine`, `lintClears`.
-- CLI: `start`, `clear` and `status`. `build` prints clear and campfire counts, and `lint` warns on invalid clears.
-- App: campfire flames with a 14-day fade, dashed halos for uncommitted clears, a selection ring, `DetailPanel.svelte` (with markdown-it and highlight.js), and `?select=<id>`.
-- Choices are recorded in `docs/decisions.md` under M2.
+**What M3 added:**
+- `core/src/visibility.ts`: `maxRidgeCrossed`, `computeVisibility` (§6.1–6.4 with the overrides), `titleKnown`.
+- map.json: `sight` (vantages, fog radii, depths lights), `surveyed`, `titleKnown`, `marks`.
+- App: the fog mask, depths masked to light, glow points, chasm and updraft markers, and "???" for faint silhouettes; the panel hides what you can't know yet.
+- `stratum start` refuses hidden shrines; `stratum build` prints revealed/silhouette/hidden counts.
 
-## Next: M3 (after M2 review)
+## Next: M4 (after M3 review)
 
-DESIGN.md §6 in full, as pure functions in core: fog, silhouettes, sky launch points, depths light and glows, and towers. Wire `visibility` into map.json, make `stratum start` refuse hidden shrines without `--force` (a TODO in `work.ts`), and mask the depths terrain to the light circles.
+DESIGN.md §7 and §11: the Horizon (three slots with their fallbacks, ISO-week stability, hardware filter), pins (`state/pins.yaml`, `stratum pin`), `stratum horizon`, the Horizon panel, the dev API (`/api/map`, `/api/start`, `/api/pin`) and SSE live reload with a file watcher.
 
 ## Known limitations and TODOs
 
@@ -62,4 +55,4 @@ DESIGN.md §6 in full, as pure functions in core: fog, silhouettes, sky launch p
 - **Cross-region `after` edges don't affect placement.** They're intended as a Horizon signal in M4.
 - **Stale lockfile entries** (removed ids) are kept on purpose; see decisions.
 - **Island ground shadows** on the surface are drawn from the archipelago outlines and look blotchy. This is cosmetic, to polish in M5.
-- **Atlas view for now.** Everything renders revealed (M1 atlas view) until M3 lands. The depths terrain is drawn dimly everywhere; M3 must mask it to light circles.
+- **No Atlas mode yet** (M5). Since M3 the map always applies the triangle rule; there's no reveal-all view for reviewing the world.

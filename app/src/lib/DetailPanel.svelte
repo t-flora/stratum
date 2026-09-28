@@ -65,7 +65,11 @@
     copyTimer = setTimeout(() => (copied = null), 1500);
   }
 
-  const chipLabel = (s: MapShrine) => (s.visibility === 'hidden' ? '???' : s.title);
+  /** A silhouette shows its glyph, size and region, not its prompt; its title only if p is high enough (§6.2). */
+  const seen = $derived(shrine.visibility === 'revealed');
+  /** From afar you learn nothing about connections, except a sealed temple's trail (its constellation, §5.2). */
+  const shownRelations = $derived(seen ? relations : shrine.kind === 'temple' ? relations.filter((g) => g.label === 'Needs') : []);
+  const chipLabel = (s: MapShrine) => (s.visibility !== 'hidden' && s.titleKnown ? s.title : '???');
 </script>
 
 <aside class="panel" aria-label="Shrine details">
@@ -73,7 +77,7 @@
     <div class="eyebrow">
       {LAYER_NAME[shrine.layer]} · {regionName.get(shrine.region) ?? shrine.region}{shrine.theme ? ` · ${shrine.theme}` : ''}
     </div>
-    <h2>{shrine.title}</h2>
+    <h2>{shrine.titleKnown ? shrine.title : '???'}</h2>
     <button class="close" onclick={onclose} aria-label="Close details" title="Close (Esc)">×</button>
     <div class="tags">
       {#if shrine.kind !== 'shrine'}<span class="tag kind">{shrine.kind}</span>{/if}
@@ -101,19 +105,30 @@
     {/if}
   </section>
 
-  <section>
-    <h3>Build</h3>
-    <p class="prose">{@html renderInline(shrine.prompt)}</p>
-  </section>
-
-  <section class="done">
-    <h3>Done when</h3>
-    <p class="prose">{@html renderInline(shrine.done)}</p>
-  </section>
-
-  {#if relations.length}
+  {#if seen}
     <section>
-      {#each relations as g (g.label)}
+      <h3>Build</h3>
+      <p class="prose">{@html renderInline(shrine.prompt)}</p>
+    </section>
+
+    <section class="done">
+      <h3>Done when</h3>
+      <p class="prose">{@html renderInline(shrine.done)}</p>
+    </section>
+  {:else}
+    <section class="afar">
+      <p>
+        {shrine.layer === 'depths' ? 'A faint glow in the dark.' : 'Seen from afar.'}
+        {shrine.kind === 'temple' && shrine.needs.some((n) => byId.get(n)?.status !== 'cleared')
+          ? 'The temple is sealed until its trail is cleared.'
+          : 'Set out to find out what it asks.'}
+      </p>
+    </section>
+  {/if}
+
+  {#if shownRelations.length}
+    <section>
+      {#each shownRelations as g (g.label)}
         <div class="rel">
           <h4>{g.label}</h4>
           <div class="chips">
@@ -250,6 +265,11 @@
   }
   .done .prose {
     font-weight: 500;
+  }
+  .afar p {
+    margin: 0;
+    color: var(--ui-muted);
+    font-style: italic;
   }
 
   .status {

@@ -73,3 +73,22 @@ Added after the M1 review, at Tiago's request. These extend DESIGN.md §4.2 and 
 - **Detail panel.** Opens on click (or Tab + Enter), closes on Escape or a click on open ground. `?select=<id>` opens it on load. Relation chips cover above/below, launch points, links (both directions), needs, follow-ups and the proposer; following one switches layer. Chips to hidden shrines will show "???" once M3 hides things. The panel also has copy buttons for the work path and the next command (`stratum start` / `stratum clear`). Set out and Pin are M4.
 - **Markdown.** markdown-it with `html: false`, and highlight.js `common` (cpp, c, python, bash, json, yaml, …) plus x86asm and armasm, with `cuda` aliased to cpp. Prompt and `done` text render as inline Markdown. Relative images in write-ups don't load yet (nothing serves `work/`).
 - **`stratum status`** (§11) is included, since it only needs derived state: counts per layer, regions with activity, campfires and uncommitted clears.
+
+## M3
+
+- **The §6.2 formulas vs. its narrative and tests (needs Tiago's review).** As written, "revealed if `p > H`, silhouette if `p ≥ H`" makes a p=2 shrine behind a default ridge (h=2) a *silhouette*, and a p=3 shrine *revealed* within R(3). The narrative ("ordinary p=2 shrines in the next region are hidden… only landmarks (p≥3) peek over it, as silhouettes") and the §13 M3 acceptance tests say hidden and silhouette. Implemented, to match the narrative and tests:
+  - **revealed** if `d ≤ R(p)` and the line is unobstructed (effective `H = 0`);
+  - **silhouette** if `d ≤ 1.6·R(p)` and `p > H`;
+  - a cleared tower still uses `R(p) + 300` and `H − 2`, so it reveals across an h=2 ridge and lets p≥3 peek over an h=4 one.
+  
+  Consequence: nothing across a ridge is ever revealed by ordinary sight, however prominent; you walk over, or climb a tower. If Tiago prefers "revealed if `p > H + 1`" (so p≥4 landmarks reveal across a default ridge), it's a one-line change in `surfaceSight`.
+- **Sea on a sight line** is skipped: H compares the regions on either shore, so looking across a bay still crosses their ridge.
+- **Vantages.** Start vantage, active (cleared or in-progress) surface shrines, and cleared towers with the bonus. An in-progress tower is an ordinary vantage. Plateau shrines are revealed but aren't vantages.
+- **Overrides** apply in the §6.2 order, so a `--force`-started temple with unmet needs stays a silhouette.
+- **Terrain is injected.** `computeVisibility` takes a `Terrain` (`regionAt`, `ridgeHeight`). `Geometry` satisfies it, so rendering, placement and line of sight share one classifier; tests use synthetic bands.
+- **map.json** gains `sight` (surface vantages and fog radii; depths lights and glows with their radii), `surveyed` on regions, and per shrine `titleKnown` and `marks` (`chasm` beside an active shrine with lightroots below it, `draft` on a launch point to a sky shrine). The app still receives every shrine, including hidden ones, and filters; Atlas mode (M5) needs them.
+- **Fog** is a soft-edged mask: land outside every vantage's R(2) (R(2) + 300 for cleared towers) and outside surveyed regions gets a grey paper wash at 74% opacity. The coastline draws over it; silhouettes draw over it.
+- **Depths.** Terrain (vein territories, strata) is masked to light circles (220 around cleared lightroots) and glows (40 under active surface shrines). Glowing lightroots render as small points with a pulsing halo, revealed ones as dim starbursts, cleared ones bright.
+- **Silhouettes in the UI.** "???" for titles when p < 3, in tooltips, labels, chips and the panel. The panel hides the prompt, `done` and relations for silhouettes, except that a sealed temple shows its `needs` (the constellation of §5.2, in the panel rather than on the map). Theme labels appear once a member is revealed.
+- **`stratum start`** now refuses hidden shrines without `--force`; silhouettes may be started (§6.2). It runs the build pipeline without writing to get visibility.
+- **Search (§6.5)** isn't built yet; there's no search box. It belongs with the top-bar work in M5.

@@ -165,6 +165,13 @@ describe('start and clear (§13 M2)', () => {
     expect(startShrine(dir, world, work(), 'a-one')).toMatchObject({ outcome: 'already', status: 'in-progress' });
   });
 
+  it('refuses a hidden shrine unless forced; a silhouette may be started', () => {
+    const visibility = new Map([['c-one', 'hidden' as const], ['b-two', 'silhouette' as const]]);
+    expect(startShrine(dir, world, work(), 'c-one', { visibility })).toMatchObject({ outcome: 'refused' });
+    expect(startShrine(dir, world, work(), 'b-two', { visibility })).toMatchObject({ outcome: 'started' });
+    expect(startShrine(dir, world, work(), 'c-one', { visibility, force: true })).toMatchObject({ outcome: 'started' });
+  });
+
   it('refuses a locked temple unless forced', () => {
     expect(startShrine(dir, world, work(), 'temple-x')).toMatchObject({ outcome: 'refused' });
     expect(startShrine(dir, world, work(), 'temple-x', { force: true })).toMatchObject({ outcome: 'started' });

@@ -4,6 +4,7 @@ import type { MapData, MapGeometry, MapShrine, MapTheme, MultiPolygon } from './
 import { themeKey, themesByRegion } from './placement.ts';
 import { hash32, mulberry32 } from './prng.ts';
 import type { Region, Vec2, World } from './types.ts';
+import { sightRadius, titleKnown, type VisibilityConfig, type VisibilityResult } from './visibility.ts';
 import type { ShrineWork } from './work.ts';
 
 /** Grid step (world units) for region outlines and ridges. */
@@ -212,17 +213,34 @@ function depthsTerrain(world: World, geo: Geometry, positions: Map<string, Vec2>
   return { veins, strata };
 }
 
-/** Assemble map.json. Every shrine is still revealed; visibility arrives in M3. */
+/** Visibility and derived state for buildMapData. Without it every shrine is revealed (tests, atlas). */
+export interface MapState {
+  work: Map<string, ShrineWork>;
+  sight: VisibilityResult;
+  config: VisibilityConfig;
+}
+
+/** Assemble map.json. */
 export function buildMapData(
   world: World, geo: Geometry, positions: Map<string, Vec2>, anchors: Map<string, Vec2> = new Map(),
-  work: Map<string, ShrineWork> = new Map(), builtAt = Date.now(),
+  state: MapState | null = null, builtAt = Date.now(),
 ): MapData {
+  const work = state?.work ?? new Map<string, ShrineWork>();
+  const active = (id: string) => (work.get(id)?.status ?? 'untouched') !== 'untouched';
+  const skyIds = new Set(world.shrines.filter((s) => s.layer === 'sky').map((s) => s.id));
   const shrines: MapShrine[] = world.shrines.map((s) => {
     const w = work.get(s.id);
+    const visibility = state?.sight.visibility.get(s.id) ?? 'revealed';
+    const marks: MapShrine['marks'] = {};
+    if (s.layer === 'surface') {
+      if (active(s.id) && world.shrines.some((d) => d.below === s.id)) marks.chasm = true;
+      if (s.links.some((l) => skyIds.has(l)) || world.shrines.some((o) => o.layer === 'sky' && o.links.includes(s.id))) marks.draft = true;
+    }
     const out: MapShrine = {
       id: s.id, title: s.title, region: s.region, layer: s.layer, kind: s.kind, p: s.p, size: s.size,
       requires: s.requires, after: s.after, links: s.links, needs: s.needs, prompt: s.prompt, done: s.done,
-      xy: positions.get(s.id)!, status: w?.status ?? 'untouched', visibility: 'revealed',
+      xy: positions.get(s.id)!, status: w?.status ?? 'untouched', visibility,
+      titleKnown: state ? titleKnown(visibility, s.p, state.config) : true, marks,
       committed: w?.committed ?? false, touches: w?.touches ?? [], remnote: w?.remnote ?? 0,
     };
     if (s.below) out.below = s.below;
@@ -250,10 +268,30 @@ export function buildMapData(
     builtAt,
     canvas: world.canvas,
     start: world.start,
-    regions: world.regions.map((r) => ({ ...r })),
+    regions: world.regions.map((r) => (state?.sight.surveyed.has(r.id) ? { ...r, surveyed: true } : { ...r })),
     shrines,
     themes,
+    sight: buildSight(world, positions, state),
     geometry: buildGeometry(world, geo, positions),
   };
 }
 
+
+function buildSight(world: World, positions: Map<string, Vec2>, state: MapState | null): MapData['sight'] {
+  const cfg = state?.config;
+  const fogRadius = cfg ? sightRadius(cfg, 2) : 0;
+  const lights: MapData['sight']['lights'] = [];
+  for (const s of world.shrines) {
+    if (s.layer !== 'depths' || !state) continue;
+    const kind = state.sight.lit.has(s.id) ? 'light' : state.sight.glowing.has(s.id) ? 'glow' : null;
+    if (kind) lights.push({ xy: positions.get(s.id)!, region: s.region, kind });
+  }
+  return {
+    vantages: state ? state.sight.vantages.map((v) => ({ xy: v.xy, tower: v.tower })) : [],
+    fogRadius,
+    towerFogRadius: cfg ? fogRadius + cfg.towerRadiusBonus : 0,
+    lights,
+    lightRadius: cfg?.lightRadius ?? 0,
+    glowRadius: cfg?.glowRadius ?? 0,
+  };
+}
