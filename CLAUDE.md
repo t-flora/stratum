@@ -1,0 +1,76 @@
+# Stratum: agent onboarding
+
+Stratum is a personal study map: a three-layer world (sky, surface, depths) of "shrines", each a small implementation plus a write-up, rendered *from this repo's files and git history*. The owner is Tiago (tiagomflora@gmail.com).
+
+## Read first, in this order
+
+1. **`docs/status.md`** covers where the project is: milestones done, open review items, and what to do next.
+2. **`DESIGN.md`** is the spec. §0 (constraints) and §13 (milestones) are mandatory reading. Treat it as authoritative except where `docs/decisions.md` extends it.
+3. **`docs/decisions.md`** records every choice made where DESIGN.md is silent, plus agreed extensions (`theme`, `after`, archipelagos, the `x86` tag). Add a bullet there for any new choice.
+
+## Working agreements (from Tiago)
+
+- **Stop for review at the end of every milestone** (DESIGN.md §13). Tiago explicitly wants these reviews. Don't roll into the next milestone without one.
+- **Hard constraints (DESIGN.md §0).** Never trade these away:
+  - The repo is the only source of truth: no database, no browser storage.
+  - Clearing requires artefacts: nothing in the UI clears a shrine by click.
+  - The triangle rule: the map never shows everything, except in Atlas mode.
+  - Positions never change once assigned.
+- **The world content is Tiago's.** Don't rewrite `world/world-seed.yaml` prose. Adding structural fields (tags, `theme`, `after`) requires his approval; the current drafts are pending his review (see status).
+- **`world/positions.lock.json` is committed and sacred.** Only regenerate it (delete and rebuild) with explicit approval, and never once any shrine has been started or cleared. Use `stratum build --replace <id>` for single moves.
+- **Commits:** only when asked. End commit messages with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Work on `main` unless told otherwise.
+- **Visual design must be original.** No Nintendo assets, names, fonts or the Sheikah eye.
+- **Hardware:** the dev machine is an Apple M2 Mac, and x86 work runs on a separate Linux server. Each machine runs `npm run stratum -- setup` once, which writes a gitignored `stratum.local.yaml` (Mac: `[arm, llm-api]`).
+
+## Commands
+
+```sh
+npm install                      # workspaces: core, cli, app
+npm test                         # vitest (all core tests; pure functions of world/state/config)
+npm run typecheck                # tsc (core+cli) and svelte-check (app)
+npm run stratum -- lint          # validate world + write-ups + config
+npm run stratum -- build         # place shrines (respects lockfile) → build/map.json
+npm run stratum -- setup         # one-time per machine: detect hardware tags
+npm run dev                      # build, then Vite at http://127.0.0.1:5173
+scripts/screenshot.sh sky 1      # headless screenshot of the running dev server → build/debug/sky-1.png
+```
+
+URL params: `?layer=sky|surface|depths`, `?zoom=<k>`. The CLI takes `--root <dir>` to point at another world, for example `fixtures/tiny`.
+
+To check UI work visually, run `npm run dev` in the background, run `scripts/screenshot.sh <layer> <zoom>`, and read the PNG. It lands under `build/` on purpose, since reads outside the repo may be blocked.
+
+## Repo map
+
+```
+core/src/          all game logic; pure TS, no DOM. Imported by cli and (types only) by app
+  types.ts         World/Shrine/Region/Diagnostic types, tag enums
+  loader.ts        YAML → World with file:line:col diagnostics (all §4.2 validation)
+  config.ts        stratum.config.yaml + stratum.local.yaml layering
+  hardware.ts      hardware-tag detection (probe injected for tests)
+  writeup.ts       WRITEUP.md frontmatter parsing and work/ folder lint
+  geometry.ts      landmass, warped region classifier (2-unit grid), adjacency, elevation, noise
+  placement.ts     §8.3 placement + theme anchors + follow-ups + lockfile I/O
+  export.ts        map.json geometry: region outlines, ridges, contours, archipelagos, depths territory
+  mapdata.ts       the map.json contract (types only; the app imports this via @stratum/core/mapdata)
+  build.ts         load → validate → place → export pipeline; lintGeometry
+cli/index.ts       commander CLI: lint, build, dev, setup (setup.ts has the real hardware probe)
+app/src/           Svelte 5 + Vite renderer of build/map.json (MapView.svelte, Glyph.svelte)
+world/             world-seed.yaml (content), proposed.yaml, positions.lock.json (committed)
+fixtures/          tiny/ (clean 3-region world), planted-errors/ (lint test)
+state/pins.yaml    map pin (M4)
+docs/              status.md, decisions.md
+```
+
+## Architecture rules
+
+- **The app is a pure renderer of `build/map.json`.** Game logic (visibility, Horizon, clear validation) goes in `core/` as pure functions with vitest tests.
+- **The app must only `import type` from `@stratum/core/mapdata`.** The core index pulls in `node:fs`.
+- **Geometry and placement are deterministic** from `(world, config.world.seed, lockfile)`. Don't use `Math.random`; use `mulberry32(hash32(key))` from `prng.ts`.
+- **One classifier.** Rendering, placement and line-of-sight must all use the same `Geometry` instance methods (`regionAt`, `classify`).
+
+## Gotchas
+
+- **Two TypeScripts.** Root TypeScript is 7.x (`tsc`). The app pins TS 6 because svelte-check needs the JS API. Both are intended.
+- **d3-contour** puts value `i` at coordinate `i + 0.5`. `export.ts` maps back with `(c − 0.5)·step`.
+- **npm may warn about esbuild/fsevents install scripts.** Vite works regardless.
+- **If a workspace dependency install silently doesn't land,** rerun `npm i -w <workspace> <pkg>` and check that workspace's package.json.
