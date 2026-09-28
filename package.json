@@ -4,12 +4,14 @@
   "type": "module",
   "workspaces": [
     "core",
-    "cli"
+    "cli",
+    "app"
   ],
   "scripts": {
     "stratum": "tsx cli/index.ts",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit && npm run -w @stratum/app check",
+    "dev": "tsx cli/index.ts dev"
   },
   "engines": {
     "node": ">=20"

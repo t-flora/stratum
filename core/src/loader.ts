@@ -204,7 +204,7 @@ export function parseWorld(seedSrc: Source, proposedSrc?: Source): LoadResult {
         const key = [a, b].sort().join('|');
         if (seen.has(key)) seed.report('warning', 'duplicate-ridge', `duplicate ridge override for ${a}/${b} (first at line ${seed.lineOf(seen.get(key))}); the last one wins`, item);
         seen.set(key, item);
-        if (ok) ridges.overrides.push({ between: [a, b], h: o.h });
+        if (ok) ridges.overrides.push({ between: [a, b], h: o.h, line: seed.lineOf(item) });
       }
     } else if (ov) seed.report('error', 'schema', 'ridges.overrides must be a list', ov);
   } else if (ridgesNode) seed.report('error', 'schema', '`ridges` must be a mapping', ridgesNode);

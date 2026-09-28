@@ -3,7 +3,8 @@ import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { Command } from 'commander';
 import {
-  CONFIG_PATH, LAYERS, LOCAL_CONFIG_PATH, hasLocalConfig, lintWorkFolders, loadConfig, loadWorld, summarize, validateConfig,
+  CONFIG_PATH, Geometry, LAYERS, LOCAL_CONFIG_PATH, LOCK_PATH, MAP_PATH, build, hasLocalConfig, lintGeometry, lintWorkFolders,
+  loadConfig, loadWorld, summarize, validateConfig,
   type Diagnostic,
 } from '@stratum/core';
 import { setup } from './setup.ts';
@@ -29,6 +30,14 @@ const program = new Command()
   .description('A three-layer exploration map for deep technical study')
   .option('--root <dir>', 'repo root (default: nearest ancestor containing world/world-seed.yaml)');
 
+function printDiagnostics(diagnostics: Diagnostic[]) {
+  const byLocation = (a: Diagnostic, b: Diagnostic) => a.file.localeCompare(b.file) || (a.line ?? 0) - (b.line ?? 0);
+  const errors = diagnostics.filter((d) => d.severity === 'error').sort(byLocation);
+  const warnings = diagnostics.filter((d) => d.severity === 'warning').sort(byLocation);
+  for (const d of [...errors, ...warnings]) console.log(formatDiagnostic(d));
+  return { errors, warnings };
+}
+
 const root = () => (program.opts().root as string | undefined) ?? findRoot();
 
 program
@@ -37,15 +46,14 @@ program
   .action(() => {
     const dir = root();
     const { world, diagnostics } = loadWorld(dir);
+    const config = loadConfig(dir);
     if (world) diagnostics.push(...lintWorkFolders(dir, world));
+    if (world && !diagnostics.some((d) => d.severity === 'error')) diagnostics.push(...lintGeometry(world, new Geometry(world, config.world.seed)));
     const configFile = hasLocalConfig(dir) ? LOCAL_CONFIG_PATH : CONFIG_PATH;
-    for (const message of validateConfig(loadConfig(dir))) {
+    for (const message of validateConfig(config)) {
       diagnostics.push({ severity: 'error', code: 'config', message, file: configFile });
     }
-    const errors = diagnostics.filter((d) => d.severity === 'error');
-    const warnings = diagnostics.filter((d) => d.severity === 'warning');
-    const byLocation = (a: Diagnostic, b: Diagnostic) => a.file.localeCompare(b.file) || (a.line ?? 0) - (b.line ?? 0);
-    for (const d of [...errors.sort(byLocation), ...warnings.sort(byLocation)]) console.log(formatDiagnostic(d));
+    const { errors, warnings } = printDiagnostics(diagnostics);
     if (world) {
       const s = summarize(world);
       if (diagnostics.length) console.log('');
@@ -58,6 +66,49 @@ program
     console.log(`${errors.length} error(s), ${warnings.length} warning(s)`);
     if (!hasLocalConfig(dir)) console.log(`note: no ${LOCAL_CONFIG_PATH} on this machine; run \`stratum setup\` to detect available hardware`);
     process.exitCode = errors.length ? 1 : 0;
+  });
+
+program
+  .command('build')
+  .description(`Place shrines (respecting ${LOCK_PATH}) and write ${MAP_PATH}`)
+  .option('--replace <ids...>', 'deliberately re-place these shrines')
+  .action((opts: { replace?: string[] }) => {
+    const t0 = performance.now();
+    const res = build(root(), { replace: opts.replace });
+    const { errors } = printDiagnostics(res.diagnostics);
+    if (!res.map || errors.length) {
+      console.log(`build failed: ${errors.length} error(s)`);
+      process.exitCode = 1;
+      return;
+    }
+    const p = res.placement!;
+    for (const r of p.relaxed) console.log(`note: ${r.id} placed with relaxed spacing ${r.spacing}`);
+    console.log(`placed ${p.placed.length} new shrine(s); ${res.lockChanged ? `updated ${LOCK_PATH}` : 'lockfile unchanged'}`);
+    console.log(`wrote ${MAP_PATH} in ${Math.round(performance.now() - t0)} ms`);
+  });
+
+program
+  .command('dev')
+  .description('Build, then serve the map with Vite on localhost')
+  .option('--port <n>', 'port', '5173')
+  .action(async (opts: { port: string }) => {
+    const dir = root();
+    const res = build(dir);
+    const { errors } = printDiagnostics(res.diagnostics);
+    if (errors.length) {
+      console.log(`build failed: ${errors.length} error(s)`);
+      process.exitCode = 1;
+      return;
+    }
+    process.env.STRATUM_ROOT = dir;
+    const { createServer } = await import('vite');
+    const appDir = join(dirname(new URL(import.meta.url).pathname), '..', 'app');
+    const server = await createServer({
+      configFile: join(appDir, 'vite.config.ts'),
+      server: { host: '127.0.0.1', port: Number(opts.port) },
+    });
+    await server.listen();
+    server.printUrls();
   });
 
 program

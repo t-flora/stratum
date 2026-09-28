@@ -45,6 +45,8 @@ export interface Shrine {
 export interface RidgeOverride {
   between: [string, string];
   h: number;
+  /** Line in world-seed.yaml, for diagnostics. */
+  line?: number;
 }
 
 export interface World {

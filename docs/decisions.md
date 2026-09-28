@@ -18,3 +18,20 @@ Choices made where DESIGN.md is silent (§0: "choose the simplest thing that pre
 
 - **`x86` tag added** to the `requires` vocabulary (DESIGN.md §4.2 and the seed header updated). Tagged only where the prompt names x86 ISA/hardware explicitly: `memory-order-litmus`, `swiss-table-probe` (SSE2), `simd-intrinsics-dot`, `simd-stream-compaction`, `cpu-gemm-tiling`, `latency-measurement` (rdtsc), `asm-calling-convention`, `asm-avx512-masks` (alongside `avx512`), `uarch-frontend-alignment` (DSB), `temple-cpu-gemm`. Left untagged because they work on either ISA: `std-simd`, `simd-parsing`, `asm-atomics-codegen`, `bits-integer-tricks`.
 - **`stratum.local.yaml`** (gitignored) overrides `stratum.config.yaml` section by section; arrays are replaced. `stratum setup` detects `linux`/`x86`/`arm` from Node's platform/arch, `avx512` from `/proc/cpuinfo` or `sysctl`, `gpu` from `nvidia-smi`, and `llm-api` from `ANTHROPIC_API_KEY`, with `--with`/`--without` overrides. `stratum lint` validates the effective config and notes when no local file exists.
+
+## M1
+
+- **Landmass.** The §8.1 ellipse with its *radius* perturbed by angular simplex noise (three octaves, about ±9%), so the coast is star-shaped: no offshore islets or inland lakes to confuse classification. Land also stops 12 units short of the canvas edge.
+- **Domain warp.** Two octaves: amplitude 40 at wavelength ~320, plus 12 at ~110. Classification is nearest-centroid on the warped point, stored on a 2-unit grid; `classify` uses the nearest grid sample.
+- **Adjacency** requires at least 5 shared grid edges (10 units of border), so noise slivers don't count. This drives the deferred §4.2 warning, which now runs in `stratum lint` and `stratum build`.
+- **Elevation.** Base noise plus a ridge term `0.12·h·exp(−(d₂−d₁)/25)`, tapered to the coast. Tower placement uses this *without* the prominence field, since shrine positions aren't known yet when towers are placed. Rendered contours include the prominence field (Gaussians, σ = 45, weight p/5).
+- **Spacing is per layer.** Surface shrines keep 38 from other surface shrines, sky 26 from other sky shrines. Placement also keeps 10 units from the coast and 12 from island edges so glyphs don't hang off. The seed places with no relaxation.
+- **Already-fixed positions are placed first.** Every locked or `xy` shrine is fixed before new shrines are placed, so a new shrine keeps clear of locked shrines later in file order too.
+- **Sky towers** go to the in-island point nearest the centroid (there's no sky elevation).
+- **Temples** are rejection-sampled along random rays at 60–85% of the centroid-to-border distance. Tests verify the ratio.
+- **Depths joining a locked ring.** Existing lightroots are locked. When a new depths shrine joins a group whose members are locked, it takes the ring slot (for the new group size k) farthest from the locked members, rather than reshuffling the ring.
+- **The lockfile keeps stale ids.** Entries for removed shrines stay, so re-adding an id restores its position. Coordinates are rounded to 0.1 and keys sorted, one per line.
+- **Geometry export.** Region outlines come from marching squares (d3-contour, 4-unit grid) on the soft field `min(d_nearest_other − d_own, land)`, which is positive exactly inside the region, so borders are smooth and agree with `classify`. Ridges are the zero set of `d_b − d_a`, clipped to where a and b are the two nearest regions on land. Contours use an 8-unit grid.
+- **App ↔ core.** The app imports only types, from `@stratum/core/mapdata`, never the Node-side code. `stratum dev` builds, then starts Vite with a middleware serving `build/map.json`. The watcher, API and SSE are M4. Until then, re-run `stratum build` and reload.
+- **`?layer=sky|surface|depths`** sets the initial layer (handy for links and screenshots).
+- **M1 is an atlas view.** Every shrine renders revealed and untouched. Depths show small vein-tinted glows around every lightroot; the real darkness and light rules are M3.

@@ -1,0 +1,74 @@
+/* Design tokens (§9.3). UI chrome follows light/dark; map layers keep their own palettes. */
+:root {
+  --font-map: 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
+  --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --ui-bg: #f6f3ec;
+  --ui-fg: #2b2620;
+  --ui-muted: #7a7064;
+  --ui-border: #ddd4c4;
+  --ui-accent: #9a5b2e;
+  --ui-panel: rgba(251, 249, 244, 0.94);
+
+  /* Surface */
+  --sea: #a9b8bf;
+  --sea-wave: #93a4ac;
+  --land: #efe4c8;
+  --coast: #6f5f47;
+  --contour: #8b7b5c;
+  --ridge: #5b4631;
+  --ink: #2f2819;
+  --label: #3d3222;
+
+  /* Sky */
+  --sky: #eef4fa;
+  --sky-glow: #ffffff;
+  --island: #fbf5e6;
+  --island-edge: #c9bb98;
+  --island-shadow: rgba(52, 76, 108, 0.22);
+  --sky-ink: #3a5f8a;
+
+  /* Depths */
+  --depths: #07080a;
+  --depths-label: #b9c2cc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ui-bg: #1b1a18;
+    --ui-fg: #ece6da;
+    --ui-muted: #a39a8c;
+    --ui-border: #3a3631;
+    --ui-accent: #d99a62;
+    --ui-panel: rgba(33, 31, 28, 0.94);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation: none !important;
+  }
+}
