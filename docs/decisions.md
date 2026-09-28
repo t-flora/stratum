@@ -13,3 +13,8 @@ Choices made where DESIGN.md is silent (§0: "choose the simplest thing that pre
 - **Workspaces.** `core/` and `cli/` exist now; `app/` is added in M1. Packages are consumed as TypeScript source via tsx/vitest, no build step.
 - **Running the CLI.** `npm run stratum -- <cmd>` or `alias stratum='npx tsx cli/index.ts'`. `--root <dir>` points at another world (used by fixtures).
 - **§2.1 counts.** Lint reports 119 surface / 38 sky / 60 depths entries. §2.1's 103 / 33 excludes towers and temples (119 − 10 − 6, 38 − 5), so there is no mismatch.
+
+## Hardware tags and per-machine config (after M0)
+
+- **`x86` tag added** to the `requires` vocabulary (DESIGN.md §4.2 and the seed header updated). Tagged only where the prompt names x86 ISA/hardware explicitly: `memory-order-litmus`, `swiss-table-probe` (SSE2), `simd-intrinsics-dot`, `simd-stream-compaction`, `cpu-gemm-tiling`, `latency-measurement` (rdtsc), `asm-calling-convention`, `asm-avx512-masks` (alongside `avx512`), `uarch-frontend-alignment` (DSB), `temple-cpu-gemm`. Left untagged because they work on either ISA: `std-simd`, `simd-parsing`, `asm-atomics-codegen`, `bits-integer-tricks`.
+- **`stratum.local.yaml`** (gitignored) overrides `stratum.config.yaml` section by section; arrays are replaced. `stratum setup` detects `linux`/`x86`/`arm` from Node's platform/arch, `avx512` from `/proc/cpuinfo` or `sysctl`, `gpu` from `nvidia-smi`, and `llm-api` from `ANTHROPIC_API_KEY`, with `--with`/`--without` overrides. `stratum lint` validates the effective config and notes when no local file exists.

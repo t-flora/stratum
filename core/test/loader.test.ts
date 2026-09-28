@@ -132,7 +132,7 @@ describe('planted errors carry file/line context', () => {
     expect(errors(ds).map((d) => d.message)).toEqual([
       '"move-semantics-vector": p must be an integer 1..5',
       '"move-semantics-vector": size must be one of S | M | L',
-      '"move-semantics-vector": unknown requires tag "cuda" (expected gpu, arm, avx512, linux, llm-api)',
+      '"move-semantics-vector": unknown requires tag "cuda" (expected gpu, arm, x86, avx512, linux, llm-api)',
     ]);
     expect(ds.find((d) => d.code === 'unknown-field')).toMatchObject({ severity: 'warning', line: lineOf(text, 'colour: red') });
   });

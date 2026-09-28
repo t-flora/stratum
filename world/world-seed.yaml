@@ -12,7 +12,7 @@
 #   p         prominence 1..5 (default 2). Towers and temples are 5.
 #             High-p shrines "peek over ridges" (the triangle rule).
 #   size      S (2-3h) | M (4-6h, default) | L (8-12h)
-#   requires  optional hardware/tool tags: gpu, arm, avx512, linux, llm-api
+#   requires  optional hardware/tool tags: gpu, arm, x86, avx512, linux, llm-api
 #   below     (depths only) id of the surface shrine this lightroot sits under
 #   links     optional ids across layers (chasms / launch points), or other related ids
 #   needs     (temples only) shrine ids that must be cleared before the temple opens
@@ -453,6 +453,7 @@ shrines:
   title: Litmus tests
   region: concurrency
   p: 4
+  requires: [x86]
   prompt: >-
     Write the store-buffering and message-passing litmus tests. Observe store-buffer reordering
     on x86, and show which memory_order fixes each one (run on ARM if available).
@@ -563,6 +564,7 @@ shrines:
 - id: swiss-table-probe
   title: SIMD group probing
   region: data-structures
+  requires: [x86]
   prompt: >-
     Add SwissTable-style control bytes and SSE2 group matching to your hash map.
   done: >-
@@ -672,6 +674,7 @@ shrines:
   title: The dot product, by hand
   region: parallel-simd
   p: 3
+  requires: [x86]
   prompt: >-
     Write an AVX2+FMA dot product with 1, 2, 4 and 8 independent accumulators, and compare it with the scalar
     and auto-vectorized versions.
@@ -690,6 +693,7 @@ shrines:
 - id: simd-stream-compaction
   title: SIMD filtering
   region: parallel-simd
+  requires: [x86]
   prompt: >-
     Filter an int array by a predicate with SIMD: a compress instruction on AVX-512, or a shuffle
     LUT on AVX2.
@@ -721,6 +725,7 @@ shrines:
   region: parallel-simd
   p: 4
   size: L
+  requires: [x86]
   prompt: >-
     Optimise single-core SGEMM: loop order, cache blocking, packing, and an AVX2/AVX-512 register-tiled
     microkernel.
@@ -1045,6 +1050,7 @@ shrines:
   title: Measuring latency honestly
   region: low-latency
   p: 4
+  requires: [x86]
   prompt: >-
     Measure with rdtsc/rdtscp and steady_clock, record into an HdrHistogram-style structure, and
     demonstrate coordinated omission.
@@ -1297,6 +1303,7 @@ shrines:
   kind: temple
   size: L
   needs: [cpu-gemm-tiling, simd-intrinsics-dot, uarch-ports-uops]
+  requires: [x86]
   prompt: >-
     Push single-core SGEMM to at least 80% of theoretical peak, then extend it to multi-core.
   done: >-
@@ -1712,6 +1719,7 @@ shrines:
   title: The System V ABI
   region: isa-assembly
   below: godbolt-reading
+  requires: [x86]
   prompt: >-
     Write 3 functions in x86-64 assembly that are callable from C++ (ints, doubles, a struct by
     value), respecting the System V ABI.
@@ -1742,7 +1750,7 @@ shrines:
   title: AVX-512 masks
   region: isa-assembly
   below: simd-stream-compaction
-  requires: [avx512]
+  requires: [avx512, x86]
   prompt: >-
     Hand-write a masked filter using k-registers and vpcompressd.
   done: >-
@@ -1844,6 +1852,7 @@ shrines:
   title: The front end and alignment
   region: microarchitecture
   below: benchmark-methodology
+  requires: [x86]
   prompt: >-
     Show a benchmark whose speed changes with code alignment alone (uop cache / DSB effects).
   done: >-

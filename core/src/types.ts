@@ -7,7 +7,7 @@ export type Kind = (typeof KINDS)[number];
 export const SIZES = ['S', 'M', 'L'] as const;
 export type Size = (typeof SIZES)[number];
 
-export const REQUIRE_TAGS = ['gpu', 'arm', 'avx512', 'linux', 'llm-api'] as const;
+export const REQUIRE_TAGS = ['gpu', 'arm', 'x86', 'avx512', 'linux', 'llm-api'] as const;
 export type RequireTag = (typeof REQUIRE_TAGS)[number];
 
 export type Vec2 = [number, number];

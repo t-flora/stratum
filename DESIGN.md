@@ -125,7 +125,7 @@ The world schema is documented in the header comment of `world/world-seed.yaml`.
 - `kind`: `shrine` (default) | `tower` | `temple`
 - `p`: prominence, 1..5. Default 2. Towers and temples are forced to 5.
 - `size`: `S | M | L`. Default M. The timebox is roughly S = 2–3h, M = 4–6h, L = 8–12h.
-- `requires`: optional list of tags: `gpu | arm | avx512 | linux | llm-api`
+- `requires`: optional list of tags: `gpu | arm | x86 | avx512 | linux | llm-api`
 - `below`: depths only, required. The id of a surface shrine.
 - `links`: optional list of shrine ids, treated as undirected for visibility purposes
 - `needs`: temples only. Shrine ids that must be cleared before the temple opens.

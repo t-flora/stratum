@@ -6,7 +6,7 @@ writeup:
   minWords: 250
 
 hardware:
-  available: [arm, llm-api]     # this Mac (M2). Heavy x86 work runs on a separate Linux server.
+  available: [arm, llm-api]     # fallback only; `stratum setup` writes the real per-machine value to stratum.local.yaml
 
 visibility:
   radiusBase: 150           # R(p) = radiusBase + radiusPerP * p
