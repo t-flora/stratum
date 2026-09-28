@@ -5,7 +5,7 @@ import { Command } from 'commander';
 import {
   CONFIG_PATH, Geometry, LAYERS, LOCAL_CONFIG_PATH, LOCK_PATH, MAP_PATH, PINS_PATH, TEMPLATES, build, clearShrine, gitReader,
   hasLocalConfig, lintClears, lintGeometry, lintPin, lintWorkFolders, loadConfig, loadWorld, readGitWork, readWorkState, setPin,
-  startShrine, summarize, validateConfig,
+  shelveShrine, startShrine, summarize, validateConfig,
   type BuildResult, type ClearCheck, type Diagnostic, type MapData, type TemplateName, type World,
 } from '@stratum/core';
 import { stratumApi } from './dev.ts';
@@ -91,7 +91,8 @@ program
     const uncommitted = work.filter((w) => w.status === 'cleared' && !w.committed).length;
     console.log(
       `${work.filter((w) => w.status === 'cleared').length} cleared${uncommitted ? ` (${uncommitted} not committed)` : ''}, ` +
-        `${work.filter((w) => w.status === 'in-progress').length} in progress`,
+        `${work.filter((w) => w.status === 'in-progress').length} in progress` +
+        (work.some((w) => w.status === 'shelved') ? `, ${work.filter((w) => w.status === 'shelved').length} shelved` : ''),
     );
     const vis = res.map.shrines.map((s) => s.visibility);
     console.log(`${vis.filter((v) => v === 'revealed').length} revealed, ${vis.filter((v) => v === 'silhouette').length} silhouettes, ${vis.filter((v) => v === 'hidden').length} hidden`);
@@ -145,7 +146,7 @@ function printChecklist(checks: ClearCheck[]) {
 
 program
   .command('start <id>')
-  .description('Scaffold work/<id>/ from a template and light a campfire')
+  .description('Scaffold work/<id>/ from a template and make camp there (also takes a shelved shrine off the shelf)')
   .option('--force', 'start a hidden shrine or a locked temple anyway')
   .option('--template <name>', `template to scaffold: ${TEMPLATES.join(' | ')} (default: by region)`)
   .action((id: string, opts: { force?: boolean; template?: string }) => {
@@ -175,15 +176,19 @@ program
       return;
     }
     const shrine = world.shrineById.get(id)!;
+    if (res.outcome === 'resumed') {
+      console.log(`Took ${shrine.title} off the shelf. Camp is here now.`);
+      return;
+    }
     if (res.outcome === 'already') {
       console.log(`${id} is already ${res.status === 'cleared' ? 'cleared' : 'in progress'} (work/${id}/WRITEUP.md exists).`);
-      if (res.note) console.log(`campfire: ${res.note}`);
+      if (res.note) console.log(`where you left off: ${res.note}`);
       return;
     }
     console.log(`Set out for ${shrine.title} (${shrine.size}, ${res.template} template)\n`);
     for (const f of res.created) console.log(`  + ${f}`);
     console.log(`\nBuild:\n${indent(shrine.prompt)}\n\nDone when:\n${indent(shrine.done)}\n`);
-    console.log(`Before stopping, write where you left off on the first line of work/${id}/NEXT.md.`);
+    console.log(`Camp is here now. Before stopping, write where you left off on the first line of work/${id}/NEXT.md.`);
     console.log(`When the write-up is done: stratum clear ${id}`);
   });
 
@@ -219,7 +224,7 @@ program
 
 program
   .command('status')
-  .description('Counts by layer and region, plus campfires')
+  .description('Counts by layer and region, plus your camp, cairns and shelved work')
   .action(() => {
     const dir = root();
     const world = loadOrFail(dir);
@@ -239,12 +244,17 @@ program
         if (c.cleared || c.active) console.log(line(`  ${r.name}`, c));
       }
     }
-    const fires = world.shrines.filter((s) => work.get(s.id)?.status === 'in-progress');
+    const note = (id: string) => work.get(id)!.camp?.note ?? '(no NEXT.md note)';
+    const camp = world.shrines.find((s) => work.get(s.id)?.camp?.current);
+    const cairns = world.shrines.filter((s) => work.get(s.id)?.camp && !work.get(s.id)!.camp!.current);
+    const shelved = world.shrines.filter((s) => work.get(s.id)?.status === 'shelved');
     const uncommitted = world.shrines.filter((s) => work.get(s.id)?.status === 'cleared' && !work.get(s.id)!.committed);
-    if (fires.length) {
-      console.log('\nCampfires:');
-      for (const s of fires) console.log(`  ${s.id}: ${work.get(s.id)!.campfire?.note ?? '(no NEXT.md note)'}`);
+    if (camp) console.log(`\nCamp: ${camp.id}: ${note(camp.id)}`);
+    if (cairns.length) {
+      console.log('Cairns (started, stepped away from):');
+      for (const s of cairns) console.log(`  ${s.id}: ${note(s.id)}`);
     }
+    if (shelved.length) console.log(`Shelved: ${shelved.map((s) => s.id).join(', ')}`);
     if (uncommitted.length) console.log(`\nCleared but not committed: ${uncommitted.map((s) => s.id).join(', ')}`);
   });
 
@@ -278,7 +288,7 @@ program
       const title = s.titleKnown ? s.title : '???';
       const where = `${s.layer} · ${regionName.get(s.region) ?? s.region} · ${s.size}${s.requires.length ? ` · needs ${s.requires.join(', ')}` : ''}`;
       console.log(`${SLOT_NAME[c.slot]}\n  ${title}  (${where})`);
-      if (c.rule === 'campfire' && s.campfire?.note) console.log(`  campfire: ${s.campfire.note}`);
+      if (c.rule === 'camp' && s.camp?.note) console.log(`  where you left off: ${s.camp.note}`);
       if (c.teaser) console.log(`  ${c.teaser}`);
       if (c.bearing !== undefined) console.log(`  ${c.distance} away, ${COMPASS[Math.round(c.bearing / 45) % 8]}`);
       console.log(`  → stratum start ${c.id}${map.pin === c.id ? '   (pinned)' : ''}\n`);
@@ -309,6 +319,22 @@ program
       return;
     }
     console.log(out.pin ? `Pinned ${out.pin}. The Thread now routes toward it.` : 'Pin removed.');
+  });
+
+program
+  .command('shelve <id>')
+  .description('Set in-progress work aside: kept in git, but no longer a camp, a vantage or on the Horizon (start resumes it)')
+  .action((id: string) => {
+    const dir = root();
+    const world = loadOrFail(dir);
+    if (!world) return;
+    const out = shelveShrine(dir, world, readWorkState(dir, world, loadConfig(dir)), id);
+    if (out.outcome === 'refused') {
+      console.log(`can't shelve: ${out.reason}`);
+      process.exitCode = 1;
+      return;
+    }
+    console.log(`Shelved ${id}. Its folder and history stay; \`stratum start ${id}\` takes it off the shelf.`);
   });
 
 program

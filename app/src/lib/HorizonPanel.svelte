@@ -27,7 +27,7 @@
   } as const;
   const LAYER_NAME: Record<Layer, string> = { sky: 'Sky', surface: 'Surface', depths: 'Depths' };
   const WHY: Record<HorizonCard['rule'], string> = {
-    campfire: 'your campfire',
+    camp: 'your camp',
     pin: 'on the way to your pin',
     nearest: 'nearest in sight',
     glow: 'glowing beneath a recent clear',
@@ -60,7 +60,7 @@
   {/if}
   {#each cards as { card, shrine } (card.slot)}
     {@const title = shrine.titleKnown ? shrine.title : '???'}
-    <article class="card slot-{card.slot}" class:campfire={card.rule === 'campfire'}>
+    <article class="card slot-{card.slot}" class:camp={card.rule === 'camp'}>
       <header>
         <span class="slot">{SLOT[card.slot].name}</span>
         <span class="why">{WHY[card.rule]}</span>
@@ -70,8 +70,8 @@
         {LAYER_NAME[shrine.layer]} · {regionName.get(shrine.region) ?? shrine.region} · {shrine.size}
         {#each shrine.requires as r (r)}<span class="req">{r}</span>{/each}
       </div>
-      {#if card.rule === 'campfire'}
-        <p class="note">{shrine.campfire?.note ?? 'No NEXT.md note yet.'}</p>
+      {#if card.rule === 'camp'}
+        <p class="note">{shrine.camp?.note ?? 'No NEXT.md note yet.'}</p>
       {:else if card.teaser}
         <p class="teaser">{card.teaser}</p>
       {/if}
@@ -85,7 +85,7 @@
       {/if}
       <div class="actions">
         {#if shrine.status === 'in-progress'}
-          <button class="primary" onclick={() => onselect(shrine.id)}>Continue</button>
+          <button class="primary" onclick={() => onselect(shrine.id)}>Return to camp</button>
         {:else}
           <button class="primary" onclick={() => onsetout(shrine.id)} title={live ? 'Run stratum start' : 'Copy the stratum start command'}>
             Set out
@@ -114,7 +114,7 @@
     position: absolute;
     top: 12px;
     left: 12px;
-    max-height: calc(100% - 24px);
+    max-height: calc(100% - 70px); /* leaves room for the map key tab below */
     width: 290px;
     overflow-y: auto;
     padding: 12px;
@@ -197,7 +197,7 @@
   .card + .card {
     margin-top: 8px;
   }
-  .card.campfire {
+  .card.camp {
     border-color: #e2572b;
   }
   .card header {

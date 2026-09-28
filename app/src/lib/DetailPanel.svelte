@@ -10,6 +10,7 @@
     onclose,
     onsetout,
     onpin,
+    onshelve,
   }: {
     shrine: MapShrine;
     map: MapData;
@@ -18,6 +19,7 @@
     onclose: () => void;
     onsetout?: (id: string) => void;
     onpin?: (id: string | null) => void;
+    onshelve?: (id: string) => void;
   } = $props();
 
   const LAYER_NAME: Record<Layer, string> = { sky: 'Sky', surface: 'Surface', depths: 'Depths' };
@@ -54,11 +56,17 @@
     shrine.status === 'cleared'
       ? `Cleared${shrine.clearedAt ? ` ${shrine.clearedAt}` : ''}`
       : shrine.status === 'in-progress'
-        ? `In progress${shrine.startedAt ? ` since ${shrine.startedAt}` : ''}`
-        : 'Untouched',
+        ? `${shrine.camp?.current ? 'Your camp' : 'A cairn'} · started ${shrine.startedAt ?? '?'}`
+        : shrine.status === 'shelved'
+          ? `Shelved${shrine.startedAt ? ` · started ${shrine.startedAt}` : ''}`
+          : 'Untouched',
   );
   const command = $derived(
-    shrine.status === 'untouched' ? `stratum start ${shrine.id}` : shrine.status === 'in-progress' ? `stratum clear ${shrine.id}` : null,
+    shrine.status === 'untouched' || shrine.status === 'shelved'
+      ? `stratum start ${shrine.id}`
+      : shrine.status === 'in-progress'
+        ? `stratum clear ${shrine.id}`
+        : null,
   );
   const workPath = $derived(`work/${shrine.id}/`);
   const writeupHtml = $derived(shrine.status === 'cleared' && shrine.writeup ? renderMarkdown(shrine.writeup) : null);
@@ -105,7 +113,14 @@
       {#if shrine.status === 'cleared' && !shrine.committed}<span class="uncommitted">not committed yet</span>{/if}
     </div>
     {#if shrine.status === 'in-progress'}
-      <p class="campfire-note">{shrine.campfire?.note ?? 'No NEXT.md note yet.'}</p>
+      <p class="camp-note">{shrine.camp?.note ?? 'No NEXT.md note yet.'}</p>
+      <p class="explain">
+        {shrine.camp?.current
+          ? 'Your camp is the work you touched most recently. The Horizon brings you back here first.'
+          : 'A cairn marks started work you stepped away from. Touch it again and camp moves here.'}
+      </p>
+    {:else if shrine.status === 'shelved'}
+      <p class="explain">Set aside on purpose. The folder and history stay; setting out again takes it off the shelf.</p>
     {/if}
     {#if shrine.hours !== undefined || shrine.touches.length || shrine.remnote}
     <ul class="facts">
@@ -161,10 +176,13 @@
 
   {#if shrine.status !== 'cleared' && shrine.visibility !== 'hidden' && (onsetout || onpin)}
     <section class="go">
-      {#if shrine.status === 'untouched' && onsetout}
+      {#if (shrine.status === 'untouched' || shrine.status === 'shelved') && onsetout}
         <button class="primary" onclick={() => onsetout(shrine.id)} title={live ? 'Run stratum start' : 'Copy the stratum start command'}>
-          Set out
+          {shrine.status === 'shelved' ? 'Take off the shelf' : 'Set out'}
         </button>
+      {/if}
+      {#if shrine.status === 'in-progress' && onshelve}
+        <button onclick={() => onshelve(shrine.id)} title={live ? 'Run stratum shelve' : 'Copy the stratum shelve command'}>Shelve</button>
       {/if}
       {#if onpin}
         <button onclick={() => onpin(map.pin === shrine.id ? null : shrine.id)} aria-pressed={map.pin === shrine.id}>
@@ -328,7 +346,16 @@
     color: var(--ui-muted);
     font-size: 11px;
   }
-  .campfire-note {
+  .explain {
+    margin: 4px 0 0;
+    color: var(--ui-muted);
+    font-size: 12px;
+  }
+  .status-shelved .dot {
+    background: transparent;
+    border: 1.5px solid var(--ui-muted);
+  }
+  .camp-note {
     margin: 6px 0 0;
     font-style: italic;
   }

@@ -158,6 +158,23 @@ describe('surface rule (§6.2, §13 M3)', () => {
   });
 });
 
+describe('shelved work', () => {
+  it('stays revealed itself but is no longer a vantage or a glow source', () => {
+    const specs: Spec[] = [
+      { id: 'shelf', region: 'mid', xy: [800, 500] },
+      { id: 'beside', region: 'mid', xy: [900, 500] },
+      { id: 'root', region: 'vein', below: 'shelf', xy: [800, 500] },
+    ];
+    const active = see(specs, { shelf: 'in-progress' });
+    expect([active.of('beside'), active.of('root')]).toEqual(['revealed', 'silhouette']);
+    const shelved = see(specs, { shelf: 'shelved' });
+    expect(shelved.of('shelf')).toBe('revealed');
+    expect(shelved.of('beside')).toBe('hidden');
+    expect(shelved.of('root')).toBe('hidden');
+    expect(shelved.vantages.map((v) => v.id ?? 'start')).toEqual(['start']);
+  });
+});
+
 describe('sky rule (§6.3)', () => {
   const specs: Spec[] = [
     { id: 'tower-isle', region: 'isle', kind: 'tower', p: 5, xy: [800, 300] },

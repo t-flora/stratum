@@ -7,7 +7,8 @@ export type Ring = Vec2[];
 export type Polygon = Ring[];
 export type MultiPolygon = Polygon[];
 
-export type ShrineStatus = 'untouched' | 'in-progress' | 'cleared';
+/** `shelved`: started, then set aside on purpose. Stays revealed; no marker, not a vantage, not on the Horizon. */
+export type ShrineStatus = 'untouched' | 'in-progress' | 'shelved' | 'cleared';
 export type Visibility = 'hidden' | 'silhouette' | 'revealed';
 
 export interface MapShrine {
@@ -44,7 +45,11 @@ export interface MapShrine {
   /** Commit timestamps (unix seconds) touching work/<id>/. */
   touches: number[];
   /** In-progress shrines: the first line of NEXT.md, and when the fire was last fed (ms since epoch). */
-  campfire?: { note: string | null; since: number | null };
+  /**
+   * In-progress shrines (docs/plans/camps.md). `current` marks the single camp (the most recently touched one);
+   * every other in-progress shrine is a cairn. `since` (ms) is when it was last touched: it drives the embers.
+   */
+  camp?: { note: string | null; since: number | null; current: boolean };
   hours?: number;
   remnote: number;
   /** Markdown body of a cleared write-up. */
@@ -103,7 +108,7 @@ export interface MapSight {
 
 export type HorizonSlot = 'thread' | 'vertical' | 'far';
 /** Which §7 rule filled the slot. */
-export type HorizonRule = 'campfire' | 'pin' | 'nearest' | 'glow' | 'sky' | 'above' | 'other-layer' | 'landmark' | 'tower' | 'temple';
+export type HorizonRule = 'camp' | 'pin' | 'nearest' | 'glow' | 'sky' | 'above' | 'other-layer' | 'landmark' | 'tower' | 'temple';
 
 export interface HorizonCard {
   slot: HorizonSlot;

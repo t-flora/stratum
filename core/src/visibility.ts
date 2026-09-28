@@ -87,7 +87,10 @@ function surfaceSight(s: Shrine, xy: Vec2, vantages: Vantage[], t: Terrain, cfg:
 export function computeVisibility(
   world: World, positions: Map<string, Vec2>, status: (id: string) => ShrineStatus, terrain: Terrain, cfg: VisibilityConfig,
 ): VisibilityResult {
-  const active = (id: string) => status(id) !== 'untouched';
+  // Shelved work is set aside: it keeps its own reveal but is no longer a vantage, glow source or launch point.
+  const active = (id: string) => status(id) === 'in-progress' || status(id) === 'cleared';
+  /** Any shrine you've worked on (shelved included) stays revealed itself. */
+  const worked = (id: string) => status(id) !== 'untouched';
   const cleared = (id: string) => status(id) === 'cleared';
   const pos = (id: string) => positions.get(id)!;
 
@@ -107,7 +110,7 @@ export function computeVisibility(
     if (s.layer !== 'surface') continue;
     let v = surfaceSight(s, pos(s.id), vantages, terrain, cfg);
     if (plateau.has(s.id)) v = 'revealed';
-    if (active(s.id)) v = 'revealed';
+    if (worked(s.id)) v = 'revealed';
     if (surveyed.has(s.region)) v = atLeast(v, 'silhouette');
     if (s.kind === 'tower') v = atLeast(v, 'silhouette');
     if (s.kind === 'temple' && !s.needs.every(cleared)) v = atMost(v, 'silhouette');
@@ -124,7 +127,7 @@ export function computeVisibility(
   const skyTowerCleared = new Set(world.shrines.filter((s) => s.kind === 'tower' && s.layer === 'sky' && cleared(s.id)).map((s) => s.region));
   for (const s of world.shrines) {
     if (s.layer !== 'sky') continue;
-    const open = s.kind === 'tower' || active(s.id) || skyTowerCleared.has(s.region) || [...(linkedTo.get(s.id) ?? [])].some(active);
+    const open = s.kind === 'tower' || worked(s.id) || skyTowerCleared.has(s.region) || [...(linkedTo.get(s.id) ?? [])].some(active);
     visibility.set(s.id, open ? 'revealed' : 'silhouette');
   }
 
@@ -139,7 +142,7 @@ export function computeVisibility(
       const c = pos(id);
       return Math.hypot(c[0] - xy[0], c[1] - xy[1]) <= cfg.lightRadius;
     });
-    visibility.set(s.id, active(s.id) || inLight ? 'revealed' : glowing.has(s.id) ? 'silhouette' : 'hidden');
+    visibility.set(s.id, worked(s.id) || inLight ? 'revealed' : glowing.has(s.id) ? 'silhouette' : 'hidden');
   }
 
   return { visibility, vantages, surveyed, glowing, lit };

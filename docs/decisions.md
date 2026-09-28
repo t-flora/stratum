@@ -127,3 +127,17 @@ Added after the M1 review, at Tiago's request. These extend DESIGN.md §4.2 and 
 
 - **The Horizon panel no longer pins down the left of the map.** It shrinks to its content and folds to a small tab (the ‹ button, or key H). The state is in memory only.
 - **More room to move.** Zoom goes down to 0.6× and panning reaches well past the canvas edges (0.6 W, 0.4 H), so anything under a side panel can be dragged into view. Zoom buttons (+, −, reset) sit top right for trackpads.
+
+## Camps and shelving (after M4, before M5)
+
+Agreed with Tiago: camp/cairn vocabulary, shelving, before M5 (see `docs/plans/camps.md`). DESIGN.md §10.1, §9.3, §4.3, §4.4, §7 and §11 have been updated.
+
+- **Exactly one camp, derived.** `deriveWorkState` marks the most recently touched in-progress shrine `camp.current` (ties by id). "Touched" is the latest of NEXT.md's mtime, WRITEUP.md's mtime, the last commit and the start date, taken at the *start* of that day so any real edit that day wins. Every other in-progress shrine is a cairn. The Horizon's Thread uses the same flag, so the map and the Horizon can't disagree. The rule is renamed `campfire` → `camp`, and map.json's `campfire` → `camp: {note, since, current}`.
+- **Cairns stay vantages** and still light the glow below (Tiago didn't object to the recommendation). Walked land stays walked.
+- **Embers.** Past 14 days untouched, the camp's flame becomes embers. The flame fades from opacity 1 to 0.45 over those 14 days.
+- **Shelving.** `status: shelved` is a new WRITEUP.md value, set by `stratum shelve <id>` or `POST /api/shelve`.
+  - A shelved shrine keeps its own reveal (like any worked shrine) but is not a vantage, glow source or sky launch point, and is never a Horizon candidate. It has no marker.
+  - `stratum start <id>` on a shelved shrine sets it back to in-progress, and it becomes the camp because WRITEUP.md was just touched.
+  - `stratum clear` works on shelved work directly.
+- **Map key.** Key K, or the "Key" tab bottom left, opens a short legend: every glyph, the camp and cairn meanings, and what fog is.
+- **The world-editing plan's answer.** When a region shrinks, the land goes to its neighbours (region weights).

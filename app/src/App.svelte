@@ -5,6 +5,7 @@
   import { atlasView } from './lib/atlas.ts';
   import DetailPanel from './lib/DetailPanel.svelte';
   import HorizonPanel from './lib/HorizonPanel.svelte';
+  import MapKey from './lib/MapKey.svelte';
   import MapView from './lib/MapView.svelte';
 
   const LAYER_ORDER: { id: Layer; label: string; key: string }[] = [
@@ -43,7 +44,7 @@
   const selected = $derived(map?.shrines.find((s) => s.id === selectedId && s.visibility !== 'hidden') ?? null);
   const counts = $derived({
     cleared: map?.shrines.filter((s) => s.status === 'cleared').length ?? 0,
-    campfires: map?.shrines.filter((s) => s.status === 'in-progress').length ?? 0,
+    started: map?.shrines.filter((s) => s.status === 'in-progress').length ?? 0,
     inSight: map?.shrines.filter((s) => s.visibility !== 'hidden').length ?? 0,
   });
 
@@ -51,6 +52,8 @@
   let live = $state(false);
   /** The Horizon panel folds to a tab (key H). In memory only: nothing is kept in the browser. */
   let horizonCollapsed = $state(false);
+  /** The map key (key K), closed by default. */
+  let keyOpen = $state(false);
   let toast = $state<string | null>(null);
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
   function say(message: string) {
@@ -71,9 +74,17 @@
     if (!live) return copyCommand(`stratum start ${id}`);
     const res = await post('/api/start', { id });
     if (!res.ok) return say(`Can't set out: ${res.error}`);
-    say(`Set out: work/${id}/ is ready and a campfire is lit.`);
+    say(`Camp is at ${map?.shrines.find((s) => s.id === id)?.title ?? id} now.`);
     await load();
     selectedId = id;
+  }
+
+  async function shelve(id: string) {
+    if (!live) return copyCommand(`stratum shelve ${id}`);
+    const res = await post('/api/shelve', { id });
+    if (!res.ok) return say(`Can't shelve: ${res.error}`);
+    say('Shelved. Setting out again takes it off the shelf.');
+    await load();
   }
 
   async function pin(id: string | null) {
@@ -122,6 +133,10 @@
       horizonCollapsed = !horizonCollapsed;
       return;
     }
+    if (e.key === 'k' || e.key === 'K') {
+      keyOpen = !keyOpen;
+      return;
+    }
     const hit = LAYER_ORDER.find((l) => l.key === e.key);
     if (hit) layer = hit.id;
   }
@@ -162,7 +177,7 @@
     <div class="spacer"></div>
     {#if built}
       <span class="readout">
-        {counts.cleared} cleared · {counts.campfires} campfire{counts.campfires === 1 ? '' : 's'} ·
+        {counts.cleared} cleared · {counts.started} in progress ·
         {atlas ? `atlas: all ${built.shrines.length} shown` : `${counts.inSight} of ${built.shrines.length} in sight`}
       </span>
       <button class="atlas-toggle" class:active={atlas} aria-pressed={atlas} onclick={toggleAtlas} title="Atlas mode: reveal everything (key A)">
@@ -190,8 +205,9 @@
           onpin={pin}
         />
       {/if}
+      <MapKey open={keyOpen} ontoggle={() => (keyOpen = !keyOpen)} />
       {#if selected}
-        <DetailPanel shrine={selected} {map} {live} onselect={select} onclose={() => (selectedId = null)} onsetout={setOut} onpin={pin} />
+        <DetailPanel shrine={selected} {map} {live} onselect={select} onclose={() => (selectedId = null)} onsetout={setOut} onpin={pin} onshelve={shelve} />
       {/if}
     {:else}
       <div class="message"><p>Loading map…</p></div>

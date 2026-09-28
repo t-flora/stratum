@@ -14,6 +14,7 @@
 | M3: visibility (triangle rule) | ✅ done, verified by Tiago | `4085f22` |
 | (extra) Atlas toggle (map half of §9.5, pulled forward) | ✅ done, unverified here | on `main` |
 | M4: Horizon, pins, dev API, SSE | 🟡 implemented, **unverified here** (see below), awaiting review | on `main` |
+| (extra) Camps, cairns, shelving, map key (docs/plans/camps.md) | 🟡 implemented, unverified here, awaiting review | on `main` |
 | M5: Hero's Path, hours, polish, Atlas mode, static build | not started | |
 
 **Acceptance evidence:**
@@ -48,14 +49,22 @@ Built in a cloud session whose network policy blocks the npm registry, so `npm t
 - CLI: `stratum horizon`, `stratum pin <id> | --clear`, and `stratum dev` with the API, watcher and SSE (`cli/dev.ts`). `clear` removes the pin on the pinned shrine.
 - App: `HorizonPanel.svelte`, Set out / Pin in both panels (copying the CLI command without the API), the pin stamp, live reload and toasts.
 
-## Next: M5 (after M4 review)
+## Camps (before M5): what to check
+
+Harness results: work 23/23, visibility 17/18 (the real-geometry test is skipped here), horizon 19/19. On the Mac:
+1. `npm test` and `npm run typecheck`.
+2. Start two scratch shrines. One flame (the camp, on the latest) and one cairn should show. Touch the cairn's NEXT.md and the camp moves.
+3. Try **Shelve** in the panel, or `npm run stratum -- shelve <id>`: its marker disappears and it leaves the Horizon. **Take off the shelf** brings it back as the camp.
+4. Press K for the map key.
+5. Clean up the scratch folders afterwards.
+
+## Next: M5 (after the camps review)
 
 DESIGN.md §9.4, §10.3, §9.2, §9.5 and §13 M5: the Hero's Path, the hours estimate (and per-region readout, §10.2), layer transitions with reduced motion, dark UI chrome, the mobile layout (Horizon as a bottom sheet at 390 px), the Atlas table, search (§6.5), `stratum build --static`, `stratum propose`, and Lighthouse accessibility ≥ 90.
 
 ## Planned after M5 (proposals, awaiting Tiago)
 
 - **[World editing](plans/world-editing.md).** Region `weight` to shrink or grow regions (Vector Coast), papers on write-ups and proposals, a core edit module with dry-run diffs, then CLI commands and a browser Edit mode. The YAML plus a JSON Schema is the contract, and the interfaces are clients. There are five questions for Tiago.
-- **[Camps instead of campfires](plans/camps.md).** Exactly one derived camp (the most recently touched in-progress shrine); other started shrines become cairns; an optional `shelve`; a map key explaining every glyph. There are four questions for Tiago, including whether to do it before M5.
 
 ## Known limitations and TODOs
 

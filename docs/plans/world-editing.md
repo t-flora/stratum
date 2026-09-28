@@ -1,6 +1,6 @@
 # Plan: editing the world (after M5)
 
-*Status: proposal for Tiago's review. Nothing here is built yet.*
+*Status: proposal. Tiago's answers so far: a shrinking region gives its land to its neighbours (weights). The other questions are still open.*
 
 ## What Tiago asked for
 

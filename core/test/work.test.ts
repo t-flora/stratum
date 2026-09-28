@@ -1,11 +1,11 @@
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   DEFAULT_CONFIG, NO_GIT, build, clearShrine, countWords, defaultTemplate, deriveWorkState, gitReader, isArtefact, loadWorld,
-  parseWorkLog, readGitWork, readWorkState, setFrontmatter, startShrine, validateClear, writeupSections,
+  parseWorkLog, readGitWork, readWorkState, setFrontmatter, shelveShrine, startShrine, validateClear, writeupSections,
   type ClearInput, type Shrine, type World,
 } from '../src/index.ts';
 
@@ -145,7 +145,7 @@ describe('start and clear (§13 M2)', () => {
   const work = () => readWorkState(dir, world, config);
   const mapShrine = (id: string) => build(dir, { git: NO_GIT, now: 0 }).map!.shrines.find((s) => s.id === id)!;
 
-  it('starting a shrine scaffolds the folder and creates a campfire', () => {
+  it('starting a shrine scaffolds the folder and makes it the camp', () => {
     const res = startShrine(dir, world, work(), 'a-one', { today: '2026-10-02' });
     expect(res).toMatchObject({ outcome: 'started', template: 'cpp' });
     if (res.outcome !== 'started') return;
@@ -158,8 +158,9 @@ describe('start and clear (§13 M2)', () => {
     const s = mapShrine('a-one');
     expect(s.status).toBe('in-progress');
     expect(s.startedAt).toBe('2026-10-02');
-    expect(s.campfire?.note).toBe('Just set out. Replace this line with where you left off.');
-    expect(s.campfire?.since).toBeGreaterThan(0);
+    expect(s.camp?.note).toBe('Just set out. Replace this line with where you left off.');
+    expect(s.camp?.since).toBeGreaterThan(0);
+    expect(s.camp?.current).toBe(true);
     expect(mapShrine('a-two').status).toBe('untouched');
     // Starting again changes nothing.
     expect(startShrine(dir, world, work(), 'a-one')).toMatchObject({ outcome: 'already', status: 'in-progress' });
@@ -206,7 +207,7 @@ describe('start and clear (§13 M2)', () => {
 
     const s = mapShrine('a-one');
     expect(s).toMatchObject({ status: 'cleared', clearedAt: '2026-10-09', remnote: 2, committed: false });
-    expect(s.campfire).toBeUndefined();
+    expect(s.camp).toBeUndefined();
     expect(s.writeup).toContain('## How it works');
     expect(clearShrine(dir, world, config, 'a-one')).toMatchObject({ outcome: 'already', date: '2026-10-09' });
   });
@@ -228,6 +229,49 @@ describe('start and clear (§13 M2)', () => {
     expect(deriveWorkState(world, reversed, config).get('temple-x')!.status).toBe('cleared');
     folders.delete('b-two');
     expect(deriveWorkState(world, folders, config).get('temple-x')!.status).toBe('in-progress');
+  });
+});
+
+describe('camps, cairns and shelving (docs/plans/camps.md)', () => {
+  let dir: string;
+  let world: World;
+  beforeEach(() => {
+    dir = tempWorld();
+    world = tinyWorld();
+  });
+  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+  const work = () => readWorkState(dir, world, config);
+  const touch = (id: string, secondsAgo: number) => {
+    const t = new Date(Date.now() - secondsAgo * 1000);
+    utimesSync(join(dir, `work/${id}/NEXT.md`), t, t);
+    utimesSync(join(dir, `work/${id}/WRITEUP.md`), t, t);
+  };
+
+  it('keeps exactly one camp, the most recently touched; the rest are cairns', () => {
+    for (const id of ['a-one', 'a-two', 'b-one']) startShrine(dir, world, work(), id, { today: '2026-01-01' });
+    touch('a-one', 300);
+    touch('a-two', 100);
+    touch('b-one', 200);
+    const w = work();
+    expect(['a-one', 'a-two', 'b-one'].map((id) => w.get(id)!.camp?.current)).toEqual([false, true, false]);
+    // Touching another shrine moves the camp there.
+    touch('a-one', 0);
+    expect(work().get('a-one')!.camp?.current).toBe(true);
+    expect(work().get('a-two')!.camp?.current).toBe(false);
+  });
+
+  it('shelving sets work aside; start takes it off the shelf', () => {
+    startShrine(dir, world, work(), 'a-one');
+    expect(shelveShrine(dir, world, work(), 'a-one')).toEqual({ outcome: 'shelved' });
+    expect(readFileSync(join(dir, 'work/a-one/WRITEUP.md'), 'utf8')).toMatch(/^status: shelved /m);
+    const shelved = work().get('a-one')!;
+    expect(shelved.status).toBe('shelved');
+    expect(shelved.camp).toBeUndefined();
+    expect(shelveShrine(dir, world, work(), 'a-one')).toMatchObject({ outcome: 'refused' });
+    expect(shelveShrine(dir, world, work(), 'a-two')).toMatchObject({ outcome: 'refused' });
+
+    expect(startShrine(dir, world, work(), 'a-one')).toEqual({ outcome: 'resumed' });
+    expect(work().get('a-one')!).toMatchObject({ status: 'in-progress', camp: { current: true } });
   });
 });
 

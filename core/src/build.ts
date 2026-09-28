@@ -96,8 +96,10 @@ export function build(root: string, opts: BuildOptions = {}): BuildResult {
     world, positions: placement.positions, pin, available: config.hardware.available, config, week,
     state: (id) => {
       const w = work.get(id);
-      const touched = [w?.campfire?.since ?? 0, (w?.touches.at(-1) ?? 0) * 1000, w?.startedAt ? Date.parse(`${w.startedAt}T12:00:00`) : 0];
-      return { status: w?.status ?? 'untouched', visibility: sight.visibility.get(id)!, clearedAt: w?.clearedAt, lastTouched: Math.max(...touched) };
+      return {
+        status: w?.status ?? 'untouched', visibility: sight.visibility.get(id)!, clearedAt: w?.clearedAt,
+        lastTouched: w?.camp?.since ?? undefined, camp: w?.camp?.current ?? false,
+      };
     },
   });
   // Geometry also depends on positions (islets and vein territories grow around placed shrines).

@@ -21,6 +21,8 @@ export interface WorkFolder {
   files: WorkFile[];
   /** NEXT.md contents and mtime (ms since epoch). */
   next: { text: string; mtime: number } | null;
+  /** WRITEUP.md mtime (ms): working on the write-up counts as being at camp. */
+  writeupMtime?: number;
 }
 
 export interface ShrineWork {
@@ -31,8 +33,11 @@ export interface ShrineWork {
   committed: boolean;
   /** Commit timestamps (unix seconds) touching `work/<id>/`. */
   touches: number[];
-  /** In-progress shrines only. `since` (ms) drives the 14-day fade: NEXT.md mtime, else last touch, else started. */
-  campfire?: { note: string | null; since: number | null };
+  /**
+   * In-progress shrines only. `since` (ms): the latest of NEXT.md's mtime, the last commit and the start date.
+   * `current` is true for exactly one shrine, the camp (most recently touched; ties by id). The rest are cairns.
+   */
+  camp?: { note: string | null; since: number | null; current: boolean };
   hours?: number;
   remnote: number;
   /** Markdown body of a cleared write-up (rendered in the detail panel). */
@@ -99,6 +104,7 @@ export function readWorkFolder(root: string, shrine: Shrine, index = templateInd
     writeup: existsSync(wfile) ? readFileSync(wfile, 'utf8') : null,
     files,
     next: existsSync(nfile) ? { text: readFileSync(nfile, 'utf8'), mtime: statSync(nfile).mtimeMs } : null,
+    ...(existsSync(wfile) ? { writeupMtime: statSync(wfile).mtimeMs } : {}),
   };
 }
 
@@ -124,7 +130,7 @@ export function proposalCounts(world: World): Map<string, number> {
 }
 
 /** First non-blank line of NEXT.md, without Markdown heading or list markers. */
-export function campfireNote(text: string): string | null {
+export function campNote(text: string): string | null {
   const line = text.split(/\r?\n/).map((l) => l.trim()).find(Boolean);
   if (!line) return null;
   return line.replace(/^(#+|[-*+]|\d+\.)\s+/, '').trim() || null;
@@ -171,7 +177,7 @@ export function deriveWorkState(world: World, folders: Map<string, WorkFolder>, 
     const fm = parsed?.frontmatter ?? null;
     const isCleared = cleared.has(s.id);
     const w: ShrineWork = {
-      status: isCleared ? 'cleared' : 'in-progress',
+      status: isCleared ? 'cleared' : fm?.status === 'shelved' ? 'shelved' : 'in-progress',
       committed: isCleared && git.dirty !== null && !git.dirty.has(`${WORK_DIR}/${s.id}/WRITEUP.md`),
       touches,
       remnote: fm?.remnote.length ?? 0,
@@ -180,18 +186,19 @@ export function deriveWorkState(world: World, folders: Map<string, WorkFolder>, 
     if (isCleared && fm?.cleared) w.clearedAt = fm.cleared;
     if (fm?.hours !== undefined) w.hours = fm.hours;
     if (isCleared && parsed) w.writeup = parsed.body;
-    if (!isCleared) {
+    if (w.status === 'in-progress') {
       const lastTouch = touches.length ? touches[touches.length - 1]! * 1000 : null;
-      const started = w.startedAt ? new Date(`${w.startedAt}T12:00:00`).getTime() : null;
-      w.campfire = {
-        note: folder.next ? campfireNote(folder.next.text) : null,
-        since: folder.next?.mtime ?? lastTouch ?? started,
-      };
+      const started = w.startedAt ? new Date(`${w.startedAt}T00:00:00`).getTime() : null; // start of day: any real edit that day is later
+      const times = [folder.next?.mtime ?? null, folder.writeupMtime ?? null, lastTouch, started].filter((t): t is number => t !== null);
+      w.camp = { note: folder.next ? campNote(folder.next.text) : null, since: times.length ? Math.max(...times) : null, current: false };
     }
     const fails = failures.get(s.id);
     if (fails) w.clearProblems = fails.map((c) => (c.detail ? `${c.label} (${c.detail})` : c.label));
     out.set(s.id, w);
   }
+  // Exactly one camp: the most recently touched in-progress shrine (ties by id). The others are cairns.
+  const camp = [...out].filter(([, w]) => w.camp).sort(([a, x], [b, y]) => (y.camp!.since ?? 0) - (x.camp!.since ?? 0) || a.localeCompare(b))[0];
+  if (camp) camp[1].camp!.current = true;
   return out;
 }
 
@@ -227,6 +234,7 @@ export interface StartOptions {
 export type StartResult =
   | { outcome: 'started'; template: TemplateName; created: string[] }
   | { outcome: 'already'; status: ShrineStatus; note: string | null }
+  | { outcome: 'resumed' }
   | { outcome: 'refused'; reason: string };
 
 /** Copy a template directory, filling placeholders in text files. Never overwrites. */
@@ -265,7 +273,12 @@ export function startShrine(root: string, world: World, work: Map<string, Shrine
   const wfile = join(dir, 'WRITEUP.md');
   const current = work.get(id);
   if (existsSync(wfile)) {
-    return { outcome: 'already', status: current?.status ?? 'in-progress', note: current?.campfire?.note ?? null };
+    // Starting a shelved shrine takes it off the shelf: it becomes in progress (and, being freshly touched, the camp).
+    if (current?.status === 'shelved') {
+      writeFileSync(wfile, setFrontmatter(readFileSync(wfile, 'utf8'), { status: 'in-progress' }));
+      return { outcome: 'resumed' };
+    }
+    return { outcome: 'already', status: current?.status ?? 'in-progress', note: current?.camp?.note ?? null };
   }
   if (opts.visibility?.get(id) === 'hidden' && !opts.force) {
     return { outcome: 'refused', reason: "it's hidden: you haven't seen it from anywhere yet (use --force to start anyway)" };
@@ -336,4 +349,26 @@ export function clearShrine(root: string, world: World, config: Config, id: stri
   const paths = [`${WORK_DIR}/${id}`, ...(shrine.kind === 'tower' ? ['world/proposed.yaml'] : []), ...(unpinned ? [PINS_PATH] : [])];
   const commit = `git add ${paths.join(' ')} && git commit -m ${quote(`Clear ${id}: ${shrine.title}`)}`;
   return { outcome: 'cleared', date, checks: res.checks, shrine, commit, unpinned };
+}
+
+// ---------------------------------------------------------------------------------------------
+// stratum shelve
+
+export type ShelveResult = { outcome: 'shelved' } | { outcome: 'refused'; reason: string };
+
+/**
+ * `stratum shelve <id>`: set in-progress work aside on purpose (docs/plans/camps.md). Sets `status: shelved` in
+ * WRITEUP.md. The folder and its history stay; the shrine stops being a camp or cairn, a vantage and a Horizon
+ * candidate. `stratum start <id>` takes it off the shelf.
+ */
+export function shelveShrine(root: string, world: World, work: Map<string, ShrineWork>, id: string): ShelveResult {
+  if (!world.shrineById.has(id)) return { outcome: 'refused', reason: `unknown shrine "${id}"` };
+  const status = work.get(id)?.status ?? 'untouched';
+  if (status === 'untouched') return { outcome: 'refused', reason: `${id} hasn't been started` };
+  if (status === 'cleared') return { outcome: 'refused', reason: `${id} is already cleared` };
+  if (status === 'shelved') return { outcome: 'refused', reason: `${id} is already shelved` };
+  const wfile = join(root, WORK_DIR, id, 'WRITEUP.md');
+  if (!existsSync(wfile)) return { outcome: 'refused', reason: `work/${id}/WRITEUP.md not found` };
+  writeFileSync(wfile, setFrontmatter(readFileSync(wfile, 'utf8'), { status: 'shelved' }));
+  return { outcome: 'shelved' };
 }

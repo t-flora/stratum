@@ -13,7 +13,7 @@ describe('parseWriteup', () => {
   it('flags a folder mismatch, bad status and a cleared write-up without a date', () => {
     expect(parseWriteup(fm('shrine: other\nstatus: done'), 'spsc-ring-buffer').problems).toEqual([
       'frontmatter shrine "other" does not match folder "spsc-ring-buffer"',
-      'frontmatter `status` must be in-progress | cleared',
+      'frontmatter `status` must be in-progress | shelved | cleared',
     ]);
     expect(parseWriteup(fm('shrine: a\nstatus: cleared'), 'a').problems).toEqual(['status is cleared but `cleared` has no date']);
   });

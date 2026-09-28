@@ -24,7 +24,7 @@
     onselect?: (id: string | null) => void;
   } = $props();
 
-  /** Reference time for campfire fading; refreshed whenever a new map arrives. */
+  /** Reference time for the camp fire fading; refreshed whenever a new map arrives. */
   const now = $derived.by(() => {
     void map.builtAt;
     return Date.now();

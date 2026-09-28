@@ -2,7 +2,7 @@
 import { watch, type FSWatcher } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { join, sep } from 'node:path';
-import { build, loadWorld, setPin, startShrine, type BuildCache, type MapData } from '@stratum/core';
+import { build, loadWorld, setPin, shelveShrine, startShrine, type BuildCache, type MapData } from '@stratum/core';
 import type { Plugin } from 'vite';
 
 /** Paths under these are noise (virtualenvs, build output, caches) or written by the build itself. */
@@ -104,7 +104,7 @@ export function stratumApi(root: string, log: (msg: string) => void): Plugin {
             req.on('close', () => clients.delete(res));
             return;
           }
-          if (req.method === 'POST' && (url.pathname === '/api/start' || url.pathname === '/api/pin')) {
+          if (req.method === 'POST' && (['/api/start', '/api/pin', '/api/shelve'].includes(url.pathname))) {
             if (!writeAllowed(req)) return send(res, 403, { error: 'same-origin JSON requests only' });
             const body = (await readJson(req)) as { id?: unknown };
             const { world } = loadWorld(root);
@@ -124,6 +124,14 @@ export function stratumApi(root: string, log: (msg: string) => void): Plugin {
             if (typeof body.id !== 'string') return send(res, 400, { error: 'expected {"id": "<shrine>"}' });
             const built = rebuild(); // fresh work state, so a just-cleared temple need counts
             if (!built.work) return send(res, 500, { error: lastError ?? 'build failed' });
+
+            if (url.pathname === '/api/shelve') {
+              const out = shelveShrine(root, world, built.work, body.id);
+              if (out.outcome === 'refused') return send(res, 409, { error: out.reason });
+              rebuild();
+              return send(res, 200, out);
+            }
+
             // Never forced from the UI: hidden shrines and locked temples need the CLI's --force.
             const out = startShrine(root, world, built.work, body.id, { visibility });
             if (out.outcome === 'refused') return send(res, 409, { error: out.reason });

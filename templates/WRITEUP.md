@@ -1,6 +1,6 @@
 ---
 shrine: {{id}}
-status: in-progress        # in-progress | cleared
+status: in-progress        # in-progress | shelved | cleared
 started: {{started}}
 cleared:                   # set by `stratum clear`
 hours:                     # optional, self-reported

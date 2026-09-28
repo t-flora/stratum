@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import matter from 'gray-matter';
 import type { Diagnostic, World } from './types.ts';
 
-export const WRITEUP_STATUSES = ['in-progress', 'cleared'] as const;
+/** `shelved`: set aside on purpose (`stratum shelve`), kept in git, not a camp or vantage (docs/plans/camps.md). */
+export const WRITEUP_STATUSES = ['in-progress', 'shelved', 'cleared'] as const;
 export type WriteupStatus = (typeof WRITEUP_STATUSES)[number];
 
 export interface WriteupFrontmatter {
@@ -57,7 +58,7 @@ export function parseWriteup(text: string, expectedId?: string): ParsedWriteup {
 
   const fm: WriteupFrontmatter = {
     shrine: typeof d.shrine === 'string' ? d.shrine : (expectedId ?? ''),
-    status: d.status === 'cleared' ? 'cleared' : 'in-progress',
+    status: d.status === 'cleared' || d.status === 'shelved' ? d.status : 'in-progress',
     remnote: Array.isArray(remnote) ? remnote.map(String) : [],
   };
   if (started) fm.started = started;

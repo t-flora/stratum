@@ -113,13 +113,30 @@ describe('the Horizon (§7, §13 M4)', () => {
   });
 
   describe('Slot 1: the Thread', () => {
-    it('continues the most recently touched campfire', () => {
+    it('returns to camp: the most recently touched in-progress shrine', () => {
       const h = horizon([
         ...FRESH,
         { id: 'old-fire', region: 'east', xy: [1100, 600], st: { status: 'in-progress', lastTouched: 1000 } },
         { id: 'new-fire', region: 'east', xy: [1150, 600], st: { status: 'in-progress', lastTouched: 2000 } },
       ]);
-      expect(h.slot('thread')).toMatchObject({ id: 'new-fire', rule: 'campfire' });
+      expect(h.slot('thread')).toMatchObject({ id: 'new-fire', rule: 'camp' });
+    });
+
+    it('prefers the camp flag from work state over touch times', () => {
+      const h = horizon([
+        { id: 'cairn', region: 'east', xy: [1100, 600], st: { status: 'in-progress', lastTouched: 2000 } },
+        { id: 'camp', region: 'east', xy: [1150, 600], st: { status: 'in-progress', lastTouched: 1000, camp: true } },
+      ]);
+      expect(h.slot('thread')).toMatchObject({ id: 'camp', rule: 'camp' });
+    });
+
+    it('never offers shelved work', () => {
+      const h = horizon([
+        { id: 'shelved', region: 'west', xy: [150, 500], st: { status: 'shelved' } },
+        { id: 'near', region: 'west', xy: [200, 500] },
+      ]);
+      expect(h.cards.map((c) => c.id)).not.toContain('shelved');
+      expect(h.slot('thread')!.id).toBe('near');
     });
 
     it('with a pin, picks the shrine "on the way" within the far distance', () => {

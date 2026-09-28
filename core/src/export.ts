@@ -230,7 +230,7 @@ export function buildMapData(
   state: MapState | null = null, builtAt = Date.now(), geometry?: MapGeometry,
 ): MapData {
   const work = state?.work ?? new Map<string, ShrineWork>();
-  const active = (id: string) => (work.get(id)?.status ?? 'untouched') !== 'untouched';
+  const active = (id: string) => ['in-progress', 'cleared'].includes(work.get(id)?.status ?? 'untouched');
   const skyIds = new Set(world.shrines.filter((s) => s.layer === 'sky').map((s) => s.id));
   const shrines: MapShrine[] = world.shrines.map((s) => {
     const w = work.get(s.id);
@@ -253,7 +253,7 @@ export function buildMapData(
     if (s.theme) out.theme = s.theme;
     if (w?.startedAt) out.startedAt = w.startedAt;
     if (w?.clearedAt) out.clearedAt = w.clearedAt;
-    if (w?.campfire) out.campfire = w.campfire;
+    if (w?.camp) out.camp = w.camp;
     if (w?.hours !== undefined) out.hours = w.hours;
     if (w?.writeup !== undefined) out.writeup = w.writeup;
     return out;

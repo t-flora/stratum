@@ -9,8 +9,10 @@ export interface HorizonShrineState {
   status: ShrineStatus;
   visibility: Visibility;
   clearedAt?: string;
-  /** Most recent activity (ms since epoch): last commit, NEXT.md mtime or start date. In-progress shrines only. */
+  /** Most recent activity (ms since epoch). In-progress shrines only. */
   lastTouched?: number;
+  /** The single camp (derived in work.ts). When set, the Thread uses it, so the map and the Horizon agree. */
+  camp?: boolean;
 }
 
 export interface HorizonInput {
@@ -71,7 +73,7 @@ export function computeHorizon(input: HorizonInput): HorizonCard[] {
   const hardwareOk = (s: Shrine) => s.requires.every((t) => available.includes(t));
   const candidates = world.shrines.filter((s) => {
     const st = state(s.id);
-    if (st.status === 'cleared' || st.visibility === 'hidden') return false;
+    if (st.status === 'cleared' || st.status === 'shelved' || st.visibility === 'hidden') return false;
     if (s.kind === 'temple' && !s.needs.every(cleared)) return false;
     return hardwareOk(s);
   });
@@ -95,11 +97,12 @@ export function computeHorizon(input: HorizonInput): HorizonCard[] {
   };
 
   // Slot 1: the Thread.
-  const campfires = world.shrines.filter((s) => state(s.id).status === 'in-progress');
+  const inProgress = world.shrines.filter((s) => state(s.id).status === 'in-progress');
   const pin = input.pin && world.shrineById.has(input.pin) && !cleared(input.pin) ? input.pin : null;
-  if (campfires.length) {
-    const byTouch = [...campfires].sort((a, b) => (state(b.id).lastTouched ?? 0) - (state(a.id).lastTouched ?? 0) || a.id.localeCompare(b.id));
-    add('thread', byTouch[0], 'campfire');
+  if (inProgress.length) {
+    // Return to camp: the flagged camp, else (hand-built states) the most recently touched, ties by id.
+    const byTouch = [...inProgress].sort((a, b) => (state(b.id).lastTouched ?? 0) - (state(a.id).lastTouched ?? 0) || a.id.localeCompare(b.id));
+    add('thread', inProgress.find((s) => state(s.id).camp) ?? byTouch[0], 'camp');
   } else {
     const onLayer = candidates.filter((s) => s.layer === L.layer && revealed(s));
     let picked = false;

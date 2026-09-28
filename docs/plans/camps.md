@@ -1,6 +1,6 @@
 # Plan: rethinking campfires (after M5, or sooner)
 
-*Status: proposal for Tiago's review. Nothing here is built yet.*
+*Status: agreed (camp/cairn, shelving, before M5) and implemented; see docs/decisions.md.*
 
 ## The problem
 

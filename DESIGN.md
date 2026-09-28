@@ -15,7 +15,7 @@ Stratum is a personal study world inspired by the exploration design of *Breath 
   2. **Clearing requires artefacts.** Nothing in the UI marks a shrine cleared by a click.
   3. **The triangle rule (§6, §7) is the core feature.** The map must never show everything at once, except in the explicit authoring view (Atlas mode).
   4. **Placement is stable.** A shrine's position never changes once assigned (§8.4). Spatial memory is part of how the map motivates.
-- Visual design must be **original**. No Nintendo assets, logos, fonts, sounds, character names or the Sheikah eye motif. The game-inspired *vocabulary* used here (shrine, tower, lightroot, sky island, depths, chasm, campfire) is generic and fine.
+- Visual design must be **original**. No Nintendo assets, logos, fonts, sounds, character names or the Sheikah eye motif. The game-inspired *vocabulary* used here (shrine, tower, lightroot, sky island, depths, chasm, camp, cairn) is generic and fine.
 - Where this document is silent, choose the simplest thing that preserves the constraints above, and record the decision in `docs/decisions.md`.
 
 ---
@@ -30,7 +30,7 @@ Tiago is in the final quarter of an MS in Financial Mathematics and wants to spe
 | Shrines | Small, finishable challenges with a clear reward | A bounded build plus a write-up, sized S/M/L (§5) |
 | Depths mirror the surface | Each lightroot lies under a surface shrine | Each depths shrine sits under a surface shrine and covers the mechanism beneath it (§6.4) |
 | The triangle rule | Terrain hides most landmarks, so only a few call to you at once | Line of sight with ridges and prominence (§6), plus a 3-slot Horizon (§7) |
-| Hero's Path, map pins | Your own history and intentions written on the map | A path drawn from git history, campfires for work in progress, and pins (§10) |
+| Hero's Path, map pins | Your own history and intentions written on the map | A path drawn from git history, a camp (and cairns) for work in progress, and pins (§10) |
 
 ### 1.1 Design principles
 
@@ -38,7 +38,7 @@ Tiago is in the final quarter of an MS in Financial Mathematics and wants to spe
 2. **A few choices, not a menu.** At any moment the interface foregrounds at most three next steps. Everything else is either visible terrain you *could* walk to, or hidden.
 3. **Finishable units.** Every shrine has a "done" condition that can be checked without judgement calls about "understanding".
 4. **Vertical meaning.** Moving between layers means moving between levels of abstraction. It isn't a separate topic list.
-5. **No guilt mechanics.** No streaks, XP, levels or nagging. Old campfires fade visually; they never generate warnings.
+5. **No guilt mechanics.** No streaks, XP, levels or nagging. An old camp burns down to embers visually; it never generates warnings.
 6. **Stable space.** Positions and region shapes are deterministic and locked.
 
 ---
@@ -68,8 +68,8 @@ The world is deliberately larger than one quarter can cover. A partly explored m
 ## 3. The core loop, as experienced
 
 1. Open the map (`stratum dev`). The **Horizon** panel shows three cards: *the thread* (continue nearby), *the vertical* (go up or down a layer), and *the far landmark* (a tall silhouette in unexplored territory).
-2. Pick one and press **Set out**. That runs `stratum start <id>`, which scaffolds `work/<id>/` from a template and makes the shrine a *campfire* on the map.
-3. Build. Commit as you go. Before stopping, write one line in `NEXT.md` ("where I left off"). The campfire card shows it next time.
+2. Pick one and press **Set out**. That runs `stratum start <id>`, which scaffolds `work/<id>/` from a template and makes camp there on the map.
+3. Build. Commit as you go. Before stopping, write one line in `NEXT.md` ("where I left off"). The Horizon's camp card shows it next time.
 4. Write `WRITEUP.md`. Run `stratum clear <id>`, which validates the clear (§5) and stamps the date. Commit.
 5. The map updates live. The fog recedes from the new vantage point, the lightroot below starts to glow, a sky shrine linked to this one opens, and the Hero's Path extends. The Horizon recomputes.
 
@@ -92,7 +92,7 @@ stratum/
   work/
     <shrine-id>/
       WRITEUP.md               # required to clear
-      NEXT.md                  # optional campfire note
+      NEXT.md                  # optional "where I left off" line (the camp note)
       ...code, CMakeLists.txt, pyproject.toml, results/
   templates/
     cpp/                       # produced by the `cmake-modern` shrine; a minimal stub until then
@@ -154,7 +154,7 @@ The world schema is documented in the header comment of `world/world-seed.yaml`.
 ```markdown
 ---
 shrine: spsc-ring-buffer
-status: in-progress        # in-progress | cleared
+status: in-progress        # in-progress | shelved | cleared
 started: 2026-10-02
 cleared:                   # set by `stratum clear`
 hours:                     # optional, self-reported
@@ -183,7 +183,7 @@ For every shrine:
 | `startedAt` | date | frontmatter |
 | `committed` | bool | Whether the WRITEUP.md shown as cleared is committed. Uncommitted clears render with a dashed outline. |
 | `touches` | list of timestamps | Commit timestamps from `git log` for paths under `work/<id>/` |
-| `campfireNote` | string | First line of `NEXT.md`, plus its mtime |
+| `camp` | `{note, since, current}` | In-progress shrines: first line of `NEXT.md`, when last touched, and whether it's *the* camp (§10.1) |
 | `visibility` | `hidden \| silhouette \| revealed` | §6 |
 | `xy` | position | §8 |
 | `hoursEstimate` | number | §10.3 |
@@ -293,7 +293,7 @@ Definitions:
 - Distances are measured in xy on the shared canvas, even across layers.
 
 **Slot 1: the Thread** (continue)
-1. If any shrines are in progress, use the most recently touched one, shown as a campfire card with its `NEXT.md` line.
+1. If any shrines are in progress, use the camp (the most recently touched one, §10.1), shown as a "return to camp" card with its `NEXT.md` line.
 2. Otherwise, if a pin exists, choose the revealed candidate on L's layer that minimises `d(L,s) + d(s,pin)` subject to `d(L,s) ≤ 450`. This means "on the way".
 3. Otherwise, use the nearest revealed candidate to L on L's layer. Break ties by p descending, then id.
 
@@ -402,7 +402,8 @@ Transitions should take under 400 ms and respect `prefers-reduced-motion`.
 | Temple | Stepped pyramid |
 | Sky shrine | Ring |
 | Lightroot | Starburst |
-| Campfire | Small flame, with brightness decaying over 14 days since the NEXT.md mtime (visual only) |
+| Camp | Small flame, fading over 14 days since last touched, then embers (visual only) |
+| Cairn | Three stacked stones |
 | Pin | Stamp |
 
 **Typography.** A serif for map labels (e.g. Cormorant Garamond via Google Fonts), a clean sans for UI and a monospace for code. Colours are defined as CSS tokens. The UI chrome supports light and dark modes. The map layers keep their own palettes in both.
@@ -419,9 +420,9 @@ A thin dotted line connects cleared shrines in `clearedAt` order, per layer. Hov
 
 ## 10. Progress signals
 
-### 10.1 Campfires
+### 10.1 Camp and cairns
 
-In-progress shrines render as campfires, showing the `NEXT.md` first line on hover and on their Horizon card.
+*Revised after M4 (docs/plans/camps.md).* Exactly one in-progress shrine is the **camp**: the most recently touched (the latest of NEXT.md's mtime, WRITEUP.md's mtime, the last commit and the start date). It renders as a flame, burning down to embers after 14 untouched days, and it is the Horizon's Thread. Every other in-progress shrine is a **cairn**, work you stepped away from. Both show the `NEXT.md` first line on hover and are vantages. `stratum shelve <id>` sets `status: shelved`: the work stays in git and the shrine stays revealed, but it has no marker, is no vantage, and never appears on the Horizon. `stratum start <id>` takes it off the shelf. A map key (key K) explains every glyph.
 
 ### 10.2 Region readout
 
@@ -449,7 +450,8 @@ Run the CLI with `npx tsx cli/index.ts`, aliased as `stratum`.
 | `stratum dev` | Vite dev server plus a local API (localhost only), with a file watcher that rebuilds on changes under `world/`, `work/` and `state/` and pushes updates over SSE |
 | `stratum start <id> [--force]` | Scaffold `work/<id>/` from a template (cpp or python, based on `region`, with a flag to override) and set `status: in-progress` and `started`. Refuses to start a hidden shrine or a locked temple without `--force`. |
 | `stratum clear <id>` | Validate (§5), stamp the date, and print the checklist and suggested commit |
-| `stratum status` | Counts by layer and region, plus campfires |
+| `stratum status` | Counts by layer and region, plus the camp, cairns and shelved work |
+| `stratum shelve <id>` | Set in-progress work aside (`status: shelved`); `start` resumes it |
 | `stratum horizon` | Print the three Horizon cards in the terminal |
 | `stratum pin <id> \| --clear` | Set or remove the pin |
 | `stratum propose --from <id>` | Append a proposal stub to `proposed.yaml` with `from`, opening `$EDITOR` if set |

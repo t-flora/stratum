@@ -8,7 +8,7 @@ export async function apiAvailable(): Promise<boolean> {
   }
 }
 
-export async function post(path: '/api/start' | '/api/pin', body: { id: string | null }): Promise<{ ok: boolean; error?: string }> {
+export async function post(path: '/api/start' | '/api/pin' | '/api/shelve', body: { id: string | null }): Promise<{ ok: boolean; error?: string }> {
   try {
     const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
     const data = (await res.json().catch(() => ({}))) as { error?: string };
