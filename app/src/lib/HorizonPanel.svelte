@@ -7,9 +7,14 @@
     onselect,
     onsetout,
     onpin,
+    collapsed = false,
+    ontoggle,
   }: {
     map: MapData;
     live: boolean;
+    /** Folded to a small tab so the map underneath is reachable (key H). */
+    collapsed?: boolean;
+    ontoggle: () => void;
     onselect: (id: string) => void;
     onsetout: (id: string) => void;
     onpin: (id: string | null) => void;
@@ -40,8 +45,16 @@
   const pinned = $derived(map.pin ? byId.get(map.pin) : undefined);
 </script>
 
+{#if collapsed}
+  <button class="horizon-tab" onclick={ontoggle} title="Show the Horizon (key H)" aria-expanded="false">
+    Horizon <span class="count">{cards.length}</span><kbd>H</kbd>
+  </button>
+{:else}
 <aside class="horizon" aria-label="Horizon">
-  <h2>Horizon <span class="week">{map.week}</span></h2>
+  <h2>
+    Horizon <span class="week">{map.week}</span>
+    <button class="fold" onclick={ontoggle} title="Fold away (key H)" aria-label="Fold the Horizon away" aria-expanded="true">‹</button>
+  </h2>
   {#if !cards.length}
     <p class="empty">Nothing in sight to set out for.</p>
   {/if}
@@ -94,13 +107,14 @@
     <p class="static-note">Static map: buttons copy the CLI command.</p>
   {/if}
 </aside>
+{/if}
 
 <style>
   .horizon {
     position: absolute;
     top: 12px;
     left: 12px;
-    bottom: 12px;
+    max-height: calc(100% - 24px);
     width: 290px;
     overflow-y: auto;
     padding: 12px;
@@ -111,10 +125,54 @@
     backdrop-filter: blur(6px);
     color: var(--ui-fg);
   }
+  .horizon-tab {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border: 1px solid var(--ui-border);
+    border-radius: 999px;
+    background: var(--ui-panel);
+    box-shadow: 0 4px 12px rgba(40, 30, 20, 0.08);
+    color: var(--ui-fg);
+    font: 600 14px var(--font-map);
+    cursor: pointer;
+  }
+  .horizon-tab .count {
+    min-width: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--ui-accent);
+    color: var(--ui-bg);
+    font: 600 11px var(--font-ui);
+    text-align: center;
+  }
+  .horizon-tab kbd {
+    font: 11px var(--font-mono);
+    opacity: 0.6;
+  }
+  .fold {
+    margin-left: auto;
+    padding: 0 6px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--ui-muted);
+    font: 20px var(--font-ui);
+    line-height: 1;
+    cursor: pointer;
+  }
+  .fold:hover {
+    background: var(--ui-border);
+    color: var(--ui-fg);
+  }
   h2 {
     display: flex;
     align-items: baseline;
-    justify-content: space-between;
+    gap: 8px;
     margin: 0 0 10px;
     font-family: var(--font-map);
     font-size: 20px;

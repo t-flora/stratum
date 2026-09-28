@@ -122,3 +122,8 @@ Added after the M1 review, at Tiago's request. These extend DESIGN.md §4.2 and 
   - Rebuilds reuse cached geometry (`BuildCache`): `Geometry` is keyed on seed, canvas, regions and ridges; exported map geometry on positions plus each shrine's region, theme, kind and p. Work, pin and write-up changes rebuild without recomputing terrain.
   - A failed rebuild keeps serving the last good map and shows the error as a toast.
 - **In the app**, the Horizon panel sits on the left (the §9.1 bottom sheet on narrow screens is M5). Set out and Pin call the API when `/api/health` answers. Otherwise, as in a static build or plain `vite`, they copy the CLI command. A campfire card shows "Continue", which opens the panel, instead of Set out. The detail panel has the same Set out / Pin buttons. The Horizon panel hides in Atlas mode.
+
+## M4 review fixes
+
+- **The Horizon panel no longer pins down the left of the map.** It shrinks to its content and folds to a small tab (the ‹ button, or key H). The state is in memory only.
+- **More room to move.** Zoom goes down to 0.6× and panning reaches well past the canvas edges (0.6 W, 0.4 H), so anything under a side panel can be dragged into view. Zoom buttons (+, −, reset) sit top right for trackpads.

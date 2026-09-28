@@ -52,6 +52,11 @@ Built in a cloud session whose network policy blocks the npm registry, so `npm t
 
 DESIGN.md §9.4, §10.3, §9.2, §9.5 and §13 M5: the Hero's Path, the hours estimate (and per-region readout, §10.2), layer transitions with reduced motion, dark UI chrome, the mobile layout (Horizon as a bottom sheet at 390 px), the Atlas table, search (§6.5), `stratum build --static`, `stratum propose`, and Lighthouse accessibility ≥ 90.
 
+## Planned after M5 (proposals, awaiting Tiago)
+
+- **[World editing](plans/world-editing.md).** Region `weight` to shrink or grow regions (Vector Coast), papers on write-ups and proposals, a core edit module with dry-run diffs, then CLI commands and a browser Edit mode. The YAML plus a JSON Schema is the contract, and the interfaces are clients. There are five questions for Tiago.
+- **[Camps instead of campfires](plans/camps.md).** Exactly one derived camp (the most recently touched in-progress shrine); other started shrines become cairns; an optional `shelve`; a map key explaining every glyph. There are four questions for Tiago, including whether to do it before M5.
+
 ## Known limitations and TODOs
 
 - **Relative images in write-ups** don't render in the detail panel yet, because nothing serves `work/`.

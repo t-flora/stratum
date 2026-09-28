@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { select } from 'd3-selection';
-  import { zoom, type D3ZoomEvent } from 'd3-zoom';
+  import { zoom, zoomIdentity, type D3ZoomEvent, type ZoomBehavior } from 'd3-zoom';
   import type { Layer, MapData, MapShrine } from '@stratum/core/mapdata';
   import Glyph from './Glyph.svelte';
   import { linePath, multiPolygonPath } from './paths.ts';
@@ -126,12 +126,22 @@
   const showThemes = $derived(t.k >= 1.5 && t.k < 2.4);
   const labelSize = (px: number) => px / Math.pow(t.k, 0.85);
 
+  let z: ZoomBehavior<SVGSVGElement, unknown> | undefined;
+  /** Zoom buttons (trackpads, keyboards): scale around the view centre, or reset to the whole map. */
+  function zoomBy(factor: number) {
+    if (z) select(svg).call(z.scaleBy, factor);
+  }
+  function zoomReset() {
+    if (z) select(svg).call(z.transform, zoomIdentity);
+  }
+
   onMount(() => {
-    const z = zoom<SVGSVGElement, unknown>()
-      .scaleExtent([1, 10])
+    // Zoom out below 1 and pan well past the edges, so anything under the side panels can be dragged into view.
+    z = zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.6, 10])
       .translateExtent([
-        [-W * 0.1, -H * 0.1],
-        [W * 1.1, H * 1.1],
+        [-W * 0.6, -H * 0.4],
+        [W * 1.6, H * 1.4],
       ])
       .on('zoom', (e: D3ZoomEvent<SVGSVGElement, unknown>) => {
         t = { k: e.transform.k, x: e.transform.x, y: e.transform.y };
@@ -343,6 +353,12 @@
   </g>
 </svg>
 
+<div class="zoom-controls" role="group" aria-label="Zoom">
+  <button onclick={() => zoomBy(1.4)} title="Zoom in (or scroll / pinch)" aria-label="Zoom in">+</button>
+  <button onclick={() => zoomBy(1 / 1.4)} title="Zoom out" aria-label="Zoom out">−</button>
+  <button onclick={zoomReset} title="Show the whole map" aria-label="Reset zoom">⤢</button>
+</div>
+
 {#if layer === 'depths'}
   <ul class="vein-legend" aria-label="Depths veins">
     {#each veins as v (v.id)}
@@ -531,6 +547,37 @@
     stroke: rgba(0, 0, 0, 0.8);
   }
 
+  .zoom-controls {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--ui-border);
+    border-radius: 8px;
+    background: var(--ui-panel);
+    box-shadow: 0 4px 12px rgba(40, 30, 20, 0.08);
+  }
+  .zoom-controls button {
+    width: 32px;
+    height: 32px;
+    border: 0;
+    background: transparent;
+    color: var(--ui-fg);
+    font: 500 17px var(--font-ui);
+    cursor: pointer;
+  }
+  .zoom-controls button + button {
+    border-top: 1px solid var(--ui-border);
+  }
+  .zoom-controls button:hover {
+    background: var(--ui-border);
+  }
+  .zoom-controls button:focus-visible {
+    outline: 2px solid var(--ui-accent);
+    outline-offset: -2px;
+  }
   .vein-legend {
     position: absolute;
     right: 16px;

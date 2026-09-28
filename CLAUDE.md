@@ -71,7 +71,7 @@ templates/         WRITEUP.md, NEXT.md, cpp/ and python/ scaffolds for `stratum 
 world/             world-seed.yaml (content), proposed.yaml, positions.lock.json (committed)
 fixtures/          tiny/ (clean 3-region world), planted-errors/ (lint test)
 state/pins.yaml    the map pin (`pin: <id>` or null)
-docs/              status.md, decisions.md
+docs/              status.md, decisions.md, plans/ (proposals awaiting Tiago: world editing, camps)
 ```
 
 ## Architecture rules

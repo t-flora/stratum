@@ -49,6 +49,8 @@
 
   /** True under `stratum dev`: Set out and Pin call the API. Otherwise they copy the CLI command (§11). */
   let live = $state(false);
+  /** The Horizon panel folds to a tab (key H). In memory only: nothing is kept in the browser. */
+  let horizonCollapsed = $state(false);
   let toast = $state<string | null>(null);
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
   function say(message: string) {
@@ -116,6 +118,10 @@
       toggleAtlas();
       return;
     }
+    if (e.key === 'h' || e.key === 'H') {
+      horizonCollapsed = !horizonCollapsed;
+      return;
+    }
     const hit = LAYER_ORDER.find((l) => l.key === e.key);
     if (hit) layer = hit.id;
   }
@@ -174,7 +180,15 @@
     {:else if map}
       <MapView {map} {layer} {initialZoom} {atlas} selected={selected?.id ?? null} onselect={select} />
       {#if !atlas}
-        <HorizonPanel {map} {live} onselect={select} onsetout={setOut} onpin={pin} />
+        <HorizonPanel
+          {map}
+          {live}
+          collapsed={horizonCollapsed}
+          ontoggle={() => (horizonCollapsed = !horizonCollapsed)}
+          onselect={select}
+          onsetout={setOut}
+          onpin={pin}
+        />
       {/if}
       {#if selected}
         <DetailPanel shrine={selected} {map} {live} onselect={select} onclose={() => (selectedId = null)} onsetout={setOut} onpin={pin} />
