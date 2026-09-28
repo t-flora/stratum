@@ -7,7 +7,30 @@
   import { linePath, multiPolygonPath } from './paths.ts';
   import { surfaceTint, veinColour } from './palette.ts';
 
-  let { map, layer, initialZoom = 1 }: { map: MapData; layer: Layer; initialZoom?: number } = $props();
+  let {
+    map,
+    layer,
+    initialZoom = 1,
+    selected = null,
+    onselect,
+  }: {
+    map: MapData;
+    layer: Layer;
+    initialZoom?: number;
+    selected?: string | null;
+    onselect?: (id: string | null) => void;
+  } = $props();
+
+  /** Reference time for campfire fading; refreshed whenever a new map arrives. */
+  const now = $derived.by(() => {
+    void map.builtAt;
+    return Date.now();
+  });
+
+  /** A click on open ground (not a glyph) closes the detail panel. d3-zoom swallows the click that ends a drag. */
+  function onMapClick(e: MouseEvent) {
+    if (!(e.target as Element).closest('.glyph')) onselect?.(null);
+  }
 
   let svg: SVGSVGElement;
   let t = $state({ k: 1, x: 0, y: 0 });
@@ -100,13 +123,16 @@
   });
 </script>
 
+<!-- Keyboard users select glyphs with Tab/Enter and close the panel with Escape (App), so the ground click needs no key handler. -->
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
 <svg
   bind:this={svg}
   class="map layer-{layer}"
   viewBox="0 0 {W} {H}"
   preserveAspectRatio="xMidYMid meet"
-  role="img"
+  role="group"
   aria-label="Stratum map, {layer} layer"
+  onclick={onMapClick}
 >
   <defs>
     <pattern id="waves" width="64" height="36" patternUnits="userSpaceOnUse">
@@ -169,7 +195,14 @@
           {/each}
         {/if}
         {#each surfaceShrines as s (s.id)}
-          <Glyph shrine={s} scale={glyphScale} regionName={regionName.get(s.region) ?? s.region} />
+          <Glyph
+            shrine={s}
+            scale={glyphScale}
+            regionName={regionName.get(s.region) ?? s.region}
+            selected={selected === s.id}
+            {now}
+            {onselect}
+          />
         {/each}
         {#if showTitles}
           {#each surfaceShrines as s (s.id)}
@@ -199,7 +232,14 @@
           {/each}
         {/if}
         {#each skyShrines as s (s.id)}
-          <Glyph shrine={s} scale={glyphScale} regionName={regionName.get(s.region) ?? s.region} />
+          <Glyph
+            shrine={s}
+            scale={glyphScale}
+            regionName={regionName.get(s.region) ?? s.region}
+            selected={selected === s.id}
+            {now}
+            {onselect}
+          />
         {/each}
         {#if showTitles}
           {#each skyShrines as s (s.id)}
@@ -222,7 +262,15 @@
           <circle cx={s.xy[0]} cy={s.xy[1]} r="70" fill="url(#glow-{s.region})" />
         {/each}
         {#each depthsShrines as s (s.id)}
-          <Glyph shrine={s} scale={glyphScale} colour={veinColour(s.region)} regionName={regionName.get(s.region) ?? s.region} />
+          <Glyph
+            shrine={s}
+            scale={glyphScale}
+            colour={veinColour(s.region)}
+            regionName={regionName.get(s.region) ?? s.region}
+            selected={selected === s.id}
+            {now}
+            {onselect}
+          />
         {/each}
         {#if showTitles}
           {#each depthsShrines as s (s.id)}

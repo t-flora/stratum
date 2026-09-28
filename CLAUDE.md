@@ -31,11 +31,14 @@ npm run typecheck                # tsc (core+cli) and svelte-check (app)
 npm run stratum -- lint          # validate world + write-ups + config
 npm run stratum -- build         # place shrines (respects lockfile) → build/map.json
 npm run stratum -- setup         # one-time per machine: detect hardware tags
+npm run stratum -- start <id>    # scaffold work/<id>/ (campfire); --template cpp|python, --force for locked temples
+npm run stratum -- clear <id>    # validate §5, stamp the date, suggest a commit (never commits)
+npm run stratum -- status        # counts, campfires, uncommitted clears
 npm run dev                      # build, then Vite at http://127.0.0.1:5173
 scripts/screenshot.sh sky 1      # headless screenshot of the running dev server → build/debug/sky-1.png
 ```
 
-URL params: `?layer=sky|surface|depths`, `?zoom=<k>`. The CLI takes `--root <dir>` to point at another world, for example `fixtures/tiny`.
+URL params: `?layer=sky|surface|depths`, `?zoom=<k>`, `?select=<id>` (opens the detail panel). The CLI takes `--root <dir>` to point at another world, for example `fixtures/tiny`.
 
 To check UI work visually, run `npm run dev` in the background, run `scripts/screenshot.sh <layer> <zoom>`, and read the PNG. It lands under `build/` on purpose, since reads outside the repo may be blocked.
 
@@ -48,13 +51,17 @@ core/src/          all game logic; pure TS, no DOM. Imported by cli and (types o
   config.ts        stratum.config.yaml + stratum.local.yaml layering
   hardware.ts      hardware-tag detection (probe injected for tests)
   writeup.ts       WRITEUP.md frontmatter parsing and work/ folder lint
+  clear.ts         §5 clear validation, write-up sections/word count, frontmatter stamping, template choice (pure)
+  git.ts           GitReader interface (injected; tests fake it or use a temp repo) and git log parsing
+  work.ts          scan work/, derive status/committed/touches/campfire, `start` and `clear`
   geometry.ts      landmass, warped region classifier (2-unit grid), adjacency, elevation, noise
   placement.ts     §8.3 placement + theme anchors + follow-ups + lockfile I/O
   export.ts        map.json geometry: region outlines, ridges, contours, archipelagos, depths territory
   mapdata.ts       the map.json contract (types only; the app imports this via @stratum/core/mapdata)
   build.ts         load → validate → place → export pipeline; lintGeometry
-cli/index.ts       commander CLI: lint, build, dev, setup (setup.ts has the real hardware probe)
-app/src/           Svelte 5 + Vite renderer of build/map.json (MapView.svelte, Glyph.svelte)
+cli/index.ts       commander CLI: lint, build, dev, start, clear, status, setup (setup.ts has the real hardware probe)
+app/src/           Svelte 5 + Vite renderer of build/map.json (MapView, Glyph, DetailPanel; markdown.ts)
+templates/         WRITEUP.md, NEXT.md, cpp/ and python/ scaffolds for `stratum start`
 world/             world-seed.yaml (content), proposed.yaml, positions.lock.json (committed)
 fixtures/          tiny/ (clean 3-region world), planted-errors/ (lint test)
 state/pins.yaml    map pin (M4)

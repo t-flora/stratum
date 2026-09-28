@@ -3,10 +3,12 @@ import { join } from 'node:path';
 import { loadConfig, type Config } from './config.ts';
 import { buildMapData } from './export.ts';
 import { Geometry } from './geometry.ts';
+import { gitReader, readGitWork, type GitReader } from './git.ts';
 import { loadWorld, SEED_PATH } from './loader.ts';
 import type { MapData } from './mapdata.ts';
 import { placeShrines, readLock, serializeLock, writeLock, type PlacementResult } from './placement.ts';
 import type { Diagnostic, World } from './types.ts';
+import { readWorkState, type ShrineWork } from './work.ts';
 
 export const MAP_PATH = 'build/map.json';
 
@@ -37,29 +39,31 @@ export interface BuildResult {
   diagnostics: Diagnostic[];
   placement: PlacementResult | null;
   lockChanged: boolean;
+  work: Map<string, ShrineWork> | null;
 }
 
 /** Load, validate, place, and assemble map.json. Writes the lockfile and map unless `write` is false. */
-export function build(root: string, opts: { replace?: string[]; write?: boolean; config?: Config } = {}): BuildResult {
+export function build(root: string, opts: { replace?: string[]; write?: boolean; config?: Config; git?: GitReader; now?: number } = {}): BuildResult {
   const config = opts.config ?? loadConfig(root);
   const { world, diagnostics } = loadWorld(root);
-  if (!world || diagnostics.some((d) => d.severity === 'error')) return { map: null, diagnostics, placement: null, lockChanged: false };
+  if (!world || diagnostics.some((d) => d.severity === 'error')) return { map: null, diagnostics, placement: null, lockChanged: false, work: null };
 
   for (const id of opts.replace ?? []) {
     if (!world.shrineById.has(id)) diagnostics.push({ severity: 'error', code: 'unknown-id', message: `--replace: unknown shrine "${id}"`, file: SEED_PATH });
   }
   const geo = new Geometry(world, config.world.seed);
   diagnostics.push(...lintGeometry(world, geo));
-  if (diagnostics.some((d) => d.severity === 'error')) return { map: null, diagnostics, placement: null, lockChanged: false };
+  if (diagnostics.some((d) => d.severity === 'error')) return { map: null, diagnostics, placement: null, lockChanged: false, work: null };
 
   const before = readLock(root);
   const placement = placeShrines(world, geo, before, opts.replace);
   const lockChanged = serializeLock(before) !== serializeLock(placement.lock);
-  const map = buildMapData(world, geo, placement.positions, placement.anchors);
+  const work = readWorkState(root, world, config, readGitWork(opts.git ?? gitReader(root)));
+  const map = buildMapData(world, geo, placement.positions, placement.anchors, work, opts.now);
   if (opts.write !== false) {
     if (lockChanged) writeLock(root, placement.lock);
     mkdirSync(join(root, 'build'), { recursive: true });
     writeFileSync(join(root, MAP_PATH), JSON.stringify(map));
   }
-  return { map, diagnostics, placement, lockChanged };
+  return { map, diagnostics, placement, lockChanged, work };
 }

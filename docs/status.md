@@ -10,13 +10,13 @@
 | (extra) `x86` tag, `stratum setup`, `stratum.local.yaml` | ✅ done | `91bf5e9` |
 | M1: geometry, placement, lockfile, static 3-layer map | ✅ done, reviewed | `56d05fa` |
 | (M1 revision) themes, follow-ups, archipelagos, depths territory | ✅ done, **awaiting review of drafted content** | `564188b` |
-| M2: work state (`start`, `clear`, WRITEUP, git touches, campfires, detail panel) | ⏭ next, not started | |
-| M3: visibility (triangle rule) | not started | |
+| M2: work state (`start`, `clear`, WRITEUP, git touches, campfires, detail panel) | 🟡 implemented, **unverified: needs `npm install`, tests, typecheck and a visual check** (see below), then review | this branch |
+| M3: visibility (triangle rule) | not started, waits for M2 review | |
 | M4: Horizon, pins, dev API, SSE | not started | |
 | M5: Hero's Path, hours, polish, Atlas mode, static build | not started | |
 
 **Acceptance evidence:**
-- M0 and M1 criteria are covered by tests in `core/test/` (44 tests).
+- M0 and M1 criteria are covered by tests in `core/test/` (44 tests). M2 adds 20 in `core/test/work.test.ts`.
 - `stratum lint` on the seed reports 217 entries and 22 regions, with 0 errors and 0 warnings.
 - Placement needs no spacing relaxation.
 
@@ -25,38 +25,38 @@
 1. **Review the drafted `theme` and `after` content** in `world/world-seed.yaml` (see `git show 564188b -- world/world-seed.yaml`). There are 136 themed shrines (3–4 themes per region) and 42 follow-up edges. He may rename, regroup or relink freely.
 2. **Regenerating the lockfile after his edits.** Once he's edited themes, offer to regenerate it so the layout follows his edits. That's safe only while no shrine has been started or cleared. Otherwise, new or changed themes get new anchors and locked shrines stay put.
 
-## Next: M2 plan
+## M2: what was built and what still needs checking
 
-DESIGN.md §5, §4.3, §4.4, §10.1, §11. Suggested order:
+Built in the cloud session on branch `claude/eager-sagan-rj0gm3`. That environment's network policy blocked the npm registry, so **no dependency could be installed**. `npm test`, `npm run typecheck`, `stratum` itself and the app were never run there.
 
-1. **Templates and `stratum start`.**
-   - Create `templates/` (WRITEUP.md, NEXT.md, a python/ stub, and a minimal cpp/ stub until the `cmake-modern` shrine produces the real one).
-   - Implement `stratum start <id> [--force] [--template cpp|python]`, which scaffolds `work/<id>/` and sets frontmatter `status: in-progress` and `started`.
-   - Default template choice is still undecided. Suggestion: python for `interp-engineering`/`interp-theory` and anything with `llm-api`, cpp otherwise. Record the choice in `docs/decisions.md`.
-   - Refusing hidden shrines or locked temples needs M3 visibility. For M2, refuse locked temples (unmet `needs`) and leave a TODO for the visibility check, or stub visibility as "all revealed".
-2. **Clear validation.**
-   - Implement `stratum clear <id>` per §5.1: the three sections are non-empty, there are at least `minWords` words, there is an artefact (a non-Markdown file other than NEXT.md, or a `code:` field), and temple `needs` are cleared.
-   - Towers: no artefact required, but at least 3 `proposed.yaml` entries with `from: <tower-id>`.
-   - On success, stamp `status: cleared` and `cleared: <today>`, print the `done` text as a self-check plus a suggested `git commit`. Never auto-commit. On failure, print a checklist.
-   - Keep the validator a pure function in core (`writeup.ts` already parses frontmatter).
-3. **Derived state in core.**
-   - `status`, `startedAt`, `clearedAt`, and `committed` (is the cleared WRITEUP.md committed? Uncommitted clears render dashed).
-   - `touches`: from `git log --format=%H%x09%ct --name-only -- work/`.
-   - `campfireNote`: the first line of NEXT.md, plus its mtime.
-   - Put the git access behind an injected interface so tests can fake it.
-4. **map.json and the app.**
-   - Add the derived fields to `MapShrine`.
-   - Render campfires (a flame glyph, brightness decaying over 14 days) and dashed uncommitted clears.
-   - Add a right-hand detail panel (§9.1): the prompt, **Done when**, link chips, status and dates, and the rendered WRITEUP.md via markdown-it with highlighting. It needs a selection click handler in `MapView`/`Glyph`.
-5. **Acceptance tests (§13 M2):**
-   - Starting a shrine creates a campfire.
-   - An invalid write-up fails with a checklist.
-   - A valid one clears and shows after a rebuild.
-   - Uncommitted clears render dashed.
-   - Use a temp git repo fixture for the git parts.
+**What was verified.** `core/test/work.test.ts` (20 tests) ran under Node's built-in TypeScript support with small scratch shims for `vitest` and `gray-matter` and a JSON copy of `fixtures/tiny`. All 20 passed. That covers the clear checks, frontmatter stamping, start/clear against a temp world, temples, and committed/touches against a real temp git repo. Not exercised: `build()` and map.json (the test's `mapShrine` helper), the real `yaml`/`gray-matter` packages, the CLI, and all Svelte code.
+
+**To do on the Mac before review:**
+1. `npm install`. `app/package.json` gained `markdown-it`, `highlight.js` and `@types/markdown-it`, so this updates `package-lock.json` (commit it).
+2. `npm test` and `npm run typecheck`. Fix anything that surfaces.
+3. Walk the acceptance criteria by hand on a scratch shrine, then remove it:
+   - `npm run stratum -- start spsc-ring-buffer`: this should scaffold `work/spsc-ring-buffer/` (cpp).
+   - `npm run dev`: a flame shows on the Atomic Steppes (`?select=spsc-ring-buffer` opens the panel).
+   - `npm run stratum -- clear spsc-ring-buffer` should fail with a checklist. Fill in the write-up and add a file, and it should clear.
+   - After a rebuild the glyph is filled with a dashed halo (not committed yet). After committing and rebuilding, the halo goes.
+   - Don't commit the scratch shrine unless Tiago wants to keep it.
+
+**What M2 added:**
+- `templates/`: WRITEUP.md, NEXT.md, and the cpp and python stubs.
+- `core/src/clear.ts` (pure): sections, word count, `validateClear`, `setFrontmatter`, template choice.
+- `core/src/git.ts`: a `GitReader` interface, a real reader, and the log parser.
+- `core/src/work.ts`: scanning `work/`, `deriveWorkState`, `startShrine`, `clearShrine`, `lintClears`.
+- CLI: `start`, `clear` and `status`. `build` prints clear and campfire counts, and `lint` warns on invalid clears.
+- App: campfire flames with a 14-day fade, dashed halos for uncommitted clears, a selection ring, `DetailPanel.svelte` (with markdown-it and highlight.js), and `?select=<id>`.
+- Choices are recorded in `docs/decisions.md` under M2.
+
+## Next: M3 (after M2 review)
+
+DESIGN.md §6 in full, as pure functions in core: fog, silhouettes, sky launch points, depths light and glows, and towers. Wire `visibility` into map.json, make `stratum start` refuse hidden shrines without `--force` (a TODO in `work.ts`), and mask the depths terrain to the light circles.
 
 ## Known limitations and TODOs
 
+- **Relative images in write-ups** don't render in the detail panel yet, because nothing serves `work/`.
 - **No live reload yet.** `stratum dev` builds once and has no file watcher, API or SSE (M4 work). Re-run `stratum build` and reload the page.
 - **Towers ignore spacing** (they take the highest point near the centroid). This is fine for the seed. A proposed tower added later could land near a locked shrine.
 - **Cross-region `after` edges don't affect placement.** They're intended as a Horizon signal in M4.

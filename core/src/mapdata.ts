@@ -30,6 +30,19 @@ export interface MapShrine {
   xy: Vec2;
   status: ShrineStatus;
   visibility: Visibility;
+  /** Derived work state (§4.4), from work/<id>/ and git. Dates are YYYY-MM-DD. */
+  startedAt?: string;
+  clearedAt?: string;
+  /** False for a cleared shrine whose WRITEUP.md isn't committed yet (rendered dashed). */
+  committed: boolean;
+  /** Commit timestamps (unix seconds) touching work/<id>/. */
+  touches: number[];
+  /** In-progress shrines: the first line of NEXT.md, and when the fire was last fed (ms since epoch). */
+  campfire?: { note: string | null; since: number | null };
+  hours?: number;
+  remnote: number;
+  /** Markdown body of a cleared write-up. */
+  writeup?: string;
 }
 
 export interface MapRegion {
@@ -70,6 +83,8 @@ export interface MapGeometry {
 
 export interface MapData {
   version: 1;
+  /** When map.json was built (ms since epoch). */
+  builtAt: number;
   canvas: { width: number; height: number };
   start: { vantage: Vec2; plateau: string[] };
   regions: MapRegion[];

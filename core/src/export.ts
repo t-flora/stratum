@@ -4,6 +4,7 @@ import type { MapData, MapGeometry, MapShrine, MapTheme, MultiPolygon } from './
 import { themeKey, themesByRegion } from './placement.ts';
 import { hash32, mulberry32 } from './prng.ts';
 import type { Region, Vec2, World } from './types.ts';
+import type { ShrineWork } from './work.ts';
 
 /** Grid step (world units) for region outlines and ridges. */
 const OUTLINE_STEP = 4;
@@ -211,17 +212,27 @@ function depthsTerrain(world: World, geo: Geometry, positions: Map<string, Vec2>
   return { veins, strata };
 }
 
-/** Assemble map.json. M1: every shrine is revealed and untouched; derived state arrives in M2/M3. */
-export function buildMapData(world: World, geo: Geometry, positions: Map<string, Vec2>, anchors: Map<string, Vec2> = new Map()): MapData {
+/** Assemble map.json. Every shrine is still revealed; visibility arrives in M3. */
+export function buildMapData(
+  world: World, geo: Geometry, positions: Map<string, Vec2>, anchors: Map<string, Vec2> = new Map(),
+  work: Map<string, ShrineWork> = new Map(), builtAt = Date.now(),
+): MapData {
   const shrines: MapShrine[] = world.shrines.map((s) => {
+    const w = work.get(s.id);
     const out: MapShrine = {
       id: s.id, title: s.title, region: s.region, layer: s.layer, kind: s.kind, p: s.p, size: s.size,
       requires: s.requires, after: s.after, links: s.links, needs: s.needs, prompt: s.prompt, done: s.done,
-      xy: positions.get(s.id)!, status: 'untouched', visibility: 'revealed',
+      xy: positions.get(s.id)!, status: w?.status ?? 'untouched', visibility: 'revealed',
+      committed: w?.committed ?? false, touches: w?.touches ?? [], remnote: w?.remnote ?? 0,
     };
     if (s.below) out.below = s.below;
     if (s.from) out.from = s.from;
     if (s.theme) out.theme = s.theme;
+    if (w?.startedAt) out.startedAt = w.startedAt;
+    if (w?.clearedAt) out.clearedAt = w.clearedAt;
+    if (w?.campfire) out.campfire = w.campfire;
+    if (w?.hours !== undefined) out.hours = w.hours;
+    if (w?.writeup !== undefined) out.writeup = w.writeup;
     return out;
   });
   const themes: MapTheme[] = [];
@@ -236,6 +247,7 @@ export function buildMapData(world: World, geo: Geometry, positions: Map<string,
   }
   return {
     version: 1,
+    builtAt,
     canvas: world.canvas,
     start: world.start,
     regions: world.regions.map((r) => ({ ...r })),
