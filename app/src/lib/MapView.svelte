@@ -112,6 +112,8 @@
   );
   /** Shrine titles on the map: silhouettes too faint to name stay anonymous (§6.2). */
   const labelled = (list: MapShrine[]) => list.filter((s) => s.titleKnown);
+  /** The pin (§7): a stamp above the pinned shrine, on its own layer, if it's in sight. */
+  const pinned = $derived(map.pin ? map.shrines.find((s) => s.id === map.pin && s.visibility !== 'hidden') : undefined);
 
   const shrinesOn = (l: Layer) => map.shrines.filter((s) => s.layer === l && s.visibility !== 'hidden');
   const surfaceShrines = $derived(shrinesOn('surface'));
@@ -330,6 +332,14 @@
         {/if}
       </g>
     {/if}
+    {#if pinned && pinned.layer === layer}
+      <g class="pin-stamp" transform="translate({pinned.xy[0]},{pinned.xy[1] - 18 * glyphScale}) scale({glyphScale})">
+        <title>Pinned: {pinned.titleKnown ? pinned.title : '???'}</title>
+        <path class="stamp-stem" d="M0,2 L0,9" />
+        <rect class="stamp-face" x="-6" y="-8" width="12" height="10" rx="2.5" transform="rotate(-8)" />
+        <circle class="stamp-dot" cy="-3" r="2.2" transform="rotate(-8)" />
+      </g>
+    {/if}
   </g>
 </svg>
 
@@ -451,6 +461,22 @@
   }
   .theme-label.sky {
     fill: #5b7697;
+  }
+  .pin-stamp {
+    pointer-events: none;
+  }
+  .stamp-stem {
+    stroke: #8c2f1f;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+  }
+  .stamp-face {
+    fill: #c2412b;
+    stroke: #6e2215;
+    stroke-width: 1.2;
+  }
+  .stamp-dot {
+    fill: #f6e7d0;
   }
   .atlas-dim {
     opacity: 0.6;

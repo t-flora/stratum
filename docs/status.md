@@ -13,11 +13,11 @@
 | M2: work state (`start`, `clear`, WRITEUP, git touches, campfires, detail panel) | ✅ done, verified by Tiago | `6d2ef39` |
 | M3: visibility (triangle rule) | ✅ done, verified by Tiago | `4085f22` |
 | (extra) Atlas toggle (map half of §9.5, pulled forward) | ✅ done, unverified here | on `main` |
-| M4: Horizon, pins, dev API, SSE | not started | |
+| M4: Horizon, pins, dev API, SSE | 🟡 implemented, **unverified here** (see below), awaiting review | on `main` |
 | M5: Hero's Path, hours, polish, Atlas mode, static build | not started | |
 
 **Acceptance evidence:**
-- M0 and M1 criteria are covered by tests in `core/test/` (44 tests). M2 adds 21 in `core/test/work.test.ts`, M3 adds 17 in `core/test/visibility.test.ts`.
+- M0 and M1 criteria are covered by tests in `core/test/` (44 tests). M2 adds 21 in `core/test/work.test.ts`, M3 adds 17 in `core/test/visibility.test.ts`, M4 adds 17 in `core/test/horizon.test.ts`.
 - `stratum lint` on the seed reports 217 entries and 22 regions, with 0 errors and 0 warnings.
 - Placement needs no spacing relaxation.
 
@@ -27,31 +27,34 @@
 2. **Review the drafted `theme` and `after` content** in `world/world-seed.yaml` (see `git show 564188b -- world/world-seed.yaml`). There are 136 themed shrines (3–4 themes per region) and 42 follow-up edges. He may rename, regroup or relink freely.
 3. **Regenerating the lockfile after his edits.** Once he's edited themes, offer to regenerate it so the layout follows his edits. That's safe only while no shrine has been started or cleared. Otherwise, new or changed themes get new anchors and locked shrines stay put.
 
-## M3: what was built and what still needs checking
+## M4: what was built and what still needs checking
 
-Built in a cloud session whose network policy blocks the npm registry, so `npm test`, `npm run typecheck`, the CLI and the app weren't run there. What did run, under Node's built-in TypeScript support with scratch shims: 16 of 17 tests in `core/test/visibility.test.ts` and all 21 in `core/test/work.test.ts`. The one skipped visibility test (a fresh repo on the tiny fixture with real geometry) needs the real `yaml` and `simplex-noise`.
-
-**Review first: a spec conflict.** The §6.2 formulas contradict §6.2's own narrative and the M3 acceptance tests. I followed the tests: only an unobstructed line reveals, and peeking over a ridge needs `p > H`. Details and a one-line alternative are in `docs/decisions.md` under M3.
+Built in a cloud session whose network policy blocks the npm registry, so `npm test`, `npm run typecheck`, the CLI and the app weren't run there. What did run, under Node's built-in TypeScript support with scratch shims: all 17 tests in `core/test/horizon.test.ts`, all 21 in `work.test.ts`, and 16 of 17 in `visibility.test.ts` (the fresh-repo test needs the real `yaml`/`simplex-noise`). The CLI module loads and links.
 
 **To do on the Mac:**
 1. `npm test` and `npm run typecheck`.
-2. `npm run dev` and look at each layer: fog over most of the surface, the plateau clear around the start vantage, towers as silhouettes, sky shrines as grey rings, the depths black. (`?select=<id>` on a silhouette shows the "seen from afar" panel.)
-3. `npm run stratum -- start <some hidden id>` should refuse; `--force` overrides.
+2. `npm run stratum -- horizon`: three cards (Thread, Vertical, Far Landmark).
+3. `npm run dev`:
+   - The Horizon panel shows on the left.
+   - **Pin** on a card: a red stamp appears on the map and `state/pins.yaml` changes. The Thread card may re-route.
+   - **Set out**: `work/<id>/` appears, a campfire lights and the Thread becomes that campfire, with no reload.
+   - Edit `work/<id>/NEXT.md`: the campfire note updates live.
+   - Afterwards, delete the scratch `work/<id>/` and run `npm run stratum -- pin --clear`, unless you want to keep them.
+4. `npm run stratum -- pin <hidden id>` should refuse.
 
-**What M3 added:**
-- `core/src/visibility.ts`: `maxRidgeCrossed`, `computeVisibility` (§6.1–6.4 with the overrides), `titleKnown`.
-- map.json: `sight` (vantages, fog radii, depths lights), `surveyed`, `titleKnown`, `marks`.
-- App: the fog mask, depths masked to light, glow points, chasm and updraft markers, and "???" for faint silhouettes; the panel hides what you can't know yet.
-- `stratum start` refuses hidden shrines; `stratum build` prints revealed/silhouette/hidden counts.
+**What M4 added:**
+- `core/src/horizon.ts` (`computeHorizon`, `isoWeek`, `firstSentence`, `bearing`) and `core/src/pins.ts`.
+- `build()` computes the Horizon and pin, takes a `BuildCache` for fast rebuilds, and map.json gains `horizon`, `pin`, `week` and per-shrine `unavailable`.
+- CLI: `stratum horizon`, `stratum pin <id> | --clear`, and `stratum dev` with the API, watcher and SSE (`cli/dev.ts`). `clear` removes the pin on the pinned shrine.
+- App: `HorizonPanel.svelte`, Set out / Pin in both panels (copying the CLI command without the API), the pin stamp, live reload and toasts.
 
-## Next: M4 (after M3 review)
+## Next: M5 (after M4 review)
 
-DESIGN.md §7 and §11: the Horizon (three slots with their fallbacks, ISO-week stability, hardware filter), pins (`state/pins.yaml`, `stratum pin`), `stratum horizon`, the Horizon panel, the dev API (`/api/map`, `/api/start`, `/api/pin`) and SSE live reload with a file watcher.
+DESIGN.md §9.4, §10.3, §9.2, §9.5 and §13 M5: the Hero's Path, the hours estimate (and per-region readout, §10.2), layer transitions with reduced motion, dark UI chrome, the mobile layout (Horizon as a bottom sheet at 390 px), the Atlas table, search (§6.5), `stratum build --static`, `stratum propose`, and Lighthouse accessibility ≥ 90.
 
 ## Known limitations and TODOs
 
 - **Relative images in write-ups** don't render in the detail panel yet, because nothing serves `work/`.
-- **No live reload yet.** `stratum dev` builds once and has no file watcher, API or SSE (M4 work). Re-run `stratum build` and reload the page.
 - **Towers ignore spacing** (they take the highest point near the centroid). This is fine for the seed. A proposed tower added later could land near a locked shrine.
 - **Cross-region `after` edges don't affect placement.** They're intended as a Horizon signal in M4.
 - **Stale lockfile entries** (removed ids) are kept on purpose; see decisions.

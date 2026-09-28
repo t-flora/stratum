@@ -6,6 +6,8 @@ export * from './clear.ts';
 export * from './git.ts';
 export * from './work.ts';
 export * from './visibility.ts';
+export * from './horizon.ts';
+export * from './pins.ts';
 export * from './summary.ts';
 export * from './hardware.ts';
 export * from './prng.ts';

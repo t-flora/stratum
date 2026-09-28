@@ -98,3 +98,27 @@ Added after the M1 review, at Tiago's request. These extend DESIGN.md §4.2 and 
 - **Map half of §9.5, now.** Asked for after M3, to check the full world. Press **A** or the top-bar **Atlas** button, or open `?atlas=1`. A spoiler warning comes first every time, and A or the button again returns to the real view. The URL keeps `?atlas=1` while it's on.
 - **Presentation only.** `atlasView` marks every shrine revealed and named in the app's copy of map.json. MapView drops the fog and draws the depths terrain dimly everywhere, with a small glow at each lightroot, as the M1 atlas view did. Work state is unchanged, and nothing is stored in the browser.
 - **Still M5:** the sortable table of every shrine.
+
+## M4
+
+- **The Horizon is a pure function** of (world, positions, per-shrine state, pin, available hardware, ISO week): `computeHorizon` in `core/src/horizon.ts`. "Recomputed only on state changes, stable within a week" follows from that. The same inputs give the same cards, and the week only enters through the Far Landmark tie-break, `hash32(week + id)`. There's no reroll.
+- **Candidates** (all slots): uncleared, not hidden, not a temple with unmet needs, and every `requires` tag in `hardware.available`. So no slot can show a hidden shrine. Campfires skip the hardware filter: work already started stays on the Horizon.
+- **L** is the latest `clearedAt` (ties: later in file order), else the start vantage on the surface. **Recent** is the last three clears in that order.
+- **Slot 1.** The most recently touched campfire. "Touched" means the latest of NEXT.md's mtime, the last commit, and the start date. Otherwise, with a pin, the revealed candidate on L's layer within `farDistance` minimising `d(L,s) + d(s,pin)`, ties by id. If none is that close, it falls back to the nearest revealed candidate (ties: p descending, then id). A pin on a cleared or unknown shrine is ignored.
+- **Slot 2** takes the first rule with a match, each resolved by nearest-to-L:
+  1. a glowing lightroot under a Recent shrine;
+  2. a revealed sky shrine linked either way to a Recent shrine;
+  3. if L is a depths shrine, the surface shrine above it, else the nearest revealed surface candidate;
+  4. the nearest revealed candidate on a layer other than Slot 1's.
+- **Slot 3.** Silhouettes with p ≥ 3 at least `farDistance` from L, sorted by the region's cleared fraction (ascending), then p (descending), then `hash32(week + id)`. If none qualify, an uncleared tower, then an open temple, by the same order. The card carries a compass bearing from L (degrees clockwise from north) and the distance.
+- **Cards** carry `slot`, `id`, `rule` (which §7 branch fired, shown as a short "why" line), `distance`, `teaser` (the first sentence of the prompt, revealed shrines only) and `bearing` (Far Landmark only). The app looks up the rest from `shrines`, and uses "???" when the title isn't known.
+- **Pins.** `state/pins.yaml` holds `pin: <id>` or `pin: null`. `stratum pin <id>` and `POST /api/pin` refuse unknown, hidden and cleared shrines. `stratum clear` removes the pin when it clears the pinned shrine and adds `state/pins.yaml` to the suggested `git add`. `stratum lint` warns about a pin that matches no shrine. On the map, the pin is a red stamp above the shrine on its own layer, shown only if the shrine is in sight.
+- **Hardware badge.** Each map shrine carries `unavailable` (its `requires` tags missing on this machine). The panel shows `requires` tags as dashed "needs X" pills.
+- **The dev API** is a Vite plugin (`cli/dev.ts`) that `stratum dev` passes to `createServer`. It isn't in `vite.config.ts`, so core stays out of the Vite config bundle.
+  - Routes: `GET /api/health`, `GET /api/map`, `GET /api/events` (SSE, `event: map` after every rebuild, including failed ones, with the error), `POST /api/start {id}` and `POST /api/pin {id|null}`.
+  - Writes must be `application/json` from the same origin, so another site can't drive them (it would need a CORS preflight we never answer). The server binds 127.0.0.1.
+  - `/api/start` never forces: hidden shrines and locked temples need the CLI's `--force`.
+- **The watcher** uses Node's built-in recursive `fs.watch` on `world/`, `work/` and `state/`, not chokidar. That avoids a new dependency, and recursive watching works on macOS and Linux in Node 20+. It debounces 150 ms and ignores `.venv`, `node_modules`, `__pycache__`, `build`, `.git`, editor swap files and `positions.lock.json`, which the build writes itself.
+  - Rebuilds reuse cached geometry (`BuildCache`): `Geometry` is keyed on seed, canvas, regions and ridges; exported map geometry on positions plus each shrine's region, theme, kind and p. Work, pin and write-up changes rebuild without recomputing terrain.
+  - A failed rebuild keeps serving the last good map and shows the error as a toast.
+- **In the app**, the Horizon panel sits on the left (the §9.1 bottom sheet on narrow screens is M5). Set out and Pin call the API when `/api/health` answers. Otherwise, as in a static build or plain `vite`, they copy the CLI command. A campfire card shows "Continue", which opens the panel, instead of Set out. The detail panel has the same Set out / Pin buttons. The Horizon panel hides in Atlas mode.

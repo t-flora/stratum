@@ -1,8 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { Layer, MapData } from '@stratum/core/mapdata';
+  import { apiAvailable, post, subscribe } from './lib/api.ts';
   import { atlasView } from './lib/atlas.ts';
   import DetailPanel from './lib/DetailPanel.svelte';
+  import HorizonPanel from './lib/HorizonPanel.svelte';
   import MapView from './lib/MapView.svelte';
 
   const LAYER_ORDER: { id: Layer; label: string; key: string }[] = [
@@ -45,6 +47,40 @@
     inSight: map?.shrines.filter((s) => s.visibility !== 'hidden').length ?? 0,
   });
 
+  /** True under `stratum dev`: Set out and Pin call the API. Otherwise they copy the CLI command (§11). */
+  let live = $state(false);
+  let toast = $state<string | null>(null);
+  let toastTimer: ReturnType<typeof setTimeout> | undefined;
+  function say(message: string) {
+    toast = message;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => (toast = null), 4000);
+  }
+  async function copyCommand(cmd: string) {
+    try {
+      await navigator.clipboard.writeText(cmd);
+      say(`Copied: ${cmd}`);
+    } catch {
+      say(`Run: ${cmd}`);
+    }
+  }
+
+  async function setOut(id: string) {
+    if (!live) return copyCommand(`stratum start ${id}`);
+    const res = await post('/api/start', { id });
+    if (!res.ok) return say(`Can't set out: ${res.error}`);
+    say(`Set out: work/${id}/ is ready and a campfire is lit.`);
+    await load();
+    selectedId = id;
+  }
+
+  async function pin(id: string | null) {
+    if (!live) return copyCommand(id ? `stratum pin ${id}` : 'stratum pin --clear');
+    const res = await post('/api/pin', { id });
+    if (!res.ok) return say(`Can't pin: ${res.error}`);
+    await load();
+  }
+
   /** Select a shrine (or close the panel). Following a chip to another layer switches layers. */
   function select(id: string | null) {
     selectedId = id;
@@ -84,7 +120,19 @@
     if (hit) layer = hit.id;
   }
 
-  onMount(load);
+  onMount(() => {
+    let unsubscribe = () => {};
+    load().then(async () => {
+      live = await apiAvailable();
+      if (live) {
+        unsubscribe = subscribe((buildError) => {
+          if (buildError) say(`Build failed; showing the last good map. ${buildError.split('\n')[0]}`);
+          else load();
+        });
+      }
+    });
+    return () => unsubscribe();
+  });
 </script>
 
 <svelte:window onkeydown={onKey} />
@@ -125,11 +173,17 @@
       </div>
     {:else if map}
       <MapView {map} {layer} {initialZoom} {atlas} selected={selected?.id ?? null} onselect={select} />
+      {#if !atlas}
+        <HorizonPanel {map} {live} onselect={select} onsetout={setOut} onpin={pin} />
+      {/if}
       {#if selected}
-        <DetailPanel shrine={selected} {map} onselect={select} onclose={() => (selectedId = null)} />
+        <DetailPanel shrine={selected} {map} {live} onselect={select} onclose={() => (selectedId = null)} onsetout={setOut} onpin={pin} />
       {/if}
     {:else}
       <div class="message"><p>Loading map…</p></div>
+    {/if}
+    {#if toast}
+      <div class="toast" role="status">{toast}</div>
     {/if}
     {#if atlasAsk && built}
       <div class="spoiler" role="dialog" aria-modal="true" aria-labelledby="spoiler-title">
@@ -206,6 +260,19 @@
   }
   .spacer {
     flex: 1;
+  }
+  .toast {
+    position: absolute;
+    left: 50%;
+    bottom: 18px;
+    max-width: min(560px, 90%);
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: var(--ui-fg);
+    color: var(--ui-bg);
+    font-size: 13px;
+    transform: translateX(-50%);
+    box-shadow: 0 6px 18px rgba(20, 16, 12, 0.25);
   }
   .atlas-toggle {
     display: inline-flex;

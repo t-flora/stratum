@@ -1,9 +1,9 @@
 import { contours } from 'd3-contour';
 import type { Geometry } from './geometry.ts';
-import type { MapData, MapGeometry, MapShrine, MapTheme, MultiPolygon } from './mapdata.ts';
+import type { HorizonCard, MapData, MapGeometry, MapShrine, MapTheme, MultiPolygon } from './mapdata.ts';
 import { themeKey, themesByRegion } from './placement.ts';
 import { hash32, mulberry32 } from './prng.ts';
-import type { Region, Vec2, World } from './types.ts';
+import type { Region, RequireTag, Vec2, World } from './types.ts';
 import { sightRadius, titleKnown, type VisibilityConfig, type VisibilityResult } from './visibility.ts';
 import type { ShrineWork } from './work.ts';
 
@@ -218,12 +218,16 @@ export interface MapState {
   work: Map<string, ShrineWork>;
   sight: VisibilityResult;
   config: VisibilityConfig;
+  available: RequireTag[];
+  horizon: HorizonCard[];
+  pin: string | null;
+  week: string;
 }
 
 /** Assemble map.json. */
 export function buildMapData(
   world: World, geo: Geometry, positions: Map<string, Vec2>, anchors: Map<string, Vec2> = new Map(),
-  state: MapState | null = null, builtAt = Date.now(),
+  state: MapState | null = null, builtAt = Date.now(), geometry?: MapGeometry,
 ): MapData {
   const work = state?.work ?? new Map<string, ShrineWork>();
   const active = (id: string) => (work.get(id)?.status ?? 'untouched') !== 'untouched';
@@ -241,6 +245,7 @@ export function buildMapData(
       requires: s.requires, after: s.after, links: s.links, needs: s.needs, prompt: s.prompt, done: s.done,
       xy: positions.get(s.id)!, status: w?.status ?? 'untouched', visibility,
       titleKnown: state ? titleKnown(visibility, s.p, state.config) : true, marks,
+      unavailable: state ? s.requires.filter((t) => !state.available.includes(t)) : [],
       committed: w?.committed ?? false, touches: w?.touches ?? [], remnote: w?.remnote ?? 0,
     };
     if (s.below) out.below = s.below;
@@ -272,7 +277,10 @@ export function buildMapData(
     shrines,
     themes,
     sight: buildSight(world, positions, state),
-    geometry: buildGeometry(world, geo, positions),
+    horizon: state?.horizon ?? [],
+    pin: state?.pin ?? null,
+    week: state?.week ?? '',
+    geometry: geometry ?? buildGeometry(world, geo, positions),
   };
 }
 

@@ -34,6 +34,8 @@ export interface MapShrine {
   titleKnown: boolean;
   /** Surface markers: `chasm` beside a shrine whose lightroot glows; `draft` on a launch point to the sky (§6.3, §6.4). */
   marks: { chasm?: boolean; draft?: boolean };
+  /** `requires` tags this machine lacks (§7 hardware filter): kept on the map, left out of the Horizon. */
+  unavailable: RequireTag[];
   /** Derived work state (§4.4), from work/<id>/ and git. Dates are YYYY-MM-DD. */
   startedAt?: string;
   clearedAt?: string;
@@ -99,6 +101,22 @@ export interface MapSight {
   glowRadius: number;
 }
 
+export type HorizonSlot = 'thread' | 'vertical' | 'far';
+/** Which §7 rule filled the slot. */
+export type HorizonRule = 'campfire' | 'pin' | 'nearest' | 'glow' | 'sky' | 'above' | 'other-layer' | 'landmark' | 'tower' | 'temple';
+
+export interface HorizonCard {
+  slot: HorizonSlot;
+  id: string;
+  rule: HorizonRule;
+  /** Distance from L (the latest clear, or the start vantage) on the shared canvas. */
+  distance: number;
+  /** First sentence of the prompt, for revealed shrines only. */
+  teaser?: string;
+  /** Far Landmark only: direction from L, degrees clockwise from north. */
+  bearing?: number;
+}
+
 export interface MapData {
   version: 1;
   /** When map.json was built (ms since epoch). */
@@ -109,5 +127,11 @@ export interface MapData {
   shrines: MapShrine[];
   themes: MapTheme[];
   sight: MapSight;
+  /** At most three cards (§7). */
+  horizon: HorizonCard[];
+  /** The active pin (state/pins.yaml), or null. */
+  pin: string | null;
+  /** ISO week the Horizon was computed for. */
+  week: string;
   geometry: MapGeometry;
 }

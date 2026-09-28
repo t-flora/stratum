@@ -8,6 +8,7 @@ import {
 import type { Config } from './config.ts';
 import type { GitWorkInfo } from './git.ts';
 import type { ShrineStatus, Visibility } from './mapdata.ts';
+import { PINS_PATH, readPin, writePin } from './pins.ts';
 import type { Diagnostic, Shrine, World } from './types.ts';
 import { parseWriteup } from './writeup.ts';
 
@@ -300,7 +301,7 @@ export function startShrine(root: string, world: World, work: Map<string, Shrine
 // stratum clear
 
 export type ClearOutcome =
-  | { outcome: 'cleared'; date: string; checks: ClearCheck[]; shrine: Shrine; commit: string }
+  | { outcome: 'cleared'; date: string; checks: ClearCheck[]; shrine: Shrine; commit: string; unpinned: boolean }
   | { outcome: 'already'; date: string | null; shrine: Shrine }
   | { outcome: 'failed'; checks: ClearCheck[]; shrine: Shrine }
   | { outcome: 'unknown'; reason: string };
@@ -329,7 +330,10 @@ export function clearShrine(root: string, world: World, config: Config, id: stri
   const date = opts.today ?? localDate();
   const wfile = join(root, WORK_DIR, id, 'WRITEUP.md');
   writeFileSync(wfile, setFrontmatter(folder.writeup!, { status: 'cleared', cleared: date }));
-  const paths = [`${WORK_DIR}/${id}`, ...(shrine.kind === 'tower' ? ['world/proposed.yaml'] : [])];
+  // Clearing the pinned shrine removes the pin (§7).
+  const unpinned = readPin(root) === id;
+  if (unpinned) writePin(root, null);
+  const paths = [`${WORK_DIR}/${id}`, ...(shrine.kind === 'tower' ? ['world/proposed.yaml'] : []), ...(unpinned ? [PINS_PATH] : [])];
   const commit = `git add ${paths.join(' ')} && git commit -m ${quote(`Clear ${id}: ${shrine.title}`)}`;
-  return { outcome: 'cleared', date, checks: res.checks, shrine, commit };
+  return { outcome: 'cleared', date, checks: res.checks, shrine, commit, unpinned };
 }

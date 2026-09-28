@@ -3,10 +3,12 @@ import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { Command } from 'commander';
 import {
-  CONFIG_PATH, Geometry, LAYERS, LOCAL_CONFIG_PATH, LOCK_PATH, MAP_PATH, TEMPLATES, build, clearShrine, gitReader, hasLocalConfig,
-  lintClears, lintGeometry, lintWorkFolders, loadConfig, loadWorld, readGitWork, readWorkState, startShrine, summarize, validateConfig,
-  type ClearCheck, type Diagnostic, type TemplateName, type World,
+  CONFIG_PATH, Geometry, LAYERS, LOCAL_CONFIG_PATH, LOCK_PATH, MAP_PATH, PINS_PATH, TEMPLATES, build, clearShrine, gitReader,
+  hasLocalConfig, lintClears, lintGeometry, lintPin, lintWorkFolders, loadConfig, loadWorld, readGitWork, readWorkState, setPin,
+  startShrine, summarize, validateConfig,
+  type BuildResult, type ClearCheck, type Diagnostic, type MapData, type TemplateName, type World,
 } from '@stratum/core';
+import { stratumApi } from './dev.ts';
 import { setup } from './setup.ts';
 
 /** Walk up from cwd to the directory containing world/world-seed.yaml. */
@@ -47,7 +49,7 @@ program
     const dir = root();
     const { world, diagnostics } = loadWorld(dir);
     const config = loadConfig(dir);
-    if (world) diagnostics.push(...lintWorkFolders(dir, world));
+    if (world) diagnostics.push(...lintWorkFolders(dir, world), ...lintPin(dir, world));
     if (world && !diagnostics.some((d) => d.severity === 'error')) diagnostics.push(...lintClears(readWorkState(dir, world, config)));
     if (world && !diagnostics.some((d) => d.severity === 'error')) diagnostics.push(...lintGeometry(world, new Geometry(world, config.world.seed)));
     const configFile = hasLocalConfig(dir) ? LOCAL_CONFIG_PATH : CONFIG_PATH;
@@ -98,7 +100,7 @@ program
 
 program
   .command('dev')
-  .description('Build, then serve the map with Vite on localhost')
+  .description('Serve the map on localhost with the dev API; rebuilds and pushes updates when world/, work/ or state/ change')
   .option('--port <n>', 'port', '5173')
   .action(async (opts: { port: string }) => {
     const dir = root();
@@ -114,7 +116,9 @@ program
     const appDir = join(dirname(new URL(import.meta.url).pathname), '..', 'app');
     const server = await createServer({
       configFile: join(appDir, 'vite.config.ts'),
+      // Localhost only (§11): the API can scaffold folders and write state/pins.yaml.
       server: { host: '127.0.0.1', port: Number(opts.port) },
+      plugins: [stratumApi(dir, (msg) => console.log(`[stratum] ${msg}`))],
     });
     await server.listen();
     server.printUrls();
@@ -208,6 +212,7 @@ program
         printChecklist(res.checks);
         console.log(`\nCleared ${res.shrine.title} on ${res.date}.\n`);
         console.log(`Did you:\n${indent(res.shrine.done)}\n`);
+        if (res.unpinned) console.log(`The pin was on ${id}; it's removed.\n`);
         console.log(`If so, commit it (stratum never commits for you):\n  ${res.commit}`);
     }
   });
@@ -241,6 +246,69 @@ program
       for (const s of fires) console.log(`  ${s.id}: ${work.get(s.id)!.campfire?.note ?? '(no NEXT.md note)'}`);
     }
     if (uncommitted.length) console.log(`\nCleared but not committed: ${uncommitted.map((s) => s.id).join(', ')}`);
+  });
+
+/** The build pipeline without writing: current visibility, work state and Horizon. */
+function currentMap(dir: string): (BuildResult & { map: MapData }) | null {
+  const built = build(dir, { write: false });
+  if (!built.map || !built.work) {
+    printDiagnostics(built.diagnostics);
+    console.log('build failed; run `stratum build`');
+    process.exitCode = 1;
+    return null;
+  }
+  return built as BuildResult & { map: MapData };
+}
+
+const SLOT_NAME = { thread: 'The Thread', vertical: 'The Vertical', far: 'The Far Landmark' } as const;
+const COMPASS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+
+program
+  .command('horizon')
+  .description('Print the three Horizon cards (§7)')
+  .action(() => {
+    const built = currentMap(root());
+    if (!built) return;
+    const { map } = built;
+    const byId = new Map(map.shrines.map((s) => [s.id, s]));
+    const regionName = new Map(map.regions.map((r) => [r.id, r.name]));
+    if (!map.horizon.length) console.log('The horizon is empty: nothing in sight to set out for.');
+    for (const c of map.horizon) {
+      const s = byId.get(c.id)!;
+      const title = s.titleKnown ? s.title : '???';
+      const where = `${s.layer} · ${regionName.get(s.region) ?? s.region} · ${s.size}${s.requires.length ? ` · needs ${s.requires.join(', ')}` : ''}`;
+      console.log(`${SLOT_NAME[c.slot]}\n  ${title}  (${where})`);
+      if (c.rule === 'campfire' && s.campfire?.note) console.log(`  campfire: ${s.campfire.note}`);
+      if (c.teaser) console.log(`  ${c.teaser}`);
+      if (c.bearing !== undefined) console.log(`  ${c.distance} away, ${COMPASS[Math.round(c.bearing / 45) % 8]}`);
+      console.log(`  → stratum start ${c.id}${map.pin === c.id ? '   (pinned)' : ''}\n`);
+    }
+    if (map.pin) console.log(`Pin: ${byId.get(map.pin)?.title ?? map.pin}`);
+  });
+
+program
+  .command('pin [id]')
+  .description(`Set the map pin (one at a time, in ${PINS_PATH}), or remove it with --clear`)
+  .option('--clear', 'remove the pin')
+  .action((id: string | undefined, opts: { clear?: boolean }) => {
+    const dir = root();
+    if (!opts.clear && !id) {
+      console.log('give a shrine id, or --clear');
+      process.exitCode = 1;
+      return;
+    }
+    const world = loadOrFail(dir);
+    if (!world) return;
+    const built = currentMap(dir);
+    if (!built) return;
+    const visibility = new Map(built.map.shrines.map((s) => [s.id, s.visibility]));
+    const out = setPin(dir, world, visibility, (x) => built.work!.get(x)?.status === 'cleared', opts.clear ? null : id!);
+    if (!out.ok) {
+      console.log(`can't pin: ${out.reason}`);
+      process.exitCode = 1;
+      return;
+    }
+    console.log(out.pin ? `Pinned ${out.pin}. The Thread now routes toward it.` : 'Pin removed.');
   });
 
 program

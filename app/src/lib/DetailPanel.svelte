@@ -5,9 +5,20 @@
   let {
     shrine,
     map,
+    live = false,
     onselect,
     onclose,
-  }: { shrine: MapShrine; map: MapData; onselect: (id: string) => void; onclose: () => void } = $props();
+    onsetout,
+    onpin,
+  }: {
+    shrine: MapShrine;
+    map: MapData;
+    live?: boolean;
+    onselect: (id: string) => void;
+    onclose: () => void;
+    onsetout?: (id: string) => void;
+    onpin?: (id: string | null) => void;
+  } = $props();
 
   const LAYER_NAME: Record<Layer, string> = { sky: 'Sky', surface: 'Surface', depths: 'Depths' };
   const LAYER_RANK: Record<Layer, number> = { sky: 0, surface: 1, depths: 2 };
@@ -145,6 +156,21 @@
           </div>
         </div>
       {/each}
+    </section>
+  {/if}
+
+  {#if shrine.status !== 'cleared' && shrine.visibility !== 'hidden' && (onsetout || onpin)}
+    <section class="go">
+      {#if shrine.status === 'untouched' && onsetout}
+        <button class="primary" onclick={() => onsetout(shrine.id)} title={live ? 'Run stratum start' : 'Copy the stratum start command'}>
+          Set out
+        </button>
+      {/if}
+      {#if onpin}
+        <button onclick={() => onpin(map.pin === shrine.id ? null : shrine.id)} aria-pressed={map.pin === shrine.id}>
+          {map.pin === shrine.id ? 'Unpin' : 'Pin'}
+        </button>
+      {/if}
     </section>
   {/if}
 
@@ -370,6 +396,28 @@
     color: #e2572b;
   }
 
+  .go {
+    display: flex;
+    gap: 8px;
+  }
+  .go button {
+    padding: 6px 16px;
+    border: 1px solid var(--ui-border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--ui-fg);
+    font: 500 13px var(--font-ui);
+    cursor: pointer;
+  }
+  .go button.primary {
+    border-color: var(--ui-accent);
+    background: var(--ui-accent);
+    color: var(--ui-bg);
+  }
+  .go button[aria-pressed='true'] {
+    border-color: var(--ui-accent);
+    color: var(--ui-accent);
+  }
   .work {
     display: grid;
     gap: 6px;
