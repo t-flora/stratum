@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   Geometry, PLACEMENT, PROPOSED_PATH, SEED_PATH, buildMapData, lintGeometry, loadConfig, loadWorld, parseWorld, placeShrines, serializeLock,
-  themeKey, themesByRegion, type Vec2, type World,
+  themeKey, themeRingOrder, themesByRegion, type Vec2, type World,
 } from '../src/index.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..');
@@ -141,6 +141,34 @@ describe('placement (M1 acceptance)', () => {
 });
 
 describe('theme clusters and follow-ups', () => {
+  it('orders the theme ring so themes joined by follow-ups are neighbours', () => {
+    // Activation Marsh: Capturing → Dictionary (activation-store → sae-training) and Dictionary → Using must touch.
+    const themes = themesByRegion(world).get('interp-engineering')!;
+    const order = themeRingOrder(world, 'interp-engineering', themes);
+    const slot = (t: string) => order.indexOf(themes.indexOf(t));
+    const adjacent = (a: string, b: string) => [1, themes.length - 1].includes(Math.abs(slot(a) - slot(b)));
+    expect(adjacent('Capturing activations', 'Dictionary learning')).toBe(true);
+    expect(adjacent('Dictionary learning', 'Using features')).toBe(true);
+    expect(order[0]).toBe(0);
+  });
+
+  it('leans a cross-theme surface follow-up toward its predecessor', () => {
+    // Surface only: sky islets keep a fixed margin from each other and the tower rock, which caps how far they can lean.
+    let checked = 0;
+    for (const s of world.shrines) {
+      if (!s.theme || s.kind !== 'shrine' || s.layer !== 'surface') continue;
+      if (s.after.some((id) => world.shrineById.get(id)!.theme === s.theme && world.shrineById.get(id)!.region === s.region)) continue;
+      const pred = s.after.map((id) => world.shrineById.get(id)!).find((p) => p.layer === s.layer);
+      if (!pred) continue;
+      const anchor = first.anchors.get(themeKey(s.region, s.theme))!;
+      const predPos = first.positions.get(pred.id)!;
+      // Closer to the predecessor than its own theme's anchor is.
+      expect(dist(first.positions.get(s.id)!, predPos), `${s.id} after ${pred.id}`).toBeLessThan(dist(anchor, predPos));
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(5);
+  });
+
   it('every themed shrine is nearer its own theme anchor than any other in its region', () => {
     const themes = themesByRegion(world);
     for (const s of world.shrines.filter((x) => x.theme)) {

@@ -110,9 +110,10 @@ export function placeShrines(world: World, geo: Geometry, lockIn: Lock = {}, rep
     const missing = themes.filter((t) => !lock[themeKey(regionId, t)]);
     if (!missing.length) continue;
     const fresh = locked.length === 0 ? initialAnchors(region, themes.length, geo) : null;
+    const order = fresh ? themeRingOrder(world, regionId, themes) : [];
     for (const t of missing) {
       const existing = themes.filter((x) => anchors.has(themeKey(regionId, x))).map((x) => anchors.get(themeKey(regionId, x))!);
-      const a = fresh ? fresh[themes.indexOf(t)]! : farthestAnchor(region, existing, geo);
+      const a = fresh ? fresh[order.indexOf(themes.indexOf(t))]! : farthestAnchor(region, existing, geo);
       anchors.set(themeKey(regionId, t), r1(a));
     }
   }
@@ -127,7 +128,8 @@ export function placeShrines(world: World, geo: Geometry, lockIn: Lock = {}, rep
     visiting.add(s.id);
     for (const pid of s.after) {
       const p = world.shrineById.get(pid);
-      if (p && p.region === s.region && p.kind === 'shrine') placeWithPredecessors(p);
+      // Any same-layer predecessor goes first (other themes and regions too), so a follow-up can lean toward it.
+      if (p && p.layer === s.layer && p.kind === 'shrine') placeWithPredecessors(p);
     }
     const ctx: Ctx = { world, geo, fixed: fixed[s.layer as Surf], positions, anchor: anchorOf(s), siblings: regionAnchors(s.region) };
     const { p, spacing } = placeOne(s, ctx);
@@ -184,6 +186,52 @@ export function placeShrines(world: World, geo: Geometry, lockIn: Lock = {}, rep
 }
 
 // ---- anchors ------------------------------------------------------------------------------
+
+/**
+ * The order of a region's themes around the ring of anchors (slot k holds theme order[k]). Consecutive slots are
+ * neighbours, so the order that puts the most cross-theme `after` edges between neighbours wins: a learning path that
+ * crosses themes then crosses one border instead of the whole region. The first theme stays in slot 0, and ties keep
+ * file order, so the result is stable.
+ */
+export function themeRingOrder(world: World, regionId: string, themes: string[]): number[] {
+  const n = themes.length;
+  const ident = themes.map((_, i) => i);
+  if (n <= 3) return ident; // every pair is already adjacent
+  const weight = new Map<string, number>();
+  for (const s of world.shrines) {
+    if (s.region !== regionId || !s.theme) continue;
+    for (const pid of s.after) {
+      const p = world.shrineById.get(pid);
+      if (!p || p.region !== regionId || !p.theme || p.theme === s.theme) continue;
+      const a = themes.indexOf(s.theme);
+      const b = themes.indexOf(p.theme);
+      const k = a < b ? `${a}|${b}` : `${b}|${a}`;
+      weight.set(k, (weight.get(k) ?? 0) + 1);
+    }
+  }
+  if (!weight.size) return ident;
+  const score = (o: number[]) => {
+    let sum = 0;
+    for (let k = 0; k < n; k++) {
+      const a = o[k]!;
+      const b = o[(k + 1) % n]!;
+      sum += weight.get(a < b ? `${a}|${b}` : `${b}|${a}`) ?? 0;
+    }
+    return sum;
+  };
+  let best = ident;
+  let bestScore = score(ident);
+  const permute = (prefix: number[], rest: number[]) => {
+    if (!rest.length) {
+      const sc = score(prefix);
+      if (sc > bestScore) { bestScore = sc; best = prefix; }
+      return;
+    }
+    for (const r of rest) permute([...prefix, r], rest.filter((x) => x !== r));
+  };
+  permute([0], ident.slice(1));
+  return best;
+}
 
 /** Candidate points for anchors: a coarse lattice inside the region (surface) or archipelago disc (sky). */
 function anchorCandidates(region: Region, geo: Geometry): Vec2[] {
@@ -317,6 +365,11 @@ function placeOne(s: Shrine, ctx: Ctx): { p: Vec2; spacing: number } {
     .map((id) => ctx.world.shrineById.get(id))
     .find((p) => p && p.region === s.region && p.theme === s.theme && ctx.positions.has(p.id));
   const predPos = pred ? ctx.positions.get(pred.id)! : undefined;
+  // Otherwise, a placed predecessor elsewhere (another theme or region): lean toward it, staying inside our own theme.
+  const far = predPos ? undefined : s.after
+    .map((id) => ctx.world.shrineById.get(id))
+    .find((p) => p && p.layer === s.layer && ctx.positions.has(p.id));
+  const farPos = far ? ctx.positions.get(far.id)! : undefined;
 
   const themeSpread = layer === 'sky' ? 22 : Math.min(50, Math.max(28, themeRadius(ctx) * 0.28));
   const propose = (spacing: number, attempt: number): Vec2 | null => {
@@ -326,6 +379,12 @@ function placeOne(s: Shrine, ctx: Ctx): { p: Vec2; spacing: number } {
       const t = rand() * 2 * Math.PI;
       const r = spacing * (1 + rand() * (PLACEMENT.followUpReach - 1));
       return [predPos[0] + r * Math.cos(t), predPos[1] + r * Math.sin(t)];
+    }
+    if (ctx.anchor && farPos && attempt < 400) {
+      const d = dist(ctx.anchor, farPos);
+      const reach = Math.min(0.5 * d, (layer === 'sky' ? 30 : themeRadius(ctx)) * 0.8);
+      const target: Vec2 = d ? [ctx.anchor[0] + ((farPos[0] - ctx.anchor[0]) / d) * reach, ctx.anchor[1] + ((farPos[1] - ctx.anchor[1]) / d) * reach] : ctx.anchor;
+      return gaussianAround(target, themeSpread * 0.7, rand);
     }
     if (ctx.anchor) return gaussianAround(ctx.anchor, themeSpread * (1 + attempt / 300), rand);
     return uniformInRegion(s, layer, geo, region, rand);

@@ -146,7 +146,7 @@ shrines:
 - id: constexpr-tables
   title: Tables built by the compiler
   region: cpp-core
-  theme: "Abstraction & dispatch"
+  theme: "What it compiles to"
   size: S
   prompt: >-
     Generate a CRC32 or 8-bit popcount lookup table at compile time with constexpr/consteval,
@@ -169,6 +169,7 @@ shrines:
   region: cpp-core
   theme: "Lazy & async"
   p: 3
+  after: [ranges-pipelines]
   prompt: >-
     Implement `generator<T>` by hand (promise_type, coroutine_handle, iterator), then compare it
     with std::generator (C++23) on a lazy tokenizer.
@@ -189,7 +190,7 @@ shrines:
 - id: variant-visit
   title: Variant vs virtual
   region: cpp-core
-  theme: "Abstraction & dispatch"
+  theme: "What it compiles to"
   prompt: >-
     Model an order-event state machine twice, once with std::variant + std::visit and once
     with a virtual hierarchy. Compare dispatch codegen and throughput.
@@ -199,7 +200,7 @@ shrines:
 - id: lambdas-closures
   title: What a lambda is
   region: cpp-core
-  theme: "Abstraction & dispatch"
+  theme: "What it compiles to"
   size: S
   prompt: >-
     Show what lambdas compile to: closure layout, captures by value/ref, and generic lambdas.
@@ -213,6 +214,7 @@ shrines:
   region: cpp-core
   theme: "Errors & contracts"
   size: S
+  after: [std-expected-errors]
   prompt: >-
     Using a compiler with P2900 support (or a documented emulation), add pre/post
     conditions to a small numeric library and compare the evaluation semantics
@@ -484,6 +486,7 @@ shrines:
   region: concurrency
   theme: "Threads & locks"
   p: 3
+  after: [threads-and-jthread]
   prompt: >-
     Implement a TAS spinlock, a TTAS spinlock with pause/backoff, and a ticket lock. Benchmark them
     against std::mutex at 1 to N threads.
@@ -507,6 +510,7 @@ shrines:
   region: concurrency
   theme: "Lock-free queues"
   p: 4
+  after: [memory-order-litmus]
   prompt: >-
     Build a bounded single-producer single-consumer queue with acquire/release, cached
     head/tail indices and cache-line padding. Optimise it step by step.
@@ -529,6 +533,7 @@ shrines:
   theme: "Threads & locks"
   p: 3
   size: S
+  after: [threads-and-jthread]
   prompt: >-
     Build per-thread counters packed together, then padded with
     alignas(std::hardware_destructive_interference_size).
@@ -766,6 +771,7 @@ shrines:
   region: parallel-simd
   theme: "SIMD algorithms"
   requires: [x86]
+  after: [simd-intrinsics-dot]
   prompt: >-
     Filter an int array by a predicate with SIMD: a compress instruction on AVX-512, or a shuffle
     LUT on AVX2.
@@ -901,6 +907,7 @@ shrines:
   theme: "Matmul & attention"
   size: S
   requires: [gpu]
+  after: [cuda-reduction]
   prompt: >-
     Implement softmax as a naive 3-pass version and as a one-pass version with the online max/normaliser trick.
   done: >-
@@ -961,6 +968,7 @@ shrines:
   theme: "Runtime & launch"
   size: S
   requires: [gpu]
+  after: [cuda-streams-overlap]
   prompt: >-
     Capture a sequence of many small kernels in a CUDA graph and measure the launch-overhead
     savings.
@@ -1030,6 +1038,7 @@ shrines:
   title: Probes and controls
   region: interp-engineering
   theme: "Probing & patching"
+  after: [activation-hooks]
   prompt: >-
     Train linear probes for a property (e.g. part of speech or token position) at every layer, with
     Hewitt & Liang style control tasks to measure selectivity.
@@ -1041,6 +1050,7 @@ shrines:
   region: interp-engineering
   theme: "Probing & patching"
   p: 4
+  after: [activation-hooks]
   prompt: >-
     Build a patching harness for an IOI-style task: clean/corrupted runs, patching per layer ×
     position, batched efficiently.
@@ -1076,7 +1086,7 @@ shrines:
   theme: "Dictionary learning"
   p: 4
   size: L
-  after: [activation-store]
+  after: [activation-store, toy-superposition]
   prompt: >-
     Train a ReLU + L1 sparse autoencoder on GPT-2 small residual activations from your activation
     store.
@@ -1194,6 +1204,7 @@ shrines:
   theme: "Measuring latency"
   size: S
   requires: [linux]
+  after: [latency-measurement]
   prompt: >-
     Pin threads with affinity (and isolcpus if possible), then compare busy-spinning, yielding and
     blocking consumers.
@@ -1206,6 +1217,7 @@ shrines:
   theme: "Networking & IPC"
   p: 3
   requires: [linux]
+  after: [binary-serialization]
   prompt: >-
     Receive a synthetic UDP multicast feed with recvmmsg, detect sequence gaps, and decode
     messages in place.
@@ -1316,6 +1328,7 @@ shrines:
   title: Differential testing for kernels
   region: agent-harness
   theme: "Oracles"
+  after: [bench-as-oracle]
   prompt: >-
     Build property-based and differential tests for numeric kernels: random shapes,
     adversarial values, and ULP/relative tolerances.
@@ -1485,7 +1498,7 @@ shrines:
 - id: forge-kernel-benchmarks
   title: Reading kernel-generation benchmarks
   region: agentic-forge
-  theme: "The field"
+  theme: "The evidence"
   p: 3
   requires: [llm-api, gpu]
   links: [llm-kernel-optimization]
@@ -1511,6 +1524,7 @@ shrines:
   theme: "Verification"
   p: 3
   links: [reward-hacking-guards]
+  after: [forge-verifier-ladder]
   prompt: >-
     Design an eval for "make this code faster without breaking it", covering task selection, scoring,
     contamination and cheating, and implement 5 tasks.
@@ -1520,7 +1534,7 @@ shrines:
 - id: forge-failure-atlas
   title: An atlas of agent failures
   region: agentic-forge
-  theme: "The field"
+  theme: "The evidence"
   links: [memory-order-litmus]
   prompt: >-
     Collect cases where agents fail at low-level work (memory ordering, UB, numerical
@@ -1691,6 +1705,7 @@ shrines:
   region: interp-theory
   theme: "Mechanisms"
   links: [activation-patching]
+  after: [theory-circuits]
   prompt: >-
     Formalise activation patching as an intervention on a causal model, and map your patching harness
     onto that formalism.
@@ -1703,6 +1718,7 @@ shrines:
   theme: "Representations"
   p: 3
   links: [sae-training, topk-sae]
+  after: [theory-superposition]
   prompt: >-
     Investigate the known SAE pathologies (feature splitting, feature absorption, unexplained
     "dark matter" in the residual), and demonstrate feature splitting across dictionary sizes.
@@ -1714,6 +1730,7 @@ shrines:
   region: interp-theory
   theme: "Method & scale"
   links: [linear-probes]
+  after: [theory-linear-representation]
   prompt: >-
     Explain the difference between decodability and use, and show a probe that succeeds on information
     the model provably doesn't use.
@@ -1772,6 +1789,7 @@ shrines:
   region: performance-theory
   theme: "Latency"
   p: 3
+  after: [theory-latency-numbers]
   prompt: >-
     Apply Little's law to memory (bandwidth = outstanding requests / latency) and measure
     memory-level parallelism with parallel pointer chases.
@@ -1807,6 +1825,7 @@ shrines:
   theme: "Models"
   p: 4
   links: [flash-attention-mini]
+  after: [theory-roofline]
   prompt: >-
     Derive the arithmetic intensity of the attention and MLP blocks in prefill vs decode, and explain
     why decode is memory-bound.
@@ -1838,7 +1857,7 @@ shrines:
 - id: num-fp-error
   title: Floating-point error analysis
   region: numerical-heights
-  theme: "Error"
+  theme: "Error & stability"
   p: 3
   prompt: >-
     Analyse the error bounds of naive, pairwise and Kahan summation, and verify them empirically.
@@ -1848,7 +1867,7 @@ shrines:
 - id: num-mixed-precision
   title: Mixed precision
   region: numerical-heights
-  theme: "Precision"
+  theme: "Low precision"
   p: 3
   requires: [gpu]
   prompt: >-
@@ -1859,7 +1878,7 @@ shrines:
 - id: num-reproducibility
   title: Reproducible reductions
   region: numerical-heights
-  theme: "Error"
+  theme: "Error & stability"
   links: [parallel-stl]
   after: [num-fp-error]
   prompt: >-
@@ -1871,7 +1890,7 @@ shrines:
 - id: num-quantization
   title: Quantization
   region: numerical-heights
-  theme: "Precision"
+  theme: "Low precision"
   p: 3
   prompt: >-
     Quantise a small model's weights to int8 and fp8 (per-tensor vs per-channel), and measure accuracy loss.
@@ -1881,9 +1900,10 @@ shrines:
 - id: num-stable-softmax
   title: Stable softmax and log-sum-exp
   region: numerical-heights
-  theme: "Error"
+  theme: "Error & stability"
   size: S
   links: [online-softmax]
+  after: [num-fp-error]
   prompt: >-
     Show the overflow and underflow failures of naive softmax, derive the stable form, and connect it to the
     online normaliser.

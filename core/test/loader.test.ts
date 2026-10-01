@@ -53,11 +53,11 @@ describe('planted errors carry file/line context', () => {
   });
 
   it('duplicate id within the seed', () => {
-    // ranges-pipelines is referenced by nothing, so renaming it produces exactly one error.
-    const text = seedText.replace('- id: ranges-pipelines', '- id: value-categories');
+    // small-vector-sbo is referenced by nothing, so renaming it produces exactly one error.
+    const text = seedText.replace('- id: small-vector-sbo', '- id: value-categories');
     const errs = errors(parseWorld(seed(text)).diagnostics);
     expect(errs).toHaveLength(1);
-    expect(errs[0]).toMatchObject({ code: 'duplicate-id', file: SEED_PATH, line: lineOf(text, '- id: value-categories', text.indexOf('id: constexpr-tables')) });
+    expect(errs[0]).toMatchObject({ code: 'duplicate-id', file: SEED_PATH, line: lineOf(text, '- id: value-categories', text.indexOf('id: bloom-filter')) });
   });
 
   it('bad below (unknown id)', () => {
