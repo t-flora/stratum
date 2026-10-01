@@ -302,4 +302,25 @@
     color: var(--ui-muted);
     font-size: 12px;
   }
+
+  /* Narrow screens (§13 M5: usable at 390 px): the Horizon is a bottom sheet, folded to a tab at the bottom edge. */
+  @media (max-width: 640px) {
+    .horizon {
+      top: auto;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: auto;
+      max-height: 42%;
+      border-radius: 14px 14px 0 0;
+      border-bottom: 0;
+      box-shadow: 0 -8px 24px rgba(40, 30, 20, 0.14);
+    }
+    .horizon-tab {
+      top: auto;
+      left: 50%;
+      bottom: 12px;
+      transform: translateX(-50%);
+    }
+  }
 </style>

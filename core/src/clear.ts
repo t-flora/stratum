@@ -10,8 +10,8 @@ export const TOWER_MIN_PROPOSALS = 3;
 
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').replace(/\s*\/\s*/g, ' / ').trim();
 
-/** Strip HTML comments (template hints) so they count neither as content nor as words. */
-function stripComments(s: string): string {
+/** Strip HTML comments (template hints) so they count neither as content nor as words, nor show in the panel. */
+export function stripComments(s: string): string {
   return s.replace(/<!--[\s\S]*?-->/g, '');
 }
 

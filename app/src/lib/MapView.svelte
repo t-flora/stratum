@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { select } from 'd3-selection';
   import { zoom, zoomIdentity, type D3ZoomEvent, type ZoomBehavior } from 'd3-zoom';
   import type { Layer, MapData, MapShrine } from '@stratum/core/mapdata';
@@ -14,6 +14,7 @@
     initialZoom = 1,
     atlas = false,
     selected = null,
+    focus = null,
     onselect,
   }: {
     map: MapData;
@@ -22,6 +23,8 @@
     /** Atlas mode (§9.5): all the terrain, no depths darkness. */
     atlas?: boolean;
     selected?: string | null;
+    /** Pan to this shrine (search results); `n` changes on every request so the same shrine can be found twice. */
+    focus?: { id: string; n: number } | null;
     onselect?: (id: string | null) => void;
   } = $props();
 
@@ -35,6 +38,14 @@
   function onMapClick(e: MouseEvent) {
     if (!(e.target as Element).closest('.glyph')) onselect?.(null);
   }
+
+  /**
+   * Layer transitions (§9.2), under 400 ms: the depths "dive" (darken, then settle from slightly larger) and the sky islands
+   * rise into place. Reduced motion (the OS setting) skips them; app.css does the same for CSS transitions.
+   */
+  const reduced = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const dive = (_node: Element) => ({ duration: reduced ? 0 : 320, css: (u: number) => `opacity: ${u}; transform: scale(${1.05 - 0.05 * u})` });
+  const rise = (_node: Element) => ({ duration: reduced ? 0 : 340, css: (u: number) => `opacity: ${u}; transform: translateY(${(1 - u) * 16}px)` });
 
   let svg: SVGSVGElement;
   let t = $state({ k: 1, x: 0, y: 0 });
@@ -122,6 +133,22 @@
   /** The pin (§7): a stamp above the pinned shrine, on its own layer, if it's in sight. */
   const pinned = $derived(map.pin ? map.shrines.find((s) => s.id === map.pin && s.visibility !== 'hidden') : undefined);
 
+  /** §9.4 Hero's Path on this layer: one dotted segment per step, dated on hover. */
+  const pathSegments = $derived(
+    map.path[layer].slice(1).map((to, i) => {
+      const from = map.path[layer][i]!;
+      return { key: `${from.id}>${to.id}`, a: byId.get(from.id)!.xy, b: byId.get(to.id)!.xy, from: from.date, to: to.date };
+    }),
+  );
+
+  /** §10.2: the region under the pointer, if its name is known (hovering blank paper tells you nothing). */
+  let hovered = $state<string | null>(null);
+  const readout = $derived.by(() => {
+    const r = hovered ? map.regions.find((x) => x.id === hovered) : undefined;
+    if (!r?.stats || (r.layer === 'surface' && !named.has(r.id))) return null;
+    return { name: r.name, layer: r.layer, surveyed: r.surveyed ?? false, ...r.stats };
+  });
+
   const shrinesOn = (l: Layer) => map.shrines.filter((s) => s.layer === l && s.visibility !== 'hidden');
   const surfaceShrines = $derived(shrinesOn('surface'));
   const skyShrines = $derived(shrinesOn('sky'));
@@ -142,6 +169,15 @@
     if (z) select(svg).call(z.transform, zoomIdentity);
   }
 
+  // Search (§6.5) asks to see a shrine: centre it, zooming in to at least 2× so it's findable among its neighbours.
+  $effect(() => {
+    const s = focus ? byId.get(focus.id) : undefined;
+    if (!s || !z) return;
+    const sel = select(svg);
+    sel.call(z.scaleTo, Math.max(2, untrack(() => t.k)));
+    sel.call(z.translateTo, s.xy[0], s.xy[1]);
+  });
+
   onMount(() => {
     // Zoom out below 1 and pan well past the edges, so anything under the side panels can be dragged into view.
     z = zoom<SVGSVGElement, unknown>()
@@ -155,6 +191,10 @@
       });
     select(svg).call(z).on('dblclick.zoom', null);
     if (initialZoom !== 1) select(svg).call(z.scaleTo, initialZoom);
+    else if (svg.clientWidth < 640) {
+      // A phone sees the whole canvas at a quarter scale: open on the start instead, close enough to read (§13 M5).
+      select(svg).call(z.scaleTo, 2.4).call(z.translateTo, map.start.vantage[0], map.start.vantage[1]);
+    }
   });
 </script>
 
@@ -245,7 +285,13 @@
         <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="var(--sea)" />
         <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="url(#waves)" />
         {#each regionFills as r (r.id)}
-          <path d={r.d} fill={r.fill} />
+          <path
+            d={r.d}
+            fill={r.fill}
+            role="presentation"
+            onpointerenter={() => (hovered = r.id)}
+            onpointerleave={() => hovered === r.id && (hovered = null)}
+          />
         {/each}
         <rect width={W} height={H} fill="#fff" filter="url(#grain)" clip-path="url(#land-clip)" />
         {#each contours as d, i (i)}
@@ -261,7 +307,11 @@
       {#if layer === 'surface'}
         <!-- Sky islands cast faint shadows on the ground (§6.3) -->
         {#each islands as isl (isl.region.id)}
-          <path class="island-ground-shadow" d={isl.d} />
+          <!-- Islands are always visible (§6.3), so are their shadows; on unexplored paper only faintly -->
+          <path class="island-ground-shadow" class:unknown={!atlas} d={isl.d} />
+          {#if !atlas}
+            <path class="island-ground-shadow" d={isl.d} mask="url(#explored-mask)" />
+          {/if}
         {/each}
         {#if showThemes}
           {#each themeLabels.filter((l) => l.layer === 'surface') as l (l.key)}
@@ -292,12 +342,18 @@
     </g>
 
     {#if layer === 'sky'}
-      <g class="sky-layer">
+      <g class="sky-layer" in:rise>
         {#each islands as isl (isl.region.id)}
           <path class="island-shadow" d={isl.d} transform="translate(22,34)" filter="url(#soft-shadow)" />
         {/each}
         {#each islands as isl (isl.region.id)}
-          <path class="island" d={isl.d} />
+          <path
+            class="island"
+            d={isl.d}
+            role="presentation"
+            onpointerenter={() => (hovered = isl.region.id)}
+            onpointerleave={() => hovered === isl.region.id && (hovered = null)}
+          />
           <text
             class="island-label"
             x={isl.region.centroid![0]}
@@ -329,7 +385,7 @@
     {/if}
 
     {#if layer === 'depths'}
-      <g class="depths-layer">
+      <g class="depths-layer" in:dive>
         <!-- Depths terrain: vein territories and rock strata, seen only where there is light -->
         <g mask={atlas ? undefined : 'url(#light-mask)'} class:atlas-dim={atlas}>
           {#each veinFills as v (v.id)}
@@ -360,6 +416,18 @@
         {/if}
       </g>
     {/if}
+    {#if pathSegments.length}
+      <!-- Hero's Path (§9.4): drawn over the glyphs but thin, so it never hides them -->
+      <g class="hero-path {layer}">
+        {#each pathSegments as seg (seg.key)}
+          <g class="step">
+            <title>{seg.from === seg.to ? seg.to : `${seg.from} → ${seg.to}`}</title>
+            <line class="step-hit" x1={seg.a[0]} y1={seg.a[1]} x2={seg.b[0]} y2={seg.b[1]} />
+            <line class="step-line" x1={seg.a[0]} y1={seg.a[1]} x2={seg.b[0]} y2={seg.b[1]} />
+          </g>
+        {/each}
+      </g>
+    {/if}
     {#if pinned && pinned.layer === layer}
       <g class="pin-stamp" transform="translate({pinned.xy[0]},{pinned.xy[1] - 18 * glyphScale}) scale({glyphScale})">
         <title>Pinned: {pinned.titleKnown ? pinned.title : '???'}</title>
@@ -370,6 +438,16 @@
     {/if}
   </g>
 </svg>
+
+{#if readout}
+  <div class="region-readout" role="status">
+    <strong>{readout.name}</strong>
+    <span>{readout.cleared} cleared · {readout.revealed} revealed · {readout.total} shrines</span>
+    <span>
+      {#if readout.layer === 'surface'}{readout.surveyed ? 'Surveyed' : 'Not surveyed'}{/if}{#if readout.hours > 0}{readout.layer === 'surface' ? ' · ' : ''}{readout.estimated ? '≈ ' : ''}{readout.hours} h{/if}
+    </span>
+  </div>
+{/if}
 
 <div class="zoom-controls" role="group" aria-label="Zoom">
   <button onclick={() => zoomBy(1.4)} title="Zoom in (or scroll / pinch)" aria-label="Zoom in">+</button>
@@ -446,6 +524,57 @@
     stroke-opacity: 0.55;
     stroke-dasharray: 0.9 2.6;
     stroke-linecap: butt;
+  }
+  .hero-path .step-line {
+    stroke: var(--path);
+    stroke-width: 1.6;
+    stroke-dasharray: 1.5 4;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+    pointer-events: none;
+  }
+  .hero-path.sky .step-line {
+    stroke: var(--sky-ink);
+  }
+  .hero-path.depths .step-line {
+    stroke: var(--depths-label);
+  }
+  .hero-path .step-hit {
+    stroke: transparent;
+    stroke-width: 10;
+    vector-effect: non-scaling-stroke;
+  }
+  .hero-path .step:hover .step-line {
+    stroke-width: 2.6;
+  }
+  .region-readout {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    display: grid;
+    gap: 2px;
+    padding: 8px 12px;
+    border: 1px solid var(--ui-border);
+    border-radius: 8px;
+    background: var(--ui-panel);
+    color: var(--ui-fg);
+    font-size: 12px;
+    pointer-events: none;
+  }
+  .region-readout strong {
+    font-family: var(--font-map);
+    font-size: 16px;
+  }
+  .region-readout span {
+    color: var(--ui-muted);
+  }
+  .sky-layer,
+  .depths-layer {
+    transform-box: view-box;
+    transform-origin: 50% 50%;
+  }
+  .island-ground-shadow.unknown {
+    opacity: 0.05;
   }
   .island-ground-shadow {
     fill: var(--island-shadow);
@@ -617,5 +746,20 @@
     height: 9px;
     margin-right: 8px;
     border-radius: 50%;
+  }
+
+  @media (max-width: 640px) {
+    .region-readout {
+      top: 56px;
+      right: auto;
+      bottom: auto;
+      left: 12px;
+    }
+    .vein-legend {
+      top: 56px;
+      right: auto;
+      bottom: auto;
+      left: 12px;
+    }
   }
 </style>

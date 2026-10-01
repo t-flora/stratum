@@ -2,7 +2,9 @@
 
 export async function apiAvailable(): Promise<boolean> {
   try {
-    return (await fetch('/api/health', { cache: 'no-store' })).ok;
+    // Static hosts often answer unknown paths with index.html and a 200, so require the API's own reply.
+    const res = await fetch('/api/health', { cache: 'no-store' });
+    return res.ok && ((await res.json().catch(() => null)) as { ok?: boolean } | null)?.ok === true;
   } catch {
     return false;
   }

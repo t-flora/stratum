@@ -52,7 +52,12 @@ export interface MapShrine {
    * every other in-progress shrine is a cairn. `since` (ms) is when it was last touched: it drives the embers.
    */
   camp?: { note: string | null; since: number | null; current: boolean };
+  /** Self-reported `hours` from the frontmatter. */
   hours?: number;
+  /** §10.3: self-reported hours, else the commit estimate (`estimated`, shown with "≈"). */
+  hoursEstimate?: { hours: number; estimated: boolean };
+  /** §6.5: lower-case text search may match ("" for anything search must not find). */
+  search: string;
   remnote: number;
   /** Markdown body of a cleared write-up. */
   writeup?: string;
@@ -68,6 +73,8 @@ export interface MapRegion {
   surveyed?: boolean;
   /** Surface regions: how much of the land is explored (share 0–1), and the middle of that part, where the name goes. */
   explored?: { share: number; centre: Vec2 | null };
+  /** §10.2 readout: cleared / revealed / total, and the hours spent here. */
+  stats?: { cleared: number; revealed: number; total: number; hours: number; estimated: boolean };
 }
 
 export interface MapRidge {
@@ -139,6 +146,8 @@ export interface MapData {
   shrines: MapShrine[];
   themes: MapTheme[];
   sight: MapSight;
+  /** §9.4 Hero's Path: cleared shrines in clearedAt order, per layer. */
+  path: Record<Layer, { id: string; date: string }[]>;
   /** At most three cards (§7). */
   horizon: HorizonCard[];
   /** The active pin (state/pins.yaml), or null. */

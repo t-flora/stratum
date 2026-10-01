@@ -4,6 +4,7 @@ import type { Geometry } from './geometry.ts';
 import type { HorizonCard, MapData, MapGeometry, MapRegion, MapShrine, MapTheme, MultiPolygon } from './mapdata.ts';
 import { themeKey, themesByRegion } from './placement.ts';
 import { hash32, mulberry32 } from './prng.ts';
+import { heroPath, regionStats, searchText, shrineHours } from './progress.ts';
 import type { Region, RequireTag, Vec2, World } from './types.ts';
 import { titleKnown, type VisibilityConfig, type VisibilityResult } from './visibility.ts';
 import type { ShrineWork } from './work.ts';
@@ -244,11 +245,12 @@ export function buildMapData(
       if (active(s.id) && world.shrines.some((d) => d.below === s.id)) marks.chasm = true;
       if (s.links.some((l) => skyIds.has(l)) || world.shrines.some((o) => o.layer === 'sky' && o.links.includes(s.id))) marks.draft = true;
     }
+    const known = state ? titleKnown(visibility, s.p, state.config) : true;
     const out: MapShrine = {
       id: s.id, title: s.title, region: s.region, layer: s.layer, kind: s.kind, p: s.p, size: s.size,
       requires: s.requires, after: s.after, links: s.links, needs: s.needs, prompt: s.prompt, done: s.done,
       xy: positions.get(s.id)!, status: w?.status ?? 'untouched', visibility,
-      titleKnown: state ? titleKnown(visibility, s.p, state.config) : true,
+      titleKnown: known, search: searchText(s, visibility, known),
       charted: s.layer !== 'surface' || !state || state.explored.has(...positions.get(s.id)!), marks,
       unavailable: state ? s.requires.filter((t) => !state.available.includes(t)) : [],
       committed: w?.committed ?? false, touches: w?.touches ?? [], remnote: w?.remnote ?? 0,
@@ -260,9 +262,15 @@ export function buildMapData(
     if (w?.clearedAt) out.clearedAt = w.clearedAt;
     if (w?.camp) out.camp = w.camp;
     if (w?.hours !== undefined) out.hours = w.hours;
+    const h = w && w.status !== 'untouched' ? shrineHours(w.hours, w.touches) : undefined;
+    if (h) out.hoursEstimate = h;
     if (w?.writeup !== undefined) out.writeup = w.writeup;
     return out;
   });
+  const byId = new Map(shrines.map((s) => [s.id, s]));
+  const stats = regionStats(
+    world, (id) => byId.get(id)!.status === 'cleared', (id) => byId.get(id)!.visibility, (id) => byId.get(id)!.hoursEstimate,
+  );
   const themes: MapTheme[] = [];
   for (const [region, names] of themesByRegion(world)) {
     const layer = world.regionById.get(region)!.layer;
@@ -279,7 +287,7 @@ export function buildMapData(
     canvas: world.canvas,
     start: world.start,
     regions: world.regions.map((r) => {
-      const out: MapRegion = { ...r };
+      const out: MapRegion = { ...r, stats: stats.get(r.id)! };
       if (state?.sight.surveyed.has(r.id)) out.surveyed = true;
       const ex = state?.exploredShare.get(r.id);
       if (ex) out.explored = { share: Math.round(ex.share * 100) / 100, centre: ex.centre };
@@ -288,6 +296,7 @@ export function buildMapData(
     shrines,
     themes,
     sight: buildSight(world, positions, state),
+    path: heroPath(world, (id) => work.get(id)?.clearedAt),
     horizon: state?.horizon ?? [],
     pin: state?.pin ?? null,
     week: state?.week ?? '',

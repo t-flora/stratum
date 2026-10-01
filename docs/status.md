@@ -15,8 +15,8 @@
 | (extra) Atlas toggle (map half of §9.5, pulled forward) | ✅ done, unverified here | on `main` |
 | M4: Horizon, pins, dev API, SSE | 🟡 implemented, **unverified here** (see below), awaiting review | on `main` |
 | (extra) Camps, cairns, shelving, map key (docs/plans/camps.md) | 🟡 implemented, unverified here, awaiting review | on `main` |
-| M4b: the unknown (docs/plans/unknown.md): peek margin, hideable sky shrines, explored land | 🟡 implemented and verified on the Mac, **awaiting review** | on `main` (uncommitted) |
-| M5: Hero's Path, hours, polish, Atlas mode, static build | not started | |
+| M4b: the unknown (docs/plans/unknown.md): peek margin, hideable sky shrines, explored land | ✅ done; Tiago continued to M5 without changes | `1873880` |
+| M5: Hero's Path, hours, polish, Atlas mode, static build | 🟡 implemented and verified on the Mac, **awaiting review** | on `main` |
 
 **Acceptance evidence:**
 - M0 and M1 criteria are covered by tests in `core/test/` (44 tests). M2 adds 21 in `core/test/work.test.ts`, M3 adds 17 in `core/test/visibility.test.ts`, M4 adds 17 in `core/test/horizon.test.ts`.
@@ -25,24 +25,37 @@
 
 ## Open items waiting on Tiago
 
-1. **Review M4b** (below).
+1. **Review M5** (below).
 2. **Review the drafted `theme` and `after` content** in `world/world-seed.yaml` (see `git show 564188b -- world/world-seed.yaml`). There are 136 themed shrines (3–4 themes per region) and 42 follow-up edges. He may rename, regroup or relink freely.
 3. **Regenerating the lockfile after his edits.** Once he's edited themes, offer to regenerate it so the layout follows his edits. That's safe only while no shrine has been started or cleared. Otherwise, new or changed themes get new anchors and locked shrines stay put.
 
-## M4b: the unknown
+## M5: what was built and how it was checked
 
-Built on the Mac: `npm test` (114 tests, including 9 new ones in `core/test/explore.test.ts`, with the M4b acceptance test on the real seed), `npm run typecheck` and `stratum lint` are all clean. Screenshots were checked on a fresh copy of the world and after one `start`.
+Checked on the Mac: `npm test` (126 tests; new: `progress.test.ts`, `propose.test.ts`), `npm run typecheck`, and screenshots of a scratch copy of the world with three clears in a throwaway git history (`build/fresh-root/`, gitignored; `npm run stratum -- --root build/fresh-root dev` shows it). Lighthouse accessibility scored 100 (mobile emulation) and 100 (desktop, detail panel open).
 
-**Fresh repo:** 52 of 217 in sight (24%). The whole plateau is revealed and charted, about 40% of each low-ridged neighbour is charted, and everything else is blank paper with landmarks floating on it. Starting a shrine in Template Highlands charted that region out to its ridges and coast (58 in sight).
+**Built:**
+- **Hero's Path** (§9.4): a dotted line through the clears on each layer, with the dates on hover.
+- **Hours** (§10.3): "≈ 2.5 h" in the detail panel and the region readout. Self-reported `hours` wins.
+- **Region readout** (§10.2): hover a charted region or a sky island to see cleared / revealed / total, surveyed, and hours. Completion % is in the top bar.
+- **Search** (§6.5): the top-bar box (`/` focuses it). It finds only what you've seen, and silhouettes by title only.
+- **Layer transitions** (§9.2): the depths dive, the sky islands rise, both under 400 ms; reduced motion turns them off. Light and dark chrome follow the OS.
+- **Phones (390 px)**: the Horizon and the detail panel become bottom sheets, the top bar wraps, and the map opens zoomed on the start.
+- **Atlas table** (§9.5): after the spoiler warning, Map / Table (key T). You can sort and filter; clicking a title shows that shrine on the map.
+- **`stratum build --static`** writes `build/static/`; serve it with any static server. Buttons copy CLI commands there.
+- **`stratum propose --from <id>`**: lists the write-up's loose threads; `--thread <n>` or `--text "…"` appends a stub to `world/proposed.yaml`.
+- **Fixes**: write-ups no longer show the template's HTML comments as text; static hosts no longer fool the app into thinking the dev API is there. Island shadows are fainter on unexplored paper (the open M4b question).
 
 **To review:**
-1. `npm run dev` on the real repo. Your scratch `work/` folders count as explorers, so for the fresh view copy `world/`, `state/`, `templates/` and `stratum.config.yaml` somewhere and use `--root`.
-2. Is the feel right? The knobs are `peekMargin` and `exploreRidge` in `stratum.config.yaml`, plus the 15% threshold for region names.
-3. The island ground shadows are more noticeable on blank paper. Keep them, fade them, or drop them outside explored land?
+1. `npm run dev`. Then try `/` to search, hover a region, open the Atlas (A, then T), and resize the window to phone width.
+2. `npm run stratum -- --root build/fresh-root dev --port 5180` for the world with a Hero's Path.
+3. `npm run stratum -- propose --from <id>` on a write-up with loose threads (it writes to `world/proposed.yaml`, so revert it if you're just trying it).
+
+**Not built:** the Hero's Path week-density toggle (optional in §9.4), and Playwright screenshots (optional in §14).
 
 **Noticed along the way (not changed):**
-- `stratum dev` only watches `work/` if it existed at startup (the first `start` in a fresh repo needs a restart to show live).
-- Headless Chrome on the Mac now writes the screenshot but never exits, so `scripts/screenshot.sh` hangs.
+- `stratum dev` only watches `work/` if it existed at startup.
+- `scripts/screenshot.sh` hangs: headless Chrome on the Mac writes the PNG but never exits, and it enforces a minimum window width, so it can't do 390 px. For this milestone I drove Chrome over the DevTools protocol with device emulation (a scratch script, `build/cdp-shot.mjs`). It could replace screenshot.sh if you want.
+- Running `npm i` in a subfolder installs into the root workspace. I hit this installing Lighthouse, restored `package.json` and `package-lock.json`, and pruned `node_modules`.
 
 ## M4: what was built and what still needs checking
 
@@ -74,9 +87,9 @@ Harness results: work 23/23, visibility 17/18 (the real-geometry test is skipped
 4. Press K for the map key.
 5. Clean up the scratch folders afterwards.
 
-## Next: M5 (after the camps and M4b reviews)
+## Next (after the M5 review)
 
-DESIGN.md §9.4, §10.3, §9.2, §9.5 and §13 M5: the Hero's Path, the hours estimate (and per-region readout, §10.2, which should respect uncharted regions), layer transitions with reduced motion, dark UI chrome, the mobile layout (Horizon as a bottom sheet at 390 px), the Atlas table, search (§6.5), `stratum build --static`, `stratum propose`, and Lighthouse accessibility ≥ 90.
+M5 is the last milestone in DESIGN.md §13. After it: Tiago's review of the drafted themes and follow-ups (open item 2), the world-editing proposal below, and setting out on the first real shrine.
 
 ## Planned after M5 (proposals, awaiting Tiago)
 
@@ -90,4 +103,3 @@ DESIGN.md §9.4, §10.3, §9.2, §9.5 and §13 M5: the Hero's Path, the hours es
 - **Stale lockfile entries** (removed ids) are kept on purpose; see decisions.
 - **Island ground shadows** on the surface are drawn from the archipelago outlines and look blotchy, more so on the blank paper of the unknown. This is cosmetic, to polish in M5.
 - **map.json still carries the full geometry** (Atlas needs it). The M5 static build might strip unexplored terrain.
-- **Atlas is map-only.** A / `?atlas=1` reveals everything on the map; the sortable table (§9.5) is M5.

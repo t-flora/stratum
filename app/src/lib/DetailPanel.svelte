@@ -123,9 +123,9 @@
     {:else if shrine.status === 'shelved'}
       <p class="explain">Set aside on purpose. The folder and history stay; setting out again takes it off the shelf.</p>
     {/if}
-    {#if shrine.hours !== undefined || shrine.touches.length || shrine.remnote}
+    {#if shrine.hoursEstimate || shrine.touches.length || shrine.remnote}
     <ul class="facts">
-      {#if shrine.hours !== undefined}<li>{shrine.hours}h</li>{/if}
+      {#if shrine.hoursEstimate}<li title={shrine.hoursEstimate.estimated ? 'Estimated from commit times' : 'Self-reported'}>{shrine.hoursEstimate.estimated ? '≈ ' : ''}{shrine.hoursEstimate.hours} h</li>{/if}
       {#if shrine.touches.length}<li>{shrine.touches.length} commit{shrine.touches.length === 1 ? '' : 's'}</li>{/if}
       {#if shrine.remnote}<li>{shrine.remnote} flashcard link{shrine.remnote === 1 ? '' : 's'}</li>{/if}
     </ul>
@@ -574,5 +574,20 @@
   }
   .markdown :global(.hljs-meta) {
     color: #b3a88f;
+  }
+
+  /* Narrow screens: a sheet from the bottom, over the Horizon, leaving the top of the map in view. */
+  @media (max-width: 640px) {
+    .panel {
+      top: auto;
+      left: 0;
+      width: auto;
+      max-height: 72%;
+      padding: 14px 16px 22px;
+      border-left: 0;
+      border-top: 1px solid var(--ui-border);
+      border-radius: 14px 14px 0 0;
+      box-shadow: 0 -8px 24px rgba(40, 30, 20, 0.16);
+    }
   }
 </style>

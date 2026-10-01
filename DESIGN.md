@@ -448,7 +448,7 @@ Run the CLI with `npx tsx cli/index.ts`, aliased as `stratum`.
 | Command | Behaviour |
 |---|---|
 | `stratum lint` | Validate the world (§4.2) and every WRITEUP.md |
-| `stratum build [--replace <id>]` | Compute positions (respecting the lockfile), derived state, visibility and Horizon, and write `build/map.json` |
+| `stratum build [--replace <id>] [--static]` | Compute positions (respecting the lockfile), derived state, visibility and Horizon, and write `build/map.json` |
 | `stratum dev` | Vite dev server plus a local API (localhost only), with a file watcher that rebuilds on changes under `world/`, `work/` and `state/` and pushes updates over SSE |
 | `stratum start <id> [--force]` | Scaffold `work/<id>/` from a template (cpp or python, based on `region`, with a flag to override) and set `status: in-progress` and `started`. Refuses to start a hidden shrine or a locked temple without `--force`. |
 | `stratum clear <id>` | Validate (§5), stamp the date, and print the checklist and suggested commit |
@@ -456,7 +456,7 @@ Run the CLI with `npx tsx cli/index.ts`, aliased as `stratum`.
 | `stratum shelve <id>` | Set in-progress work aside (`status: shelved`); `start` resumes it |
 | `stratum horizon` | Print the three Horizon cards in the terminal |
 | `stratum pin <id> \| --clear` | Set or remove the pin |
-| `stratum propose --from <id>` | Append a proposal stub to `proposed.yaml` with `from`, opening `$EDITOR` if set |
+| `stratum propose --from <id> [--thread <n> \| --text <t>]` | Append a proposal stub to `proposed.yaml` with `from`, opening `$EDITOR` if set. Without `--thread` it lists the write-up's loose threads to choose from |
 
 **Dev API.** `GET /api/map`, `POST /api/start {id}`, `POST /api/pin {id|null}`, and `GET /api/events` (SSE). **Set out** and **Pin** in the UI call these. In a static build (`stratum build --static`), those buttons copy the equivalent CLI command instead.
 

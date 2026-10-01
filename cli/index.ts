@@ -1,9 +1,10 @@
 #!/usr/bin/env -S npx tsx
-import { existsSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { Command } from 'commander';
 import {
-  CONFIG_PATH, Geometry, LAYERS, LOCAL_CONFIG_PATH, LOCK_PATH, MAP_PATH, PINS_PATH, TEMPLATES, build, clearShrine, gitReader,
+  CONFIG_PATH, Geometry, LAYERS, PROPOSED_PATH, appendProposal, looseThreads, parseWriteup, proposalStub, LOCAL_CONFIG_PATH, LOCK_PATH, MAP_PATH, PINS_PATH, TEMPLATES, build, clearShrine, gitReader,
   hasLocalConfig, lintClears, lintGeometry, lintPin, lintWorkFolders, loadConfig, loadWorld, readGitWork, readWorkState, setPin,
   shelveShrine, startShrine, summarize, validateConfig,
   type BuildResult, type ClearCheck, type Diagnostic, type MapData, type TemplateName, type World,
@@ -75,7 +76,8 @@ program
   .command('build')
   .description(`Place shrines (respecting ${LOCK_PATH}) and write ${MAP_PATH}`)
   .option('--replace <ids...>', 'deliberately re-place these shrines')
-  .action((opts: { replace?: string[] }) => {
+  .option('--static', 'also bundle the app with map.json into build/static/ (no dev API: buttons copy CLI commands)')
+  .action(async (opts: { replace?: string[]; static?: boolean }) => {
     const t0 = performance.now();
     const res = build(root(), { replace: opts.replace });
     const { errors } = printDiagnostics(res.diagnostics);
@@ -97,7 +99,26 @@ program
     const vis = res.map.shrines.map((s) => s.visibility);
     console.log(`${vis.filter((v) => v === 'revealed').length} revealed, ${vis.filter((v) => v === 'silhouette').length} silhouettes, ${vis.filter((v) => v === 'hidden').length} hidden`);
     console.log(`wrote ${MAP_PATH} in ${Math.round(performance.now() - t0)} ms`);
+    if (opts.static) await buildStatic(root());
   });
+
+/**
+ * `stratum build --static` (§11): the app plus a copy of map.json, servable from any folder (relative base).
+ * Without the dev API the app notices and makes Set out / Pin / Shelve copy the CLI command instead.
+ */
+async function buildStatic(dir: string) {
+  const { build: viteBuild } = await import('vite');
+  const appDir = join(dirname(new URL(import.meta.url).pathname), '..', 'app');
+  const outDir = resolve(dir, 'build', 'static');
+  await viteBuild({
+    configFile: join(appDir, 'vite.config.ts'),
+    base: './',
+    logLevel: 'warn',
+    build: { outDir, emptyOutDir: true },
+  });
+  copyFileSync(join(dir, MAP_PATH), join(outDir, 'map.json'));
+  console.log(`wrote build/static/ (serve it, e.g. \`npx vite preview --outDir build/static\`; file:// can't fetch map.json)`);
+}
 
 program
   .command('dev')
@@ -335,6 +356,52 @@ program
       return;
     }
     console.log(`Shelved ${id}. Its folder and history stay; \`stratum start ${id}\` takes it off the shelf.`);
+  });
+
+program
+  .command('propose')
+  .description(`Append a proposal stub to ${PROPOSED_PATH} (§4.3, §5.3); a loose thread from the write-up becomes its prompt`)
+  .requiredOption('--from <id>', 'the proposing shrine (a tower clear, or a write-up with loose threads)')
+  .option('--thread <n>', 'which loose thread (1-based; see the list with no --thread)')
+  .option('--text <text>', 'the proposal text, instead of a loose thread')
+  .option('--no-edit', "don't open $EDITOR afterwards")
+  .action((opts: { from: string; thread?: string; text?: string; edit: boolean }) => {
+    const dir = root();
+    const world = loadOrFail(dir);
+    if (!world) return;
+    if (!world.shrineById.has(opts.from)) {
+      console.log(`unknown shrine "${opts.from}"`);
+      process.exitCode = 1;
+      return;
+    }
+    const writeup = join(dir, 'work', opts.from, 'WRITEUP.md');
+    const threads = existsSync(writeup) ? looseThreads(parseWriteup(readFileSync(writeup, 'utf8')).body) : [];
+    let text = opts.text;
+    if (!text && opts.thread !== undefined) {
+      text = threads[Number(opts.thread) - 1];
+      if (!text) {
+        console.log(`no loose thread ${opts.thread} in work/${opts.from}/WRITEUP.md (it has ${threads.length})`);
+        process.exitCode = 1;
+        return;
+      }
+    }
+    if (!text && threads.length) {
+      console.log(`Loose threads in work/${opts.from}/WRITEUP.md:`);
+      threads.forEach((t, i) => console.log(`  ${i + 1}. ${t}`));
+      console.log(`Pick one: stratum propose --from ${opts.from} --thread <n>   (or --text "…")`);
+      return;
+    }
+    const stub = proposalStub(world, opts.from, text);
+    const file = join(dir, PROPOSED_PATH);
+    const before = existsSync(file) ? readFileSync(file, 'utf8') : 'shrines: []\n';
+    writeFileSync(file, appendProposal(before, stub.yaml));
+    console.log(`added "${stub.id}" to ${PROPOSED_PATH}:\n${indent(stub.yaml)}`);
+    const { diagnostics } = loadWorld(dir);
+    const { errors } = printDiagnostics(diagnostics.filter((d) => d.file === PROPOSED_PATH));
+    console.log('Fill in `done` (and adjust anything else), then run `stratum build`: existing shrines keep their places.');
+    if (errors.length) process.exitCode = 1;
+    const editor = process.env.VISUAL || process.env.EDITOR;
+    if (opts.edit && editor && process.stdout.isTTY) spawnSync(`${editor} ${JSON.stringify(file)}`, { stdio: 'inherit', shell: true });
   });
 
 program

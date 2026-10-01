@@ -3,10 +3,12 @@
   import type { Layer, MapData } from '@stratum/core/mapdata';
   import { apiAvailable, post, subscribe } from './lib/api.ts';
   import { atlasView } from './lib/atlas.ts';
+  import AtlasTable from './lib/AtlasTable.svelte';
   import DetailPanel from './lib/DetailPanel.svelte';
   import HorizonPanel from './lib/HorizonPanel.svelte';
   import MapKey from './lib/MapKey.svelte';
   import MapView from './lib/MapView.svelte';
+  import SearchBox from './lib/SearchBox.svelte';
 
   const LAYER_ORDER: { id: Layer; label: string; key: string }[] = [
     { id: 'sky', label: 'Sky', key: '1' },
@@ -26,8 +28,12 @@
   let atlasAsk = $state(params.get('atlas') === '1');
   const map = $derived(built && atlas ? atlasView(built) : built);
 
+  /** Atlas mode shows the map with everything revealed, or the table of every shrine (§9.5). */
+  let atlasTable = $state(false);
+
   function setAtlas(on: boolean) {
     atlas = on;
+    if (!on) atlasTable = false;
     atlasAsk = false;
     const url = new URL(location.href);
     if (on) url.searchParams.set('atlas', '1');
@@ -47,6 +53,15 @@
     started: map?.shrines.filter((s) => s.status === 'in-progress').length ?? 0,
     inSight: map?.shrines.filter((s) => s.visibility !== 'hidden').length ?? 0,
   });
+  /** §10.2: the global completion, in small text only. */
+  const completion = $derived(built ? Math.round((1000 * counts.cleared) / built.shrines.length) / 10 : 0);
+
+  /** Search asks the map to centre a shrine; the counter makes a repeat search for the same shrine move the map again. */
+  let focus = $state<{ id: string; n: number } | null>(null);
+  function find(id: string) {
+    select(id);
+    focus = { id, n: (focus?.n ?? 0) + 1 };
+  }
 
   /** True under `stratum dev`: Set out and Pin call the API. Otherwise they copy the CLI command (§11). */
   let live = $state(false);
@@ -103,7 +118,7 @@
 
   async function load() {
     try {
-      const res = await fetch('/map.json', { cache: 'no-store' });
+      const res = await fetch('map.json', { cache: 'no-store' });
       if (!res.ok) throw new Error(await res.text());
       built = await res.json();
       error = null;
@@ -127,6 +142,10 @@
     if ((e.target as HTMLElement)?.closest('input, textarea')) return;
     if (e.key === 'a' || e.key === 'A') {
       toggleAtlas();
+      return;
+    }
+    if ((e.key === 't' || e.key === 'T') && atlas) {
+      atlasTable = !atlasTable;
       return;
     }
     if (e.key === 'h' || e.key === 'H') {
@@ -174,12 +193,23 @@
         </button>
       {/each}
     </div>
+    {#if map}
+      <SearchBox {map} onpick={find} />
+    {/if}
     <div class="spacer"></div>
     {#if built}
       <span class="readout">
-        {counts.cleared} cleared · {counts.started} in progress ·
+        {completion}% of the world<span class="long">&nbsp;· {counts.cleared} cleared · {counts.started} in progress</span> ·
         {atlas ? `atlas: all ${built.shrines.length} shown` : `${counts.inSight} of ${built.shrines.length} in sight`}
       </span>
+      {#if atlas}
+        <div class="layers" role="radiogroup" aria-label="Atlas view">
+          <button role="radio" aria-checked={!atlasTable} class:active={!atlasTable} onclick={() => (atlasTable = false)}>Map</button>
+          <button role="radio" aria-checked={atlasTable} class:active={atlasTable} onclick={() => (atlasTable = true)} title="Every shrine as a table (key T)">
+            Table<kbd>T</kbd>
+          </button>
+        </div>
+      {/if}
       <button class="atlas-toggle" class:active={atlas} aria-pressed={atlas} onclick={toggleAtlas} title="Atlas mode: reveal everything (key A)">
         Atlas<kbd>A</kbd>
       </button>
@@ -193,7 +223,7 @@
         <pre>{error}</pre>
       </div>
     {:else if map}
-      <MapView {map} {layer} {initialZoom} {atlas} selected={selected?.id ?? null} onselect={select} />
+      <MapView {map} {layer} {initialZoom} {atlas} {focus} selected={selected?.id ?? null} onselect={select} />
       {#if !atlas}
         <HorizonPanel
           {map}
@@ -206,7 +236,10 @@
         />
       {/if}
       <MapKey open={keyOpen} ontoggle={() => (keyOpen = !keyOpen)} />
-      {#if selected}
+      {#if atlas && atlasTable && built}
+        <AtlasTable map={built} onpick={(id) => ((atlasTable = false), find(id))} />
+      {/if}
+      {#if selected && !(atlas && atlasTable)}
         <DetailPanel shrine={selected} {map} {live} onselect={select} onclose={() => (selectedId = null)} onsetout={setOut} onpin={pin} onshelve={shelve} />
       {/if}
     {:else}
@@ -220,8 +253,8 @@
         <div class="spoiler-card">
           <h2 id="spoiler-title">Open the atlas?</h2>
           <p>
-            The atlas shows every shrine, including the ones you haven't seen yet: all the terrain, no darkness, every prompt.
-            It's for reviewing and editing the world. Your progress doesn't change, and pressing A again takes you back.
+            The atlas shows every shrine, including the ones you haven't seen yet: all the terrain, no darkness, every prompt,
+            on the map or as a table (key T). It's for reviewing and editing the world. Your progress doesn't change, and pressing A again takes you back.
           </p>
           <div class="spoiler-actions">
             <button onclick={() => (atlasAsk = false)}>Keep exploring</button>
@@ -377,6 +410,7 @@
   .readout {
     color: var(--ui-muted);
     font-size: 12px;
+    white-space: nowrap;
   }
   .stage {
     position: relative;
@@ -390,5 +424,29 @@
   pre {
     font-family: var(--font-mono);
     white-space: pre-wrap;
+  }
+
+  /* Narrow screens: the top bar wraps, with search on its own row; the long readout shrinks to the essentials. */
+  @media (max-width: 640px) {
+    .topbar {
+      flex-wrap: wrap;
+      gap: 8px 10px;
+      padding: 8px 12px;
+    }
+    h1 {
+      font-size: 20px;
+    }
+    .layers button {
+      padding: 5px 10px;
+    }
+    .layers kbd,
+    .atlas-toggle kbd,
+    .readout .long {
+      display: none;
+    }
+    .topbar :global(.search) {
+      order: 10;
+      width: 100%;
+    }
   }
 </style>

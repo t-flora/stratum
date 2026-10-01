@@ -6,7 +6,7 @@
 
   --ui-bg: #f6f3ec;
   --ui-fg: #2b2620;
-  --ui-muted: #7a7064;
+  --ui-muted: #6b6256;
   --ui-border: #ddd4c4;
   --ui-accent: #9a5b2e;
   --ui-panel: rgba(251, 249, 244, 0.94);
@@ -22,6 +22,7 @@
   --label: #3d3222;
   --unknown: #e8e2d3;
   --unknown-edge: #a8987a;
+  --path: #7a3b1c;
 
   /* Sky */
   --sky: #eef4fa;

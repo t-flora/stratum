@@ -156,4 +156,17 @@
     outline: 2px solid var(--ui-accent);
     outline-offset: 1px;
   }
+
+  /* Narrow screens: the bottom edge belongs to the Horizon sheet, so the key lives top left. */
+  @media (max-width: 640px) {
+    .key,
+    .key-tab {
+      top: 12px;
+      bottom: auto;
+    }
+    .key {
+      width: min(300px, calc(100% - 70px));
+      max-height: calc(100% - 80px);
+    }
+  }
 </style>

@@ -209,6 +209,7 @@ describe('start and clear (§13 M2)', () => {
     expect(s).toMatchObject({ status: 'cleared', clearedAt: '2026-10-09', remnote: 2, committed: false });
     expect(s.camp).toBeUndefined();
     expect(s.writeup).toContain('## How it works');
+    expect(s.writeup).not.toContain('<!--'); // template hints don't reach the panel
     expect(clearShrine(dir, world, config, 'a-one')).toMatchObject({ outcome: 'already', date: '2026-10-09' });
   });
 

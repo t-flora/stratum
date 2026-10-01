@@ -2,7 +2,7 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
-  TEMPLATES, defaultTemplate, fillTemplate, localDate, setFrontmatter, validateClear,
+  TEMPLATES, defaultTemplate, fillTemplate, localDate, setFrontmatter, stripComments, validateClear,
   type ClearCheck, type TemplateName, type WorkFile,
 } from './clear.ts';
 import type { Config } from './config.ts';
@@ -185,7 +185,8 @@ export function deriveWorkState(world: World, folders: Map<string, WorkFolder>, 
     if (fm?.started) w.startedAt = fm.started;
     if (isCleared && fm?.cleared) w.clearedAt = fm.cleared;
     if (fm?.hours !== undefined) w.hours = fm.hours;
-    if (isCleared && parsed) w.writeup = parsed.body;
+    // The template's hints are HTML comments; markdown-it (html: false) would print them as text.
+    if (isCleared && parsed) w.writeup = stripComments(parsed.body).replace(/\n{3,}/g, '\n\n').trim();
     if (w.status === 'in-progress') {
       const lastTouch = touches.length ? touches[touches.length - 1]! * 1000 : null;
       const started = w.startedAt ? new Date(`${w.startedAt}T00:00:00`).getTime() : null; // start of day: any real edit that day is later

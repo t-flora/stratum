@@ -8,6 +8,8 @@ export * from './work.ts';
 export * from './visibility.ts';
 export * from './explore.ts';
 export * from './horizon.ts';
+export * from './progress.ts';
+export * from './propose.ts';
 export * from './pins.ts';
 export * from './summary.ts';
 export * from './hardware.ts';
