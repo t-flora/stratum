@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Stratum: three strata. Sky with a floating islet, the surface with a shrine, and the depths with the lightroot
+       directly beneath it (each lightroot sits under its surface shrine). Original artwork. -->
+  <defs>
+    <clipPath id="tile"><rect width="64" height="64" rx="14" /></clipPath>
+    <radialGradient id="glow" cx="32" cy="53" r="13" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3fd0c4" stop-opacity="0.75" />
+      <stop offset="1" stop-color="#3fd0c4" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <g clip-path="url(#tile)">
+    <!-- sky -->
+    <rect width="64" height="64" fill="#d6e6f5" />
+    <ellipse cx="47.5" cy="16.5" rx="6" ry="1.6" fill="#9fb3c9" opacity="0.55" />
+    <path d="M40,9.2 H55 q-1.2,3.6 -5.2,5.4 q-1.4,1.6 -2.3,1.2 q-1.2,-0.4 -2.2,-1.4 q-4.2,-1.6 -5.3,-5.2z" fill="#c9bb98" />
+    <path d="M40,9.2 q0.6,-2.2 3.6,-2.5 q2.2,-1.9 5,-0.9 q2.8,-0.4 4.6,1.2 q1.6,0.8 1.8,2.2z" fill="#fbf5e6" />
+    <!-- surface, with a wavy horizon -->
+    <path d="M0,22 q8,-3.4 16,-0.6 t16,0 t16,0.2 t16,-0.4 V64 H0z" fill="#efe2c2" />
+    <path d="M0,22 q8,-3.4 16,-0.6 t16,0 t16,0.2 t16,-0.4" fill="none" stroke="#6f5f47" stroke-width="1.2" />
+    <!-- depths -->
+    <path d="M0,44.5 q10,2.6 20,0.4 t22,0.2 t22,-0.6 V64 H0z" fill="#0d1016" />
+    <circle cx="32" cy="53" r="13" fill="url(#glow)" />
+    <polygon points="32,46.2 33.6,50.8 38.3,50.5 34.6,53.4 36.1,58 32,55.3 27.9,58 29.4,53.4 25.7,50.5 30.4,50.8" fill="#3fd0c4" />
+    <!-- the shrine: a rotated square with an inner dot -->
+    <rect x="25" y="26" width="14" height="14" rx="1.2" transform="rotate(45 32 33)" fill="#efe2c2" stroke="#2f2819" stroke-width="3" />
+    <circle cx="32" cy="33" r="2.6" fill="#2f2819" />
+  </g>
+</svg>
