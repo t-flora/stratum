@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npx vitest run)",
+      "Bash(npx vitest run *)",
+      "Bash(npx tsc -p tsconfig.json --noEmit)",
+      "Bash(npm run typecheck)",
+      "Bash(npm run -s typecheck)",
+      "Bash(npm run stratum -- lint)",
+      "Bash(npm run -s stratum -- lint)",
+      "Bash(npm run stratum -- *)",
+      "Bash(npm run -s stratum -- *)",
+      "Bash(npm run dev *)",
+      "Bash(scripts/screenshot.sh *)",
+      "Bash(node scripts/shot.mjs *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}
