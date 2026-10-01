@@ -551,8 +551,25 @@ Stop for review after each milestone.
   - a fresh repo still shows 15–25% of the world;
   - the biomes, ranges, rivers and lakes render, on explored land only.
 
-### M7: Expeditions (planned, docs/plans/reset.md)
-- Reset the map without losing the work; erase; a new world while nothing is started.
+### Future milestones (planned, optional)
+
+These are proposals, each with open questions for Tiago in its plan. They're numbered for reference, not strict order. Anything that reshapes the world is only cheap before the first `stratum start` (see M8).
+
+### M7: Expeditions (docs/plans/reset.md)
+- Reset the map without losing the work: `stratum expedition new` archives `work/` into `archive/expedition-<n>/`. Also `stratum erase` (delete the work), and a new-world step (a new seed) that's only allowed with `work/` empty. All CLI only, a dry run by default, confirmed by typing a count.
+- **Accept when:** a new expedition returns the map to its fresh state with every write-up preserved in the archive and no position moved; erase and new-world refuse without confirmation; the four questions in the plan are answered.
+
+### M8: World editing (docs/plans/world-editing.md)
+- E1: JSON Schemas, a region `weight` (shrink or grow regions, e.g. Vector Coast), `papers:` in WRITEUP.md, `source:` on proposals.
+- E2: a core edit module with dry-run diffs, plus `stratum add` and `stratum region`.
+- E3: a browser Edit mode (region handles with preview, add/edit forms, an uncommitted-changes banner). The YAML is the contract and the interfaces are clients.
+- E4 (optional): a shared paper library, split world files, a papers layer.
+- **Timing:** E1's `weight` changes region shapes, so it needs a lockfile regeneration. Do it before the first shrine is started.
+- **Accept when:** every edit goes through the core module with a dry-run diff; the YAML validates against the schemas; no edit moves a locked shrine except by an explicit `--replace`.
+
+### M9: Feature names (docs/plans/geography.md)
+- Generated names for the M6 rivers, lakes and ranges (Tiago chose generated), filling the features' optional `name`, shown once explored. Deterministic from the seed and feature id, overridable in world-seed.yaml.
+- **Accept when:** names are stable across builds, never collide within a layer, and appear only on explored land.
 
 ---
 

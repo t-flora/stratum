@@ -1,6 +1,6 @@
 # Status
 
-*Last updated: 2026-09-30. Keep this current at the end of every work session and milestone.*
+*Last updated: 2026-10-01. Keep this current at the end of every work session and milestone.*
 
 ## Milestones (DESIGN.md §13)
 
@@ -9,7 +9,7 @@
 | M0: skeleton, loader, `stratum lint` | ✅ done, reviewed | `7788328` |
 | (extra) `x86` tag, `stratum setup`, `stratum.local.yaml` | ✅ done | `91bf5e9` |
 | M1: geometry, placement, lockfile, static 3-layer map | ✅ done, reviewed | `56d05fa` |
-| (M1 revision) themes, follow-ups, archipelagos, depths territory | ✅ done, **awaiting review of drafted content** | `564188b` |
+| (M1 revision) themes, follow-ups, archipelagos, depths territory | ✅ done; content reviewed by Claude at Tiago's request (2026-10-01, below) | `564188b` |
 | M2: work state (`start`, `clear`, WRITEUP, git touches, campfires, detail panel) | ✅ done, verified by Tiago | `6d2ef39` |
 | M3: visibility (triangle rule) | ✅ done, verified by Tiago | `4085f22` |
 | (extra) Atlas toggle (map half of §9.5, pulled forward) | ✅ done, unverified here | on `main` |
@@ -17,8 +17,11 @@
 | (extra) Camps, cairns, shelving, map key (docs/plans/camps.md) | 🟡 implemented, unverified here, awaiting review | on `main` |
 | M4b: the unknown (docs/plans/unknown.md): peek margin, hideable sky shrines, explored land | ✅ done; Tiago continued to M5 without changes | `1873880` |
 | M5: Hero's Path, hours, polish, Atlas mode, static build | ✅ done; Tiago moved on to M6 | `275e0d7` |
-| M6: geography (docs/plans/geography.md): a generated continent, biomes, ranges, rivers, lakes | 🟡 implemented and verified on the Mac, **awaiting review** | on `main` (uncommitted) |
-| M7: expeditions (docs/plans/reset.md) | planned | |
+| M6: geography (docs/plans/geography.md): a generated continent, biomes, ranges, rivers, lakes | ✅ done, committed with Tiago's OK | `22a99f0` |
+| (extra) Theme/follow-up review, learning-path placement, favicon | ✅ done | on `main` |
+| M7: expeditions (docs/plans/reset.md) | planned, optional; 4 questions open | |
+| M8: world editing (docs/plans/world-editing.md) | planned, optional; 4 questions open. **E1 (region weights) only before the first start** | |
+| M9: feature names (geography: generated) | planned, optional | |
 
 **Acceptance evidence:**
 - M0 and M1 criteria are covered by tests in `core/test/` (44 tests). M2 adds 21 in `core/test/work.test.ts`, M3 adds 17 in `core/test/visibility.test.ts`, M4 adds 17 in `core/test/horizon.test.ts`.
@@ -27,9 +30,17 @@
 
 ## Open items waiting on Tiago
 
-1. **Review M6** (below), including the drafted `biome:` values in world-seed.yaml.
-2. **Review the drafted `theme` and `after` content** in `world/world-seed.yaml` (see `git show 564188b -- world/world-seed.yaml`). There are 136 themed shrines (3–4 themes per region) and 42 follow-up edges. He may rename, regroup or relink freely.
-3. **Regenerating the lockfile after his edits.** Once he's edited themes, offer to regenerate it so the layout follows his edits. That's safe only while no shrine has been started or cleared. Otherwise, new or changed themes get new anchors and locked shrines stay put.
+1. **Optional:** is seed `20261005` a keeper, and are the drafted region `biome:` values right? He was happy to commit M6 as is. A change of either needs a lockfile regeneration, so do it before the first `stratum start`.
+2. **Optional milestones M7–M9** (DESIGN.md §13) each have open questions in their plans. If he wants M8's region weights (e.g. shrink Vector Coast), do them **before setting out** on the first shrine.
+3. **Then: set out on the first real shrine.** After the first `stratum start`, the lockfile is frozen for good (CLAUDE.md).
+
+## Theme and follow-up review (2026-10-01)
+
+Tiago chose to be surprised by the themes and asked Claude to review them for the learning experience. Since the Horizon's Thread card picks the nearest revealed shrine to the last clear, placement *is* the learning path, so the review covered both content and placement:
+- **Four themes renamed** for accuracy: "Abstraction & dispatch" → "What it compiles to", "The field" → "The evidence", "Error" → "Error & stability", "Precision" → "Low precision".
+- **21 follow-up edges added** (now 63) where one shrine prepares another, e.g. `spsc-ring-buffer` after `memory-order-litmus`, `sae-training` after `toy-superposition`, `theory-arith-intensity` after `theory-roofline`, `udp-multicast-feed` after `binary-serialization`.
+- **Placement now follows paths across boundaries:** each region's themes are ordered around the ring so linked themes are neighbours, and a follow-up whose predecessor is in another theme or region leans toward it. See docs/decisions.md.
+- **The lockfile was regenerated** (approved; nothing started). A fresh repo still shows 53 of 217.
 
 ## M6: what was built and how it was checked
 
@@ -42,8 +53,8 @@ Checked on the Mac: `npm test` (138 tests; new: `core/test/landmass.test.ts`, wh
 - **The lockfile was regenerated** (approved with the continent). Themes still cluster and follow-ups still sit by their predecessors; the placement rules are unchanged. A fresh repo shows 53 of 217 (24.4%), as before.
 
 **Things to know:**
-- Your five scratch folders from M4 testing are in `build/scratch-work/` (gitignored), not deleted. The old lockfile is `build/positions.lock.before-m6.json`. Delete both whenever you like.
-- **Restart your dev server on port 5173.** It was started at 22:08, partway through M6, so it may hold older geometry code; it rewrote the lockfile while the file was briefly missing. The committed lockfile was regenerated cleanly and verified, and a running server never moves locked positions, but its rendering may be stale.
+- The M4 scratch folders and the pre-M6 lockfile backup were deleted on 2026-10-01.
+- **Regenerating the lockfile while `npm run dev` runs:** never delete the file first, since the watcher will refill it. Compute the new lock and swap it in atomically (temp file + rename). That's how the 2026-10-01 regeneration was done.
 - A full build now takes about 1.4 s (it was 0.6 s), mostly the river flood. The dev server caches geometry, so live rebuilds are unaffected.
 
 **To review:**
@@ -109,15 +120,9 @@ Harness results: work 23/23, visibility 17/18 (the real-geometry test is skipped
 4. Press K for the map key.
 5. Clean up the scratch folders afterwards.
 
-## Next (after the M6 review)
+## Next
 
-M5 is the last milestone in DESIGN.md §13. After it: Tiago's review of the drafted themes and follow-ups (open item 2), the world-editing proposal below, and setting out on the first real shrine.
-
-## Planned after M5 (proposals, awaiting Tiago)
-
-- **Feature names** (geography, deferred): generate names for the rivers, lakes and ranges, or name them in world-seed.yaml. Features already carry ids and an optional `name`.
-- **[Expeditions](plans/reset.md)** (asked for 2026-09-30). Reset the map without losing the work: `stratum expedition new` archives `work/` into `archive/expedition-<n>/`. Also `stratum erase`, and a "new world" step that changes the seed and is only allowed with `work/` empty. All CLI only, a dry run by default, with a typed count as confirmation. Four questions.
-- **[World editing](plans/world-editing.md).** Region `weight` to shrink or grow regions (Vector Coast), papers on write-ups and proposals, a core edit module with dry-run diffs, then CLI commands and a browser Edit mode. The YAML plus a JSON Schema is the contract, and the interfaces are clients. There are five questions for Tiago.
+All of DESIGN.md §13's original milestones (M0–M6) are done. What comes next is Tiago's choice: the optional M7–M9 (above), or setting out on the first shrine.
 
 ## Known limitations and TODOs
 
@@ -125,5 +130,5 @@ M5 is the last milestone in DESIGN.md §13. After it: Tiago's review of the draf
 - **Towers ignore spacing** (they take the highest point near the centroid). This is fine for the seed. A proposed tower added later could land near a locked shrine.
 - **Cross-region `after` edges don't affect placement.** They're intended as a Horizon signal in M4.
 - **Stale lockfile entries** (removed ids) are kept on purpose; see decisions.
-- **Island ground shadows** on the surface are drawn from the archipelago outlines and look blotchy, more so on the blank paper of the unknown. This is cosmetic, to polish in M5.
+- **Island ground shadows** on the surface are drawn from the archipelago outlines and look blotchy (fainter on unexplored paper since M5). Cosmetic.
 - **map.json still carries the full geometry** (Atlas needs it). The M5 static build might strip unexplored terrain.
