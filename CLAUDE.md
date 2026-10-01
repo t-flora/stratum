@@ -64,19 +64,21 @@ core/src/          all game logic; pure TS, no DOM. Imported by cli and (types o
   pins.ts          state/pins.yaml read/write/validate
   visibility.ts    §6 triangle rule: line of sight over ridges (peek margin), vantages, sky launch points, depths light (pure; Terrain injected)
   explore.ts       explored land (docs/plans/unknown.md): ray-traced from every place you've stood, stopped by high ridges (pure)
-  geometry.ts      landmass, warped region classifier (2-unit grid), adjacency, elevation, noise
+  geometry.ts      warped region classifier (2-unit grid), adjacency, biome elevation, noise
+  landmass.ts      the generated continent (M6): lobes, coast noise, islets, lakes (pure)
+  features.ts      M6 ranges, rivers (priority flood), lakes, cliffs and beaches (rendering only)
   placement.ts     §8.3 placement + theme anchors + follow-ups + lockfile I/O
   export.ts        map.json geometry: region outlines, ridges, contours, archipelagos, depths territory
   mapdata.ts       the map.json contract (types only; the app imports this via @stratum/core/mapdata)
   build.ts         load → validate → place → export pipeline; lintGeometry
 cli/index.ts       commander CLI: lint, build, dev, start, clear, shelve, status, horizon, pin, propose, setup (setup.ts: hardware probe)
 cli/dev.ts         dev API Vite plugin: /api/{health,map,events,start,pin,shelve}, fs.watch rebuilds, SSE
-app/src/           Svelte 5 + Vite renderer of build/map.json (MapView, Glyph, DetailPanel, HorizonPanel, MapKey, SearchBox, AtlasTable; api.ts, camp.ts, markdown.ts)
+app/src/           Svelte 5 + Vite renderer of build/map.json (MapView, Glyph, DetailPanel, HorizonPanel, MapKey, SearchBox, AtlasTable, Geography; api.ts, camp.ts, markdown.ts)
 templates/         WRITEUP.md, NEXT.md, cpp/ and python/ scaffolds for `stratum start`
 world/             world-seed.yaml (content), proposed.yaml, positions.lock.json (committed)
 fixtures/          tiny/ (clean 3-region world), planted-errors/ (lint test)
 state/pins.yaml    the map pin (`pin: <id>` or null)
-docs/              status.md, decisions.md, plans/ (world editing, geography, reset: proposals; camps, unknown: done)
+docs/              status.md, decisions.md, plans/ (world editing, reset: proposals; camps, unknown, geography: done)
 ```
 
 ## Architecture rules

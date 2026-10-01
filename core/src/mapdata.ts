@@ -1,7 +1,7 @@
 // The build/map.json contract between core (producer) and app (pure renderer). Types only: safe to import from the browser.
-import type { Kind, Layer, RequireTag, Size, Vec2 } from './types.ts';
+import type { Biome, Kind, Layer, RequireTag, Size, Vec2 } from './types.ts';
 
-export type { Kind, Layer, RequireTag, Size, Vec2 };
+export type { Biome, Kind, Layer, RequireTag, Size, Vec2 };
 
 export type Ring = Vec2[];
 export type Polygon = Ring[];
@@ -69,6 +69,8 @@ export interface MapRegion {
   name: string;
   centroid?: Vec2;
   radius?: number;
+  /** Surface regions: terrain type (M6), drawn as the region's ground texture. */
+  biome?: Biome;
   /** Surface regions whose tower is cleared: explored in full (§5.3). */
   surveyed?: boolean;
   /** Surface regions: how much of the land is explored (share 0–1), and the middle of that part, where the name goes. */
@@ -103,6 +105,23 @@ export interface MapGeometry {
     veins: Record<string, MultiPolygon>;
     strata: MultiPolygon[];
   };
+  /** Geographic features (M6), rendering only. */
+  features: MapFeatures;
+}
+
+/**
+ * M6 features (docs/plans/geography.md). Ids are stable for a given geometry; `name` is optional and filled in later
+ * (named features show once explored). Nothing here affects sight, exploration or placement.
+ */
+export interface MapFeatures {
+  /** Mountains along the high (h ≥ 3) ridges; snow on the h = 4 ones. */
+  ranges: { id: string; name?: string; between: [string, string]; h: number; peaks: { xy: Vec2; size: number; snow: boolean }[] }[];
+  /** Source to mouth (or to the river it joins); width at the source and at the end. */
+  rivers: { id: string; name?: string; line: Vec2[]; width: [number, number] }[];
+  /** Inland lakes (their water is already a hole in the coast outline). */
+  lakes: { id: string; name?: string; xy: Vec2; r: number }[];
+  /** The character of the coast: cliffs where the ground inland is high, beaches where it's low. */
+  shore: { cliffs: Vec2[][]; beaches: Vec2[][] };
 }
 
 /** What the unknown and the depths darkness are cut from (§6, §9.3, docs/plans/unknown.md). */

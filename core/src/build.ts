@@ -1,18 +1,18 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { loadConfig, type Config } from './config.ts';
+import { CONFIG_PATH, loadConfig, type Config } from './config.ts';
 import { computeExplored, exploredShare } from './explore.ts';
 import { buildGeometry, buildMapData } from './export.ts';
 import { computeHorizon, isoWeek } from './horizon.ts';
 import type { MapGeometry } from './mapdata.ts';
 import { readPin } from './pins.ts';
 import { hash32 } from './prng.ts';
-import { Geometry } from './geometry.ts';
+import { GRID_STEP, Geometry } from './geometry.ts';
 import { gitReader, readGitWork, type GitReader } from './git.ts';
 import { loadWorld, SEED_PATH } from './loader.ts';
 import type { MapData } from './mapdata.ts';
 import { placeShrines, readLock, serializeLock, writeLock, type PlacementResult } from './placement.ts';
-import type { Diagnostic, World } from './types.ts';
+import type { Diagnostic, Vec2, World } from './types.ts';
 import { computeVisibility } from './visibility.ts';
 import { readWorkState, type ShrineWork } from './work.ts';
 
@@ -37,6 +37,61 @@ export function lintGeometry(world: World, geo: Geometry): Diagnostic[] {
       out.push({ severity: 'error', code: 'empty-region', message: `region "${r.id}" has no land (centroid at sea or swallowed by neighbours)`, file: SEED_PATH });
     }
   });
+  out.push(...landmassProblems(geo));
+  return out;
+}
+
+/** A region must keep at least this share of the land, and its main piece this share of the region. */
+const MIN_REGION_SHARE = 0.03;
+const MIN_MAIN_PIECE = 0.85;
+
+/**
+ * The continent's guarantees (docs/plans/geography.md). The generator is deterministic, so a failure is a property of
+ * (regions, seed): the fix is a different `world.seed`, which is only safe while nothing has been started.
+ */
+export function landmassProblems(geo: Geometry): Diagnostic[] {
+  const out: Diagnostic[] = [];
+  const fail = (message: string) =>
+    out.push({ severity: 'error', code: 'landmass', message: `${message}; try another world.seed (only while nothing is started)`, file: CONFIG_PATH });
+  const { gw, gh, cells } = geo;
+  const cellOf = ([x, y]: Vec2) => Math.round(y / GRID_STEP) * gw + Math.round(x / GRID_STEP);
+  /** 4-connected flood fill from `start` over cells accepted by `ok`. */
+  const fill = (start: number, ok: (c: number) => boolean) => {
+    const seen = new Uint8Array(gw * gh);
+    const stack = [start];
+    seen[start] = 1;
+    let n = 0;
+    while (stack.length) {
+      const c = stack.pop()!;
+      n++;
+      const x = c % gw;
+      for (const d of [x > 0 ? c - 1 : -1, x < gw - 1 ? c + 1 : -1, c - gw, c + gw]) {
+        if (d >= 0 && d < gw * gh && !seen[d] && ok(d)) {
+          seen[d] = 1;
+          stack.push(d);
+        }
+      }
+    }
+    return { seen, n };
+  };
+
+  let landCells = 0;
+  const regionCells = new Array<number>(geo.surface.length).fill(0);
+  for (const c of cells) if (c >= 0) (landCells++, regionCells[c]!++);
+
+  geo.surface.forEach((r, i) => {
+    const c = cellOf(r.centroid!);
+    if (cells[c] !== i) return fail(`region "${r.id}": its centroid isn't in its own land`);
+    if (regionCells[i]! < MIN_REGION_SHARE * landCells) fail(`region "${r.id}" has only ${Math.round((100 * regionCells[i]!) / landCells)}% of the land`);
+    const main = fill(c, (d) => cells[d] === i).n;
+    if (main < MIN_MAIN_PIECE * regionCells[i]!) fail(`region "${r.id}" is split: its main piece holds ${Math.round((100 * main) / regionCells[i]!)}% of it`);
+  });
+  if (out.length) return out;
+
+  // One continent: every region's centroid is reachable over land from the first region's.
+  const { seen } = fill(cellOf(geo.surface[0]!.centroid!), (d) => cells[d]! >= 0);
+  const cut = geo.surface.filter((r) => !seen[cellOf(r.centroid!)]).map((r) => r.id);
+  if (cut.length) fail(`the land is in pieces: ${cut.join(', ')} ${cut.length === 1 ? 'is' : 'are'} cut off from ${geo.surface[0]!.id} by water`);
   return out;
 }
 

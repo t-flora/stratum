@@ -1,9 +1,8 @@
 import { createNoise2D, type NoiseFunction2D } from 'simplex-noise';
+import { buildLandmass, type Islet, type Lake } from './landmass.ts';
 import { mulberry32 } from './prng.ts';
-import type { Region, Vec2, World } from './types.ts';
+import type { Biome, Region, Vec2, World } from './types.ts';
 
-/** The landmass ellipse (§8.1). */
-export const LANDMASS = { cx: 800, cy: 500, rx: 760, ry: 470 };
 /** Classification grid resolution in world units (§8.1: "2-unit resolution is fine"). */
 export const GRID_STEP = 2;
 /** Amplitude of the domain warp that makes region borders organic. */
@@ -35,12 +34,18 @@ export class Geometry {
 
   private readonly ridgeH = new Map<string, number>();
   private readonly ridgeDefault: number;
+  /** The continent's lakes and offshore islets (docs/plans/geography.md). */
+  readonly lakes: Lake[];
+  readonly islets: Islet[];
+
   private readonly centroids: Vec2[];
-  private readonly nCoast: NoiseFunction2D;
+  /** The signed land field sampled on the classification grid; landSigned interpolates it. */
+  private readonly land: Float32Array;
   private readonly nWarp: NoiseFunction2D[];
   private readonly nElev: NoiseFunction2D[];
   private readonly nIsland: NoiseFunction2D;
   private readonly nRock: NoiseFunction2D;
+  private readonly nBiome: NoiseFunction2D;
 
   constructor(world: World, seed: number) {
     this.width = world.canvas.width;
@@ -53,14 +58,36 @@ export class Geometry {
     for (const o of world.ridges.overrides) this.ridgeH.set(pairKey(o.between[0], o.between[1]), o.h);
 
     const noise = (salt: number) => createNoise2D(mulberry32((seed ^ Math.imul(salt, 0x9e3779b1)) >>> 0));
-    this.nCoast = noise(1);
     this.nWarp = [noise(2), noise(3), noise(4), noise(5)];
     this.nElev = [noise(6), noise(7)];
     this.nIsland = noise(8);
     this.nRock = noise(9);
+    this.nBiome = noise(10);
 
     this.gw = Math.floor(this.width / GRID_STEP) + 1;
     this.gh = Math.floor(this.height / GRID_STEP) + 1;
+    const landmass = buildLandmass(this.surface, this.width, this.height, seed);
+    this.lakes = landmass.lakes;
+    this.islets = landmass.islets;
+    // The field is smooth at the scale of a few units (its finest noise is 32 units), so sample it every 2 grid steps
+    // and fill in between bilinearly: a quarter of the noise evaluations, the same coastline.
+    this.land = new Float32Array(this.gw * this.gh);
+    const cw = Math.ceil((this.gw - 1) / 2) + 1;
+    const ch = Math.ceil((this.gh - 1) / 2) + 1;
+    const coarse = new Float32Array(cw * ch);
+    for (let cy = 0; cy < ch; cy++) for (let cx = 0; cx < cw; cx++) coarse[cy * cw + cx] = landmass.at(cx * 2 * GRID_STEP, cy * 2 * GRID_STEP);
+    for (let gy = 0; gy < this.gh; gy++) {
+      const cy = Math.min(ch - 2, gy >> 1);
+      const ty = gy / 2 - cy;
+      for (let gx = 0; gx < this.gw; gx++) {
+        const cx = Math.min(cw - 2, gx >> 1);
+        const tx = gx / 2 - cx;
+        const i = cy * cw + cx;
+        const top = coarse[i]! * (1 - tx) + coarse[i + 1]! * tx;
+        const bottom = coarse[i + cw]! * (1 - tx) + coarse[i + cw + 1]! * tx;
+        this.land[gy * this.gw + gx] = top * (1 - ty) + bottom * ty;
+      }
+    }
     this.cells = new Int8Array(this.gw * this.gh);
     this.bbox = this.surface.map(() => ({ minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }));
     for (let gy = 0; gy < this.gh; gy++) {
@@ -94,18 +121,24 @@ export class Geometry {
     for (const [k, n] of counts) if (n >= MIN_ADJACENT_EDGES) this.adjacency.set(k, n);
   }
 
-  /** Signed distance-like value to the coastline, in approximate world units: > 0 on land. */
+  /**
+   * Signed distance-like value to the coastline (sea or lake), in approximate world units: > 0 on land.
+   * Bilinear in the land field sampled on the classification grid (landmass.ts), so it's exact at grid points.
+   */
   landSigned(x: number, y: number): number {
-    const dx = (x - LANDMASS.cx) / LANDMASS.rx;
-    const dy = (y - LANDMASS.cy) / LANDMASS.ry;
-    const r = Math.hypot(dx, dy);
-    const c = r === 0 ? 1 : dx / r;
-    const s = r === 0 ? 0 : dy / r;
-    const n = this.nCoast;
-    const threshold = 1 + 0.06 * n(c * 1.3, s * 1.3) + 0.03 * n(c * 4 + 10, s * 4 + 10) + 0.012 * n(c * 11 + 20, s * 11 + 20);
-    const coast = (threshold - r) * LANDMASS.ry;
-    const edge = Math.min(x, y, this.width - x, this.height - y) - 12;
-    return Math.min(coast, edge);
+    const fx = Math.max(0, Math.min(this.gw - 1.0001, x / GRID_STEP));
+    const fy = Math.max(0, Math.min(this.gh - 1.0001, y / GRID_STEP));
+    const ix = Math.floor(fx);
+    const iy = Math.floor(fy);
+    const tx = fx - ix;
+    const ty = fy - iy;
+    const i = iy * this.gw + ix;
+    const l = this.land;
+    const top = l[i]! * (1 - tx) + l[i + 1]! * tx;
+    const bottom = l[i + this.gw]! * (1 - tx) + l[i + this.gw + 1]! * tx;
+    const v = top * (1 - ty) + bottom * ty;
+    // Off the canvas is sea.
+    return x < 0 || y < 0 || x > this.width || y > this.height ? Math.min(v, -1) : v;
   }
 
   isLand(x: number, y: number): boolean {
@@ -168,7 +201,37 @@ export class Geometry {
     const h = i2 >= 0 ? this.ridgeHeight(this.surface[i1]!.id, this.surface[i2]!.id) : 0;
     const ridge = 0.12 * h * Math.exp(-(d2 - d1) / 25);
     const shore = Math.min(1, land / 60); // taper toward the coast
-    return base * shore + ridge;
+    // Each biome reshapes the ground; across a border the two profiles blend over ~80 units, so there are no cliffs.
+    const own = this.biomeProfile(this.surface[i1]!.biome, base, x, y);
+    const t = i2 < 0 ? 1 : Math.min(1, 0.5 + (d2 - d1) / 80);
+    const ground = t >= 1 ? own : t * own + (1 - t) * this.biomeProfile(this.surface[i2]!.biome, base, x, y);
+    return ground * shore + ridge;
+  }
+
+  /** M6 biome elevation profiles (rendering, tower placement, rivers). `base` is the shared rolling-noise ground. */
+  private biomeProfile(biome: Biome | undefined, base: number, x: number, y: number): number {
+    const n = this.nBiome;
+    const rugged = (f: number) => 1 - Math.abs(n(x * f, y * f)); // ridged noise: sharp crests
+    switch (biome) {
+      case 'plateau': return 0.72 + 0.22 * (base - 0.5) + 0.04 * n(x / 120 + 3, y / 120 - 3); // a mesa: high and gently rolling
+      case 'highland': return base * 1.1 + 0.22 + 0.14 * rugged(1 / 70);
+      case 'ridge': return base + 0.18 + 0.2 * rugged(1 / 48) ** 2;
+      case 'steppe': return 0.42 + 0.3 * (base - 0.5);
+      case 'coast': return base * 0.5;
+      case 'marsh': return 0.18 + 0.12 * (base - 0.5);
+      case 'jungle': return base * 0.85 + 0.06 * n(x / 40 + 9, y / 40 - 9);
+      case 'woods': return base * 0.95;
+      case 'canyon': {
+        // High tableland cut by a winding gorge along a noise contour.
+        const g = n(x / 210 - 40, y / 210 + 40);
+        return base * 1.05 + 0.3 - 0.55 * Math.exp(-((g / 0.07) ** 2));
+      }
+      case 'workshop': {
+        const e = base * 1.05 + 0.05;
+        return Math.floor(e * 7) / 7 + 0.03 * (e * 7 - Math.floor(e * 7)); // terraces
+      }
+      default: return base;
+    }
   }
 
   /** Rock-strata noise for the depths (rendering only). */

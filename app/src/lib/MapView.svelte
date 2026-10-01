@@ -3,6 +3,7 @@
   import { select } from 'd3-selection';
   import { zoom, zoomIdentity, type D3ZoomEvent, type ZoomBehavior } from 'd3-zoom';
   import type { Layer, MapData, MapShrine } from '@stratum/core/mapdata';
+  import Geography from './Geography.svelte';
   import Glyph from './Glyph.svelte';
   import { regionOf } from './names.ts';
   import { linePath, multiPolygonPath, ringPath } from './paths.ts';
@@ -293,6 +294,7 @@
             onpointerleave={() => hovered === r.id && (hovered = null)}
           />
         {/each}
+        <Geography {map} part="ground" />
         <rect width={W} height={H} fill="#fff" filter="url(#grain)" clip-path="url(#land-clip)" />
         {#each contours as d, i (i)}
           <path class="contour" {d} />
@@ -302,6 +304,7 @@
           <path class="ridge-hatch" d={r.d} style:stroke-width={2.5 + 1.8 * r.h} />
         {/each}
         <path class="coast" d={coast} />
+        <Geography {map} part="overlay" />
       </g>
 
       {#if layer === 'surface'}

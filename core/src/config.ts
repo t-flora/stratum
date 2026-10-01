@@ -25,7 +25,7 @@ export interface Config {
 }
 
 export const DEFAULT_CONFIG: Config = {
-  world: { seed: 20261002 },
+  world: { seed: 20261005 },
   writeup: { minWords: 250 },
   hardware: { available: ['linux', 'llm-api'] },
   visibility: {

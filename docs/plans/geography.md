@@ -1,6 +1,6 @@
 # Geography: a world worth uncovering (proposal)
 
-*Asked for by Tiago on 2026-09-30, after M5. Status: proposal, awaiting his answers below.*
+*Asked for by Tiago on 2026-09-30, after M5. Status: built as M6. His answers: replace the oval with a generated continent, keeping themes clustered and follow-ups close; a `biome:` field; rivers as decoration only; features named later (generated). Details in docs/decisions.md, M6.*
 
 ## The problem
 

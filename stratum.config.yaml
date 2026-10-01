@@ -1,6 +1,6 @@
 # Stratum tunables. See DESIGN.md §6, §7 and §16.
 world:
-  seed: 20261002            # region geometry / noise seed (§8.4)
+  seed: 20261005            # region geometry, continent and noise seed (§8.4, M6); changing it moves everything
 
 writeup:
   minWords: 250

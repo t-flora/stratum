@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  DEFAULT_CONFIG, EXPLORE_RAYS, Geometry, RIDGE_OVERSHOOT, computeExplored, computeVisibility, explorerRing, exploredShare,
+  DEFAULT_CONFIG, EXPLORE_RAYS, Geometry, loadConfig, RIDGE_OVERSHOOT, computeExplored, computeVisibility, explorerRing, exploredShare,
   loadWorld, placeShrines, readLock, type Region, type Shrine, type ShrineStatus, type Terrain, type Vec2, type World,
 } from '../src/index.ts';
 
@@ -105,7 +105,7 @@ describe('explored land (docs/plans/unknown.md)', () => {
 describe('a fresh repo on the seed world (M4b acceptance)', () => {
   const root = join(import.meta.dirname, '..', '..');
   const world = loadWorld(root).world!;
-  const geo = new Geometry(world, DEFAULT_CONFIG.world.seed);
+  const geo = new Geometry(world, loadConfig(root).world.seed);
   const { positions } = placeShrines(world, geo, readLock(root));
   const { visibility } = computeVisibility(world, positions, () => 'untouched', geo, cfg);
   const ex = computeExplored(world, positions, () => 'untouched', geo, cfg);

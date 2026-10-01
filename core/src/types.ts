@@ -10,6 +10,10 @@ export type Size = (typeof SIZES)[number];
 export const REQUIRE_TAGS = ['gpu', 'arm', 'x86', 'avx512', 'linux', 'llm-api'] as const;
 export type RequireTag = (typeof REQUIRE_TAGS)[number];
 
+/** Surface terrain types (M6, docs/plans/geography.md): the ground texture and elevation profile of a region. */
+export const BIOMES = ['plateau', 'highland', 'ridge', 'steppe', 'coast', 'jungle', 'marsh', 'woods', 'canyon', 'workshop'] as const;
+export type Biome = (typeof BIOMES)[number];
+
 export type Vec2 = [number, number];
 
 export interface Region {
@@ -18,6 +22,8 @@ export interface Region {
   name: string;
   centroid?: Vec2;
   radius?: number;
+  /** Surface regions only; without it the region renders as plain ground. */
+  biome?: Biome;
 }
 
 export interface Shrine {

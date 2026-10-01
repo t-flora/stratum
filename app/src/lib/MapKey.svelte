@@ -65,6 +65,14 @@
         <dd>Updraft: a launch point to a sky shrine</dd>
       </div>
       <div>
+        <dt><svg viewBox="-8 -9 16 12"><path d="M-7,2 L0.5,-7 L1.5,2 Z" fill="#efe2c6" stroke="#5b4631" stroke-width="0.7" /><path d="M1.5,2 L0.5,-7 L7,2 Z" fill="#a8916d" stroke="#5b4631" stroke-width="0.7" /></svg></dt>
+        <dd>Mountains: a high ridge (h ≥ 3) that hides what's behind it</dd>
+      </div>
+      <div>
+        <dt><svg viewBox="-8 -6 16 12"><path d="M-7,3 Q-3,-4 0,0 T7,-3" fill="none" stroke="#6f95ab" stroke-width="1.6" stroke-linecap="round" /></svg></dt>
+        <dd>River or lake: scenery only; it doesn't block sight</dd>
+      </div>
+      <div>
         <dt><svg viewBox="-8 -10 16 20"><path d="M0,2 L0,9" stroke="#8c2f1f" stroke-width="1.6" /><rect x="-6" y="-8" width="12" height="10" rx="2.5" transform="rotate(-8)" fill="#c2412b" stroke="#6e2215" stroke-width="1.2" /></svg></dt>
         <dd>Your pin: the Horizon routes toward it</dd>
       </div>

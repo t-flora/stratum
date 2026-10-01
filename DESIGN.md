@@ -117,6 +117,7 @@ The world schema is documented in the header comment of `world/world-seed.yaml`.
 - `name`: string
 - `centroid`: `[x, y]`, required for surface and sky
 - `radius`: number, sky islands only
+- `biome`: optional, surface regions only (M6): one of `plateau | highland | ridge | steppe | coast | jungle | marsh | woods | canyon | workshop`. It sets the region's ground texture and elevation profile.
 
 **Shrine**
 - `id`: unique kebab slug, also the work folder name
@@ -324,7 +325,14 @@ The slots never duplicate. Each card shows the title (or "???"), layer, region, 
 
 ### 8.1 Surface regions
 
-- The landmass is an ellipse (cx 800, cy 500, rx 760, ry 470) with its boundary perturbed by 2D simplex noise (seeded). Everything outside it is sea.
+- The landmass is a generated continent (*M6*, `core/src/landmass.ts`; it replaced the v1 ellipse). It's a smooth union of noisy lobes, one around each region's centroid, with a warped, multi-scale coast (bays, fjords, headlands), a few offshore islets and one or two inland lakes. Everything else is sea. It is deterministic from (surface regions, `world.seed`).
+- **Guarantees** (build errors, code `landmass`):
+  - every centroid lies in its own region's land;
+  - each region keeps at least 3% of the land, and its main piece holds at least 85% of it;
+  - all regions are one continent;
+  - ridge overrides join regions that share a border (the existing warning).
+
+  A failing seed is fixed by choosing another `world.seed`, which is only allowed while nothing has been started.
 - A point belongs to the region whose centroid is nearest to the point after domain warping: `pt' = pt + warp(pt)`, where warp is low-frequency simplex noise with an amplitude of about 40 units. This produces organic borders.
 - The **same function** is used for rendering, placement and line of sight. It must be deterministic and fast (a precomputed grid lookup at 2-unit resolution is fine).
 - Ridges are drawn along region borders, with visual weight proportional to `h`.
@@ -350,7 +358,13 @@ After placement, write `world/positions.lock.json` (`{id: [x, y]}`) and commit i
 
 ### 8.5 Elevation (rendering only)
 
-`elevation(pt) = base noise + 0.35·(prominence field) + ridge term`. The ridge term raises the terrain near borders in proportion to `h`. Contours are drawn with d3-contour on a coarse grid. Elevation doesn't affect game logic, except for tower placement.
+`elevation(pt) = biome profile(base noise) + 0.35·(prominence field) + ridge term`. The ridge term raises the terrain near borders in proportion to `h`. Each region's `biome` reshapes the base noise (M6): highlands and ridges rise and turn rugged, the plateau is a gently rolling mesa, marsh and coast lie low, the canyon is a tableland with a gorge, and the workshops are terraced. Profiles blend across borders over about 80 units. Contours are drawn with d3-contour on a coarse grid. Elevation doesn't affect game logic, except for tower placement.
+
+**Features (M6, rendering only).** These are derived from the geometry, drawn only on explored land, and have no effect on sight, exploration or placement. Each has a stable id and an optional `name` (none yet):
+- mountain ranges along h ≥ 3 ridges, with snow on h = 4;
+- rivers from a priority flood over the elevation field, so they always reach the sea, a lake or another river, with gentle meanders;
+- the lakes;
+- cliffs where the ground inland is high, and beaches where it's low.
 
 ---
 
@@ -527,6 +541,18 @@ Stop for review after each milestone.
 ### M5: Hero's Path, hours and polish
 - The Hero's Path, the hours estimate, layer transitions, reduced motion, dark UI chrome, mobile layout, Atlas mode and the static build.
 - **Accept when** Lighthouse accessibility is at least 90, and the map is usable at 390 px width with the Horizon as a bottom sheet.
+
+### M6: Geography
+- Added after M5 (docs/plans/geography.md): the generated continent (§8.1), a `biome` field per surface region, and rendering-only features (§8.5).
+- **Accept when:**
+  - the landmass passes its guarantees for the configured seed;
+  - two builds are identical;
+  - adding a shrine to proposed.yaml still moves nothing;
+  - a fresh repo still shows 15–25% of the world;
+  - the biomes, ranges, rivers and lakes render, on explored land only.
+
+### M7: Expeditions (planned, docs/plans/reset.md)
+- Reset the map without losing the work; erase; a new world while nothing is started.
 
 ---
 

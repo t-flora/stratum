@@ -34,16 +34,16 @@ start:
 
 regions:
   # --- SURFACE ----------------------------------------------------------------
-  - { id: cpp-core,            layer: surface, name: "The Core Plateau",        centroid: [800, 500] }
-  - { id: metaprogramming,     layer: surface, name: "Template Highlands",      centroid: [560, 300] }
-  - { id: tooling-measurement, layer: surface, name: "Instrument Ridge",        centroid: [820, 190] }
-  - { id: concurrency,         layer: surface, name: "Atomic Steppes",          centroid: [1080, 300] }
-  - { id: parallel-simd,       layer: surface, name: "Vector Coast",            centroid: [1310, 520] }
-  - { id: gpu-programming,     layer: surface, name: "Kernel Jungle",           centroid: [1260, 810] }
-  - { id: interp-engineering,  layer: surface, name: "Activation Marsh",        centroid: [880, 830] }
-  - { id: data-structures,     layer: surface, name: "Cacheline Woods",         centroid: [520, 660] }
-  - { id: low-latency,         layer: surface, name: "Tick Canyon",             centroid: [250, 420] }
-  - { id: agent-harness,       layer: surface, name: "Agent Workshops",         centroid: [320, 830] }
+  - { id: cpp-core,            layer: surface, name: "The Core Plateau",        centroid: [800, 500], biome: plateau }
+  - { id: metaprogramming,     layer: surface, name: "Template Highlands",      centroid: [560, 300], biome: highland }
+  - { id: tooling-measurement, layer: surface, name: "Instrument Ridge",        centroid: [820, 190], biome: ridge }
+  - { id: concurrency,         layer: surface, name: "Atomic Steppes",          centroid: [1080, 300], biome: steppe }
+  - { id: parallel-simd,       layer: surface, name: "Vector Coast",            centroid: [1310, 520], biome: coast }
+  - { id: gpu-programming,     layer: surface, name: "Kernel Jungle",           centroid: [1260, 810], biome: jungle }
+  - { id: interp-engineering,  layer: surface, name: "Activation Marsh",        centroid: [880, 830], biome: marsh }
+  - { id: data-structures,     layer: surface, name: "Cacheline Woods",         centroid: [520, 660], biome: woods }
+  - { id: low-latency,         layer: surface, name: "Tick Canyon",             centroid: [250, 420], biome: canyon }
+  - { id: agent-harness,       layer: surface, name: "Agent Workshops",         centroid: [320, 830], biome: workshop }
   # --- SKY (islands float above related surface regions) ------------------------
   - { id: agentic-forge,       layer: sky, name: "The Agentic Forge",       centroid: [330, 760],  radius: 170 }
   - { id: design-archipelago,  layer: sky, name: "Design Archipelago",      centroid: [540, 420],  radius: 190 }

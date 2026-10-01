@@ -2,12 +2,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
-  Geometry, PLACEMENT, PROPOSED_PATH, SEED_PATH, buildMapData, lintGeometry, loadWorld, parseWorld, placeShrines, serializeLock,
+  Geometry, PLACEMENT, PROPOSED_PATH, SEED_PATH, buildMapData, lintGeometry, loadConfig, loadWorld, parseWorld, placeShrines, serializeLock,
   themeKey, themesByRegion, type Vec2, type World,
 } from '../src/index.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..');
-const SEED = 20261002;
+const SEED = loadConfig(ROOT).world.seed;
 const seedText = readFileSync(join(ROOT, SEED_PATH), 'utf8');
 const dist = (a: Vec2, b: Vec2) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const worldOf = (seed = seedText, proposed?: string) =>

@@ -181,3 +181,30 @@ Agreed with Tiago: about 20% in sight on a fresh repo, sky included; the peek ma
 
 - **Screenshots** (`scripts/screenshot.sh`) now go through `scripts/shot.mjs`, which drives headless Chrome over the DevTools protocol: device emulation (`--mobile`, any size), a forced colour scheme, an optional `--eval` before the shot, and page errors printed. The old `chrome --screenshot` path hung on the Mac and couldn't render narrower than about 500 px. The script's arguments are unchanged; the size takes `1600x1050` (the old `1600,1050` still works).
 - **Plans** for geography (a generated continent, then features) and for expeditions (resetting the map without losing work) are in `docs/plans/geography.md` and `docs/plans/reset.md`, awaiting Tiago's answers.
+
+## M6: Geography
+
+Agreed with Tiago on 2026-09-30: a generated continent instead of the ellipse, keeping themes clustered and follow-ups next to their predecessors (the placement rules are unchanged); a `biome:` field per region; rivers as decoration only; features named later. The plan is `docs/plans/geography.md`; DESIGN.md §4.2, §8.1, §8.5 and §13 have been updated.
+
+- **The continent** (`core/src/landmass.ts`):
+  - It's a log-sum-exp smooth union (blend 26) of one lobe per surface centroid. A lobe's radius is 0.62 × the distance to the nearest other centroid, clamped to 120–215 and jittered ±16% per region by hash, so the outline doesn't follow the centroid grid. Its edge is noisy by direction, which makes peninsulas.
+  - The coast gets a domain warp (55 units at 1/300) and three octaves of noise (34/16/6 units at 1/210, 1/85, 1/32). Within 120 units of the canvas edge the land is pushed down, so coasts curve away from the frame.
+  - There are 5–8 islets just offshore and 1–2 lakes, each more than 110 + r from every centroid and deep inland.
+  - It's sampled every 4 units, interpolated to the 2-unit classification grid, and read back bilinearly by `landSigned`. That's exact at grid points and about 230 ms for the seed world.
+- **Guarantees, not a seed search.** A failing (regions, seed) pair is a build error that suggests another `world.seed`. An automatic search was rejected: adding a region later could pick a different variant and move the land under locked shrines.
+- **The seed** is now 20261005, in both `stratum.config.yaml` and the code default. The old 20261002 split two regions joined by an h=1 ridge. Of the passing date-style seeds, 20261005 had the most character: a horned peninsula with a fjord (Tick Canyon), a sound into Atomic Steppes, an inland lake, and a southern bay with islets.
+- **Biomes.** Each surface region has an optional `biome` (the drafted values follow the region names). It's validated in the loader (unknown: error; on sky or depths: warning, ignored), shapes elevation (DESIGN §8.5), and is exported on `regions[]`. The profiles of the two nearest regions blend over about 80 units, so borders have no cliffs.
+- **Features** (`core/src/features.ts`, map.json `geometry.features`), all rendering only:
+  - **Ranges:** peaks every 20 units along h ≥ 3 ridge lines, jittered ±5 units across the line, and at least 16 units from any shrine glyph. Snow on h = 4.
+  - **Rivers:** a priority flood (binary heap; ties by cell index) on a 6-unit elevation grid seeded from shore water cells gives every land cell a pit-free route to water. Cells draining at least 260 cells are river. Polylines are traced longest first, and a tributary stops where it meets one already drawn; rivers under 8 points are dropped without claiming cells. Each gets a ±0.6-cell double-sine meander, faded to zero at both ends, then 3 rounds of Chaikin smoothing. Ids are `river-N` by mouth position.
+  - **Lakes:** `lake-N` from the generator.
+  - **Shore:** cliff where the ground 45 units inland is above 0.6, beach below 0.3.
+  - Every feature has an optional `name`; none is set yet.
+- **Rendering** (`app/src/lib/Geography.svelte`) sits inside the terrain mask, so it shows on explored land only:
+  - biome textures as small SVG patterns in world units, over each region's tint;
+  - rivers in up to six segments of increasing width;
+  - beaches as a sand stroke, cliffs as a dashed ink stroke, peaks as a lit and a shaded face.
+
+  The map key gained mountains and rivers.
+- **Lockfile regeneration** (approved with the continent). The five untracked scratch folders from M4 testing were moved from `work/` to `build/scratch-work/`, not deleted, and the old lockfile was saved as `build/positions.lock.before-m6.json`. A dev server started at 22:08 (not one of the agent's) rewrote the lockfile the moment it went missing, possibly with older code. So the new lockfile was generated in an unwatched scratch copy and moved in with one rename, then checked byte for byte against a from-scratch placement with the current code.
+- **Tests that assumed the old seed** now read the repo's configured seed: the placement tests and the M4b acceptance test.

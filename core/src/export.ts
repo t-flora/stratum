@@ -1,5 +1,6 @@
 import { contours } from 'd3-contour';
 import { explorerRing, type Explored, type RegionExplored } from './explore.ts';
+import { buildFeatures } from './features.ts';
 import type { Geometry } from './geometry.ts';
 import type { HorizonCard, MapData, MapGeometry, MapRegion, MapShrine, MapTheme, MultiPolygon } from './mapdata.ts';
 import { themeKey, themesByRegion } from './placement.ts';
@@ -120,7 +121,9 @@ export function buildGeometry(world: World, geo: Geometry, positions: Map<string
   const islands: MapGeometry['islands'] = {};
   for (const r of geo.sky) islands[r.id] = archipelago(world, geo, r, positions);
 
-  return { coast, regions, ridges, contours: levels, islands, depths: depthsTerrain(world, geo, positions, land, n, m) };
+  const shrineXY = world.shrines.filter((s) => s.layer === 'surface' && positions.has(s.id)).map((s) => positions.get(s.id)!);
+  const features = buildFeatures(geo, ridges, coast, shrineXY);
+  return { coast, regions, ridges, contours: levels, islands, depths: depthsTerrain(world, geo, positions, land, n, m), features };
 }
 
 /**

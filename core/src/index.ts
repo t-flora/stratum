@@ -15,6 +15,8 @@ export * from './summary.ts';
 export * from './hardware.ts';
 export * from './prng.ts';
 export * from './geometry.ts';
+export * from './landmass.ts';
+export * from './features.ts';
 export * from './placement.ts';
 export * from './mapdata.ts';
 export * from './export.ts';

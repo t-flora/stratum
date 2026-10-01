@@ -2,8 +2,8 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { LineCounter, parseDocument, isMap, isSeq, isScalar, type Node, type YAMLMap } from 'yaml';
 import {
-  KINDS, LAYERS, REQUIRE_TAGS, SIZES,
-  type Diagnostic, type Kind, type Layer, type Region, type RequireTag, type Shrine, type Size, type Vec2, type World,
+  BIOMES, KINDS, LAYERS, REQUIRE_TAGS, SIZES,
+  type Biome, type Diagnostic, type Kind, type Layer, type Region, type RequireTag, type Shrine, type Size, type Vec2, type World,
 } from './types.ts';
 
 export interface Source {
@@ -20,7 +20,7 @@ export interface LoadResult {
 export const SEED_PATH = 'world/world-seed.yaml';
 export const PROPOSED_PATH = 'world/proposed.yaml';
 
-const REGION_KEYS = new Set(['id', 'layer', 'name', 'centroid', 'radius']);
+const REGION_KEYS = new Set(['id', 'layer', 'name', 'centroid', 'radius', 'biome']);
 const SHRINE_KEYS = new Set([
   'id', 'title', 'region', 'theme', 'kind', 'p', 'size', 'requires', 'below', 'after', 'links', 'needs', 'prompt', 'done', 'xy', 'from',
 ]);
@@ -168,6 +168,12 @@ export function parseWorld(seedSrc: Source, proposedSrc?: Source): LoadResult {
         else seed.report('error', 'schema', `region "${id}": sky islands need a positive \`radius\``, get(item, 'radius') ?? item);
       } else if (radius !== undefined) {
         seed.report('warning', 'schema', `region "${id}": \`radius\` only applies to sky islands; ignored`, get(item, 'radius'));
+      }
+      const biome = js(get(item, 'biome'));
+      if (biome !== undefined) {
+        if (layer !== 'surface') seed.report('warning', 'schema', `region "${id}": \`biome\` only applies to surface regions; ignored`, get(item, 'biome'));
+        else if (!BIOMES.includes(biome as Biome)) seed.report('error', 'schema', `region "${id}": biome must be one of ${BIOMES.join(' | ')}`, get(item, 'biome'));
+        else region.biome = biome as Biome;
       }
       regions.push(region);
       regionById.set(id, region);
