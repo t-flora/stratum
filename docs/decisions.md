@@ -176,3 +176,8 @@ Agreed with Tiago: about 20% in sight on a fresh repo, sky included; the peek ma
   - The stub is appended to proposed.yaml as text, so comments survive, matching the existing item indentation. Then lint runs on proposed.yaml, and `$VISUAL`/`$EDITOR` opens if stdout is a terminal (`--no-edit` skips it).
 - **Write-ups in the panel** no longer show the template's HTML comments as text. The body is stripped of `<!-- -->` before it goes into map.json, the same rule the word count uses. This was a bug from M2.
 - **Lighthouse accessibility**: 100 with the default mobile emulation and 100 with the desktop preset (detail panel open), run against the dev server. Lighthouse isn't a project dependency; it was installed temporarily for the run.
+
+## After M5
+
+- **Screenshots** (`scripts/screenshot.sh`) now go through `scripts/shot.mjs`, which drives headless Chrome over the DevTools protocol: device emulation (`--mobile`, any size), a forced colour scheme, an optional `--eval` before the shot, and page errors printed. The old `chrome --screenshot` path hung on the Mac and couldn't render narrower than about 500 px. The script's arguments are unchanged; the size takes `1600x1050` (the old `1600,1050` still works).
+- **Plans** for geography (a generated continent, then features) and for expeditions (resetting the map without losing work) are in `docs/plans/geography.md` and `docs/plans/reset.md`, awaiting Tiago's answers.

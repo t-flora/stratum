@@ -39,7 +39,7 @@ npm run stratum -- horizon       # the three Horizon cards
 npm run stratum -- pin <id>      # set the pin (--clear removes it)
 npm run stratum -- propose --from <id>  # list the write-up's loose threads; --thread <n> / --text appends a stub to world/proposed.yaml
 npm run dev                      # Vite + dev API at http://127.0.0.1:5173; rebuilds live on world/work/state changes
-scripts/screenshot.sh sky 1      # headless screenshot of the running dev server → build/debug/sky-1.png
+scripts/screenshot.sh sky 1      # headless screenshot of the running dev server → build/debug/sky-1.png (MOBILE=1 … 390x844 for a phone)
 ```
 
 URL params: `?layer=sky|surface|depths`, `?zoom=<k>`, `?select=<id>` (opens the detail panel), `?atlas=1` (reveal everything, behind a spoiler warning; key A toggles). Keys: 1/2/3 layers, H folds the Horizon, K map key, / search, T the Atlas table (in Atlas mode). The CLI takes `--root <dir>` to point at another world, for example `fixtures/tiny`.
@@ -76,7 +76,7 @@ templates/         WRITEUP.md, NEXT.md, cpp/ and python/ scaffolds for `stratum 
 world/             world-seed.yaml (content), proposed.yaml, positions.lock.json (committed)
 fixtures/          tiny/ (clean 3-region world), planted-errors/ (lint test)
 state/pins.yaml    the map pin (`pin: <id>` or null)
-docs/              status.md, decisions.md, plans/ (world editing: proposal; camps, unknown: done)
+docs/              status.md, decisions.md, plans/ (world editing, geography, reset: proposals; camps, unknown: done)
 ```
 
 ## Architecture rules

@@ -54,7 +54,7 @@ Checked on the Mac: `npm test` (126 tests; new: `progress.test.ts`, `propose.tes
 
 **Noticed along the way (not changed):**
 - `stratum dev` only watches `work/` if it existed at startup.
-- `scripts/screenshot.sh` hangs: headless Chrome on the Mac writes the PNG but never exits, and it enforces a minimum window width, so it can't do 390 px. For this milestone I drove Chrome over the DevTools protocol with device emulation (a scratch script, `build/cdp-shot.mjs`). It could replace screenshot.sh if you want.
+- `scripts/screenshot.sh` used to hang: headless Chrome on the Mac writes the PNG but never exits, and it enforces a minimum window width, so it couldn't do 390 px. **Fixed after M5:** it now drives Chrome over the DevTools protocol (`scripts/shot.mjs`). Same arguments as before, plus `MOBILE=1` (phone emulation), `QUERY='&select=…'` and `SCHEME=light|dark`.
 - Running `npm i` in a subfolder installs into the root workspace. I hit this installing Lighthouse, restored `package.json` and `package-lock.json`, and pruned `node_modules`.
 
 ## M4: what was built and what still needs checking
@@ -93,6 +93,8 @@ M5 is the last milestone in DESIGN.md §13. After it: Tiago's review of the draf
 
 ## Planned after M5 (proposals, awaiting Tiago)
 
+- **[Geography](plans/geography.md)** (asked for 2026-09-30). A generated continent instead of the ellipse: peninsulas, bays, islands, maybe an inland sea. It needs a lockfile regeneration, so it's best done with the post-theme-review one, before real work starts. Then rendering-only features on explored land: mountains on high ridges, rivers and lakes, and a biome texture per region. Four questions.
+- **[Expeditions](plans/reset.md)** (asked for 2026-09-30). Reset the map without losing the work: `stratum expedition new` archives `work/` into `archive/expedition-<n>/`. Also `stratum erase`, and a "new world" step that changes the seed and is only allowed with `work/` empty. All CLI only, a dry run by default, with a typed count as confirmation. Four questions.
 - **[World editing](plans/world-editing.md).** Region `weight` to shrink or grow regions (Vector Coast), papers on write-ups and proposals, a core edit module with dry-run diffs, then CLI commands and a browser Edit mode. The YAML plus a JSON Schema is the contract, and the interfaces are clients. There are five questions for Tiago.
 
 ## Known limitations and TODOs
