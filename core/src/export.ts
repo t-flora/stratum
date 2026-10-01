@@ -1,10 +1,11 @@
 import { contours } from 'd3-contour';
+import { explorerRing, type Explored, type RegionExplored } from './explore.ts';
 import type { Geometry } from './geometry.ts';
-import type { HorizonCard, MapData, MapGeometry, MapShrine, MapTheme, MultiPolygon } from './mapdata.ts';
+import type { HorizonCard, MapData, MapGeometry, MapRegion, MapShrine, MapTheme, MultiPolygon } from './mapdata.ts';
 import { themeKey, themesByRegion } from './placement.ts';
 import { hash32, mulberry32 } from './prng.ts';
 import type { Region, RequireTag, Vec2, World } from './types.ts';
-import { sightRadius, titleKnown, type VisibilityConfig, type VisibilityResult } from './visibility.ts';
+import { titleKnown, type VisibilityConfig, type VisibilityResult } from './visibility.ts';
 import type { ShrineWork } from './work.ts';
 
 /** Grid step (world units) for region outlines and ridges. */
@@ -217,6 +218,9 @@ function depthsTerrain(world: World, geo: Geometry, positions: Map<string, Vec2>
 export interface MapState {
   work: Map<string, ShrineWork>;
   sight: VisibilityResult;
+  explored: Explored;
+  /** How much of each surface region's land is explored. */
+  exploredShare: Map<string, RegionExplored>;
   config: VisibilityConfig;
   available: RequireTag[];
   horizon: HorizonCard[];
@@ -244,7 +248,8 @@ export function buildMapData(
       id: s.id, title: s.title, region: s.region, layer: s.layer, kind: s.kind, p: s.p, size: s.size,
       requires: s.requires, after: s.after, links: s.links, needs: s.needs, prompt: s.prompt, done: s.done,
       xy: positions.get(s.id)!, status: w?.status ?? 'untouched', visibility,
-      titleKnown: state ? titleKnown(visibility, s.p, state.config) : true, marks,
+      titleKnown: state ? titleKnown(visibility, s.p, state.config) : true,
+      charted: s.layer !== 'surface' || !state || state.explored.has(...positions.get(s.id)!), marks,
       unavailable: state ? s.requires.filter((t) => !state.available.includes(t)) : [],
       committed: w?.committed ?? false, touches: w?.touches ?? [], remnote: w?.remnote ?? 0,
     };
@@ -273,7 +278,13 @@ export function buildMapData(
     builtAt,
     canvas: world.canvas,
     start: world.start,
-    regions: world.regions.map((r) => (state?.sight.surveyed.has(r.id) ? { ...r, surveyed: true } : { ...r })),
+    regions: world.regions.map((r) => {
+      const out: MapRegion = { ...r };
+      if (state?.sight.surveyed.has(r.id)) out.surveyed = true;
+      const ex = state?.exploredShare.get(r.id);
+      if (ex) out.explored = { share: Math.round(ex.share * 100) / 100, centre: ex.centre };
+      return out;
+    }),
     shrines,
     themes,
     sight: buildSight(world, positions, state),
@@ -287,7 +298,6 @@ export function buildMapData(
 
 function buildSight(world: World, positions: Map<string, Vec2>, state: MapState | null): MapData['sight'] {
   const cfg = state?.config;
-  const fogRadius = cfg ? sightRadius(cfg, 2) : 0;
   const lights: MapData['sight']['lights'] = [];
   for (const s of world.shrines) {
     if (s.layer !== 'depths' || !state) continue;
@@ -296,8 +306,7 @@ function buildSight(world: World, positions: Map<string, Vec2>, state: MapState 
   }
   return {
     vantages: state ? state.sight.vantages.map((v) => ({ xy: v.xy, tower: v.tower })) : [],
-    fogRadius,
-    towerFogRadius: cfg ? fogRadius + cfg.towerRadiusBonus : 0,
+    explored: state ? state.explored.explorers.map(explorerRing) : [],
     lights,
     lightRadius: cfg?.lightRadius ?? 0,
     glowRadius: cfg?.glowRadius ?? 0,

@@ -220,7 +220,7 @@
         <div class="spoiler-card">
           <h2 id="spoiler-title">Open the atlas?</h2>
           <p>
-            The atlas shows every shrine, including the ones you haven't seen yet: no fog, no darkness, every prompt.
+            The atlas shows every shrine, including the ones you haven't seen yet: all the terrain, no darkness, every prompt.
             It's for reviewing and editing the world. Your progress doesn't change, and pressing A again takes you back.
           </p>
           <div class="spoiler-actions">

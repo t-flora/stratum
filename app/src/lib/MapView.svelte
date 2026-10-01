@@ -4,7 +4,8 @@
   import { zoom, zoomIdentity, type D3ZoomEvent, type ZoomBehavior } from 'd3-zoom';
   import type { Layer, MapData, MapShrine } from '@stratum/core/mapdata';
   import Glyph from './Glyph.svelte';
-  import { linePath, multiPolygonPath } from './paths.ts';
+  import { regionOf } from './names.ts';
+  import { linePath, multiPolygonPath, ringPath } from './paths.ts';
   import { surfaceTint, veinColour } from './palette.ts';
 
   let {
@@ -18,7 +19,7 @@
     map: MapData;
     layer: Layer;
     initialZoom?: number;
-    /** Atlas mode (§9.5): no fog, no depths darkness. */
+    /** Atlas mode (§9.5): all the terrain, no depths darkness. */
     atlas?: boolean;
     selected?: string | null;
     onselect?: (id: string | null) => void;
@@ -62,7 +63,9 @@
   /** Region labels: the spot near the centroid that keeps the label box farthest from any glyph. */
   const regionLabels = $derived(
     surfaceRegions.map((r) => {
-      const [cx, cy] = r.centroid!;
+      // A partly explored region is named over the part you've seen, not out in the blank.
+      const partial = !atlas && !r.surveyed && r.explored?.centre && r.explored.share < 0.9;
+      const [cx, cy] = partial ? r.explored!.centre! : r.centroid!;
       const halfW = r.name.length * 5.2;
       const halfH = 11;
       const glyphs = map.shrines.filter((s) => s.layer === 'surface' && Math.abs(s.xy[0] - cx) < 260 && Math.abs(s.xy[1] - cy) < 200);
@@ -102,8 +105,12 @@
     Object.entries(map.geometry.depths.veins).map(([id, mp]) => ({ id, d: multiPolygonPath(mp), fill: veinColour(id) })),
   );
   const strata = $derived(map.geometry.depths.strata.map(multiPolygonPath));
-  /** Surveyed regions (cleared tower) lose their fog wash entirely (§5.3). */
+  /** Surveyed regions (cleared tower) are explored in full (§5.3). */
   const surveyedFills = $derived(regionFills.filter((r) => map.regions.find((x) => x.id === r.id)?.surveyed).map((r) => r.d));
+  /** Explored land (docs/plans/unknown.md): one ray-traced shape per place you've stood. Everything else is blank paper. */
+  const exploredShapes = $derived(map.sight.explored.map(ringPath));
+  /** A region's name shows once you've seen a fair share of it. */
+  const named = $derived(new Set(map.regions.filter((r) => atlas || r.surveyed || (r.explored?.share ?? 0) >= 0.15).map((r) => r.id)));
   const lights = $derived(
     atlas
       ? // The atlas lights every lightroot dimly, so the depths read as a whole.
@@ -177,20 +184,22 @@
       <feGaussianBlur stdDeviation="9" />
     </filter>
     <clipPath id="land-clip"><path d={coast} /></clipPath>
-    <!-- Fog (§9.3): a wash over land outside every vantage's R(2) radius. Holes are black with soft edges, so overlaps only clear more. -->
-    <radialGradient id="fog-hole">
-      <stop offset="0" stop-color="#000" stop-opacity="1" />
-      <stop offset="0.72" stop-color="#000" stop-opacity="1" />
-      <stop offset="1" stop-color="#000" stop-opacity="0" />
-    </radialGradient>
-    <mask id="fog-mask" maskUnits="userSpaceOnUse" x={-W} y={-H} width={W * 3} height={H * 3}>
-      <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="#fff" />
-      {#each surveyedFills as d, i (i)}
-        <path {d} fill="#000" />
-      {/each}
-      {#each map.sight.vantages as v, i (i)}
-        <circle cx={v.xy[0]} cy={v.xy[1]} r={v.tower ? map.sight.towerFogRadius : map.sight.fogRadius} fill="url(#fog-hole)" />
-      {/each}
+    <!-- The unknown (docs/plans/unknown.md): terrain is drawn only on explored land, with a feathered edge. -->
+    <filter id="feather" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="5" />
+    </filter>
+    <filter id="edge-wash" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="14" />
+    </filter>
+    <mask id="explored-mask" maskUnits="userSpaceOnUse" x={-W} y={-H} width={W * 3} height={H * 3}>
+      <g filter="url(#feather)">
+        {#each surveyedFills as d, i (i)}
+          <path {d} fill="#fff" />
+        {/each}
+        {#each exploredShapes as d, i (i)}
+          <path {d} fill="#fff" />
+        {/each}
+      </g>
     </mask>
     <!-- Depths (§6.4): black except inside light circles and glows. -->
     <radialGradient id="light-hole">
@@ -219,26 +228,35 @@
   <g transform="translate({t.x},{t.y}) scale({t.k})">
     <!-- SURFACE: full on the surface layer, a faint ground far below on the sky layer (§9.3) -->
     <g class="surface-layer">
-      <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="var(--sea)" />
-      <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="url(#waves)" />
-      {#each regionFills as r (r.id)}
-        <path d={r.d} fill={r.fill} />
-      {/each}
-      <rect width={W} height={H} fill="#fff" filter="url(#grain)" clip-path="url(#land-clip)" />
-      {#each contours as d, i (i)}
-        <path class="contour" {d} />
-      {/each}
-      {#each ridges as r, i (i)}
-        <path class="ridge-line" d={r.d} />
-        <path class="ridge-hatch" d={r.d} style:stroke-width={2.5 + 1.8 * r.h} />
-      {/each}
       {#if !atlas}
-        <g class="fog" mask="url(#fog-mask)" clip-path="url(#land-clip)">
-          <rect width={W} height={H} fill="var(--fog)" />
-          <rect width={W} height={H} fill="#fff" filter="url(#grain)" />
+        <!-- Blank paper where nobody has looked yet, darkening a little towards the edge of the known world -->
+        <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="var(--unknown)" />
+        <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="#fff" filter="url(#grain)" />
+        <g class="edge-wash" filter="url(#edge-wash)">
+          {#each surveyedFills as d, i (i)}
+            <path {d} />
+          {/each}
+          {#each exploredShapes as d, i (i)}
+            <path {d} />
+          {/each}
         </g>
       {/if}
-      <path class="coast" d={coast} />
+      <g class="terrain" mask={atlas ? undefined : 'url(#explored-mask)'}>
+        <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="var(--sea)" />
+        <rect x={-W} y={-H} width={W * 3} height={H * 3} fill="url(#waves)" />
+        {#each regionFills as r (r.id)}
+          <path d={r.d} fill={r.fill} />
+        {/each}
+        <rect width={W} height={H} fill="#fff" filter="url(#grain)" clip-path="url(#land-clip)" />
+        {#each contours as d, i (i)}
+          <path class="contour" {d} />
+        {/each}
+        {#each ridges as r, i (i)}
+          <path class="ridge-line" d={r.d} />
+          <path class="ridge-hatch" d={r.d} style:stroke-width={2.5 + 1.8 * r.h} />
+        {/each}
+        <path class="coast" d={coast} />
+      </g>
 
       {#if layer === 'surface'}
         <!-- Sky islands cast faint shadows on the ground (§6.3) -->
@@ -251,7 +269,7 @@
           {/each}
         {/if}
         {#if t.k < 1.5}
-          {#each regionLabels as r (r.id)}
+          {#each regionLabels.filter((r) => named.has(r.id)) as r (r.id)}
             <text class="region-label" x={r.x} y={r.y} font-size={labelSize(22)}>{r.name}</text>
           {/each}
         {/if}
@@ -259,7 +277,7 @@
           <Glyph
             shrine={s}
             scale={glyphScale}
-            regionName={regionName.get(s.region) ?? s.region}
+            regionName={regionOf(regionName, s)}
             selected={selected === s.id}
             {now}
             {onselect}
@@ -296,7 +314,7 @@
           <Glyph
             shrine={s}
             scale={glyphScale}
-            regionName={regionName.get(s.region) ?? s.region}
+            regionName={regionOf(regionName, s)}
             selected={selected === s.id}
             {now}
             {onselect}
@@ -329,7 +347,7 @@
             shrine={s}
             scale={glyphScale}
             colour={veinColour(s.region)}
-            regionName={regionName.get(s.region) ?? s.region}
+            regionName={regionOf(regionName, s)}
             selected={selected === s.id}
             {now}
             {onselect}
@@ -497,8 +515,9 @@
   .atlas-dim {
     opacity: 0.6;
   }
-  .fog {
-    opacity: 0.74;
+  .edge-wash {
+    fill: var(--unknown-edge);
+    opacity: 0.35;
     pointer-events: none;
   }
   .light {

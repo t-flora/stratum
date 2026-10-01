@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig, type Config } from './config.ts';
+import { computeExplored, exploredShare } from './explore.ts';
 import { buildGeometry, buildMapData } from './export.ts';
 import { computeHorizon, isoWeek } from './horizon.ts';
 import type { MapGeometry } from './mapdata.ts';
@@ -88,7 +89,9 @@ export function build(root: string, opts: BuildOptions = {}): BuildResult {
   const placement = placeShrines(world, geo, before, opts.replace);
   const lockChanged = serializeLock(before) !== serializeLock(placement.lock);
   const work = readWorkState(root, world, config, readGitWork(opts.git ?? gitReader(root)));
-  const sight = computeVisibility(world, placement.positions, (id) => work.get(id)?.status ?? 'untouched', geo, config.visibility);
+  const status = (id: string) => work.get(id)?.status ?? 'untouched';
+  const sight = computeVisibility(world, placement.positions, status, geo, config.visibility);
+  const explored = computeExplored(world, placement.positions, status, geo, config.visibility);
   const now = opts.now ?? Date.now();
   const week = isoWeek(new Date(now));
   const pin = readPin(root);
@@ -111,7 +114,7 @@ export function build(root: string, opts: BuildOptions = {}): BuildResult {
   }
   const map = buildMapData(
     world, geo, placement.positions, placement.anchors,
-    { work, sight, config: config.visibility, available: config.hardware.available, horizon, pin, week }, now, geometry,
+    { work, sight, explored, exploredShare: exploredShare(world, geo, explored), config: config.visibility, available: config.hardware.available, horizon, pin, week }, now, geometry,
   );
   if (opts.write !== false) {
     if (lockChanged) writeLock(root, placement.lock);

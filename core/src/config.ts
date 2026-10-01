@@ -11,11 +11,15 @@ export interface Config {
     radiusBase: number;
     radiusPerP: number;
     silhouetteFactor: number;
+    /** A silhouette peeks over a ridge of height H only if p > H + peekMargin (docs/plans/unknown.md). */
+    peekMargin: number;
     towerRadiusBonus: number;
     towerRidgeBonus: number;
     lightRadius: number;
     glowRadius: number;
     silhouetteTitleMinP: number;
+    /** Exploration rays stop at the first ridge at least this high (after a cleared tower's ridge bonus). */
+    exploreRidge: number;
   };
   horizon: { farDistance: number };
 }
@@ -28,11 +32,13 @@ export const DEFAULT_CONFIG: Config = {
     radiusBase: 150,
     radiusPerP: 90,
     silhouetteFactor: 1.6,
+    peekMargin: 1,
     towerRadiusBonus: 300,
     towerRidgeBonus: 2,
     lightRadius: 220,
     glowRadius: 40,
     silhouetteTitleMinP: 3,
+    exploreRidge: 2,
   },
   horizon: { farDistance: 450 },
 };

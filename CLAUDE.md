@@ -59,7 +59,8 @@ core/src/          all game logic; pure TS, no DOM. Imported by cli and (types o
   work.ts          scan work/, derive status/committed/touches/camp (one camp, the rest cairns), `start`, `clear`, `shelve`
   horizon.ts       §7 Horizon: three slots and their fallbacks, ISO week, pin routing (pure)
   pins.ts          state/pins.yaml read/write/validate
-  visibility.ts    §6 triangle rule: line of sight over ridges, vantages, sky launch points, depths light (pure; Terrain injected)
+  visibility.ts    §6 triangle rule: line of sight over ridges (peek margin), vantages, sky launch points, depths light (pure; Terrain injected)
+  explore.ts       explored land (docs/plans/unknown.md): ray-traced from every place you've stood, stopped by high ridges (pure)
   geometry.ts      landmass, warped region classifier (2-unit grid), adjacency, elevation, noise
   placement.ts     §8.3 placement + theme anchors + follow-ups + lockfile I/O
   export.ts        map.json geometry: region outlines, ridges, contours, archipelagos, depths territory
@@ -72,7 +73,7 @@ templates/         WRITEUP.md, NEXT.md, cpp/ and python/ scaffolds for `stratum 
 world/             world-seed.yaml (content), proposed.yaml, positions.lock.json (committed)
 fixtures/          tiny/ (clean 3-region world), planted-errors/ (lint test)
 state/pins.yaml    the map pin (`pin: <id>` or null)
-docs/              status.md, decisions.md, plans/ (world editing: proposal; camps: done)
+docs/              status.md, decisions.md, plans/ (world editing: proposal; camps, unknown: done)
 ```
 
 ## Architecture rules

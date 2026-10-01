@@ -62,8 +62,8 @@ const atMost = (v: Visibility, cap: Visibility): Visibility => (rank[v] <= rank[
 /**
  * Surface visibility of one shrine from the vantage set (§6.2, before overrides).
  * Revealed: within R(p) with no ridge in the way (a cleared tower's bonus can lower H to 0).
- * Silhouette: within 1.6·R(p) and p > H. So p=2 hides behind a default ridge (h=2), p=3 peeks over it,
- * and an h=4 ridge hides p=3: exactly the §6.2 narrative and the §13 M3 acceptance tests.
+ * Silhouette: within 1.6·R(p) and p > H + peekMargin. With the default margin of 1, p=3 peeks over the
+ * plateau's low (h=1) borders, only p≥4 landmarks peek over a default ridge (h=2), and nothing over h=4.
  */
 function surfaceSight(s: Shrine, xy: Vec2, vantages: Vantage[], t: Terrain, cfg: VisibilityConfig): Visibility {
   let best: Visibility = 'hidden';
@@ -73,9 +73,9 @@ function surfaceSight(s: Shrine, xy: Vec2, vantages: Vantage[], t: Terrain, cfg:
     if (d > cfg.silhouetteFactor * r) continue;
     const raw = maxRidgeCrossed(t, v.xy, xy);
     const h = v.tower ? Math.max(0, raw - cfg.towerRidgeBonus) : raw;
-    // The acceptance form of §6.2 (see docs/decisions.md): only an unobstructed line reveals; peeking over needs p > H.
+    // Only an unobstructed line reveals; peeking over a ridge needs a margin (docs/decisions.md, M3 and M4b).
     if (d <= r && h === 0) return 'revealed';
-    if (s.p > h) best = 'silhouette';
+    if (s.p > h + cfg.peekMargin) best = 'silhouette';
   }
   return best;
 }
@@ -117,20 +117,6 @@ export function computeVisibility(
     visibility.set(s.id, v);
   }
 
-  // §6.3 sky: never hidden. Revealed via the island's tower or a launch point (a linked shrine in either direction).
-  const linkedTo = new Map<string, Set<string>>();
-  const link = (a: string, b: string) => linkedTo.set(a, (linkedTo.get(a) ?? new Set()).add(b));
-  for (const s of world.shrines) for (const l of s.links) {
-    link(s.id, l);
-    link(l, s.id);
-  }
-  const skyTowerCleared = new Set(world.shrines.filter((s) => s.kind === 'tower' && s.layer === 'sky' && cleared(s.id)).map((s) => s.region));
-  for (const s of world.shrines) {
-    if (s.layer !== 'sky') continue;
-    const open = s.kind === 'tower' || worked(s.id) || skyTowerCleared.has(s.region) || [...(linkedTo.get(s.id) ?? [])].some(active);
-    visibility.set(s.id, open ? 'revealed' : 'silhouette');
-  }
-
   // §6.4 depths: darkness, lit by cleared lightroots; glows under active surface shrines.
   const lit = new Set(world.shrines.filter((s) => s.layer === 'depths' && cleared(s.id)).map((s) => s.id));
   const glowing = new Set<string>();
@@ -143,6 +129,25 @@ export function computeVisibility(
       return Math.hypot(c[0] - xy[0], c[1] - xy[1]) <= cfg.lightRadius;
     });
     visibility.set(s.id, worked(s.id) || inLight ? 'revealed' : glowing.has(s.id) ? 'silhouette' : 'hidden');
+  }
+
+  // §6.3 sky (after the surface and depths, which it looks at). Islands are always visible; their shrines are revealed via
+  // the island's tower or an active launch point (a linked shrine in either direction), silhouettes once a launch point is
+  // in sight, and hidden otherwise.
+  const linkedTo = new Map<string, Set<string>>();
+  const link = (a: string, b: string) => linkedTo.set(a, (linkedTo.get(a) ?? new Set()).add(b));
+  for (const s of world.shrines) for (const l of s.links) {
+    link(s.id, l);
+    link(l, s.id);
+  }
+  const skyTowerCleared = new Set(world.shrines.filter((s) => s.kind === 'tower' && s.layer === 'sky' && cleared(s.id)).map((s) => s.region));
+  for (const s of world.shrines) {
+    if (s.layer !== 'sky') continue;
+    const linked = [...(linkedTo.get(s.id) ?? [])];
+    const open = s.kind === 'tower' || worked(s.id) || skyTowerCleared.has(s.region) || linked.some(active);
+    // You can see the updraft from the ground: a revealed launch point (on another layer) shows the sky shrine's outline.
+    const seen = linked.some((l) => world.shrineById.get(l)?.layer !== 'sky' && visibility.get(l) === 'revealed');
+    visibility.set(s.id, open ? 'revealed' : seen ? 'silhouette' : 'hidden');
   }
 
   return { visibility, vantages, surveyed, glowing, lit };

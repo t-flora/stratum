@@ -141,3 +141,15 @@ Agreed with Tiago: camp/cairn vocabulary, shelving, before M5 (see `docs/plans/c
   - `stratum clear` works on shelved work directly.
 - **Map key.** Key K, or the "Key" tab bottom left, opens a short legend: every glyph, the camp and cairn meanings, and what fog is.
 - **The world-editing plan's answer.** When a region shrinks, the land goes to its neighbours (region weights).
+
+## M4b: the unknown (after the camps, before M5)
+
+Agreed with Tiago: about 20% in sight on a fresh repo, sky included; the peek margin rather than raising the plateau ridges; ray-traced explored land; sky islands stay visible. The full plan and the measurements are in `docs/plans/unknown.md`. DESIGN.md §6.2, §6.3, §9.3, §13 (M3 note, new M4b) and §16 have been updated.
+
+- **Peek margin.** A silhouette needs `p > H + peekMargin` (config, default 1). This replaces the M3 rule `p > H`. Revealing is unchanged. The M3 bullet above about the `p > H + 1` variant is superseded: that variant was for *revealing*, whereas this one is for silhouettes.
+- **Sky shrines can be hidden.** They're silhouettes only once a launch point on another layer is *revealed*, and links between sky shrines don't count. Sky is computed after the surface and depths, so it can look at them.
+- **Explored land** is computed in core (`explore.ts`) from the same `Terrain` as line of sight. The explorers are the start vantage and every worked surface shrine, shelved included: shelving stops sight, not memory. It uses 360 rays per explorer with a 4-unit march, each stopping 10 units past the first ridge of h ≥ `exploreRidge` (config, default 2) after the tower bonus. Surveyed regions are explored in full.
+- **The renderer** masks all surface terrain to explored land, with a 5-unit feather and a faint wash outside the edge, over blank paper (`--unknown`). The masked terrain includes the sky layer's faint ground. Island ground shadows stay, since the islands are always visible. Atlas draws everything.
+- **Region names** show once 15% of the region's land is explored (or it's surveyed). A partly explored region (< 90%) is labelled around the centre of its explored part (`regions[].explored.centre`, sampled every 10 units).
+- **Uncharted silhouettes** (`charted: false`: a surface shrine off explored land) read "Uncharted" for their region, and their theme is hidden, in the tooltip, the panel, the chips and the Horizon.
+- **Explored-but-hidden.** Land can be explored while p=2 shrines on it stay hidden (across an h=1 border, or in a surveyed region). Terrain and shrines are separate reveals, as with towers in §6.2.

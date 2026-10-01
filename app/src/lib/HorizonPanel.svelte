@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { HorizonCard, Layer, MapData } from '@stratum/core/mapdata';
+  import { regionOf } from './names.ts';
 
   let {
     map,
@@ -67,7 +68,7 @@
       </header>
       <button class="title" onclick={() => onselect(shrine.id)} title="Show details">{title}</button>
       <div class="meta">
-        {LAYER_NAME[shrine.layer]} · {regionName.get(shrine.region) ?? shrine.region} · {shrine.size}
+        {LAYER_NAME[shrine.layer]} · {regionOf(regionName, shrine)} · {shrine.size}
         {#each shrine.requires as r (r)}<span class="req">{r}</span>{/each}
       </div>
       {#if card.rule === 'camp'}

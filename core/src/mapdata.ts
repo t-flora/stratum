@@ -33,6 +33,8 @@ export interface MapShrine {
   visibility: Visibility;
   /** False for silhouettes too faint to name (p below silhouetteTitleMinP): show "???" (§6.2). */
   titleKnown: boolean;
+  /** Surface shrines on explored land (sky and depths: always true). Uncharted silhouettes float on blank paper, region unknown. */
+  charted: boolean;
   /** Surface markers: `chasm` beside a shrine whose lightroot glows; `draft` on a launch point to the sky (§6.3, §6.4). */
   marks: { chasm?: boolean; draft?: boolean };
   /** `requires` tags this machine lacks (§7 hardware filter): kept on the map, left out of the Horizon. */
@@ -62,8 +64,10 @@ export interface MapRegion {
   name: string;
   centroid?: Vec2;
   radius?: number;
-  /** Surface regions whose tower is cleared: no fog wash (§5.3). */
+  /** Surface regions whose tower is cleared: explored in full (§5.3). */
   surveyed?: boolean;
+  /** Surface regions: how much of the land is explored (share 0–1), and the middle of that part, where the name goes. */
+  explored?: { share: number; centre: Vec2 | null };
 }
 
 export interface MapRidge {
@@ -94,12 +98,15 @@ export interface MapGeometry {
   };
 }
 
-/** What the fog and the depths darkness are cut from (§6, §9.3). */
+/** What the unknown and the depths darkness are cut from (§6, §9.3, docs/plans/unknown.md). */
 export interface MapSight {
-  /** Surface vantages; the fog lifts within `fogRadius` of each (`towerFogRadius` for cleared towers). */
+  /** Surface vantages (§6.1). */
   vantages: { xy: Vec2; tower: boolean }[];
-  fogRadius: number;
-  towerFogRadius: number;
+  /**
+   * Explored land: one ring per explorer (the start and every surface shrine worked on), through the tips of rays that stop
+   * at high ridges. Surveyed regions are explored in full on top of these. Everything else on the surface is unknown.
+   */
+  explored: Ring[];
   /** Depths: light circles around cleared lightroots, and small glows under active surface shrines. */
   lights: { xy: Vec2; region: string; kind: 'light' | 'glow' }[];
   lightRadius: number;

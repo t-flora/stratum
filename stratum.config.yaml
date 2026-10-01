@@ -12,11 +12,13 @@ visibility:
   radiusBase: 150           # R(p) = radiusBase + radiusPerP * p
   radiusPerP: 90
   silhouetteFactor: 1.6
+  peekMargin: 1             # a silhouette peeks over a ridge H only if p > H + peekMargin
   towerRadiusBonus: 300
   towerRidgeBonus: 2
   lightRadius: 220
   glowRadius: 40
   silhouetteTitleMinP: 3
+  exploreRidge: 2           # terrain is explored up to the first ridge this high (docs/plans/unknown.md)
 
 horizon:
   farDistance: 450

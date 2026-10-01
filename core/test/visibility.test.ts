@@ -76,19 +76,30 @@ describe('line of sight', () => {
   });
 });
 
-describe('surface rule (§6.2, §13 M3)', () => {
-  it('p=2 shrines across a default ridge are hidden and p=3 ones are silhouettes', () => {
-    const v = see([
-      { id: 'near-p2', region: 'west', xy: [500, 500] },
-      { id: 'across-p2', region: 'mid', xy: [650, 500] },
-      { id: 'across-p3', region: 'mid', xy: [650, 520], p: 3 },
-    ]);
+describe('surface rule (§6.2, §13 M3 as revised in M4b)', () => {
+  const across: Spec[] = [
+    { id: 'near-p2', region: 'west', xy: [500, 500] },
+    { id: 'across-p2', region: 'mid', xy: [650, 500] },
+    { id: 'across-p3', region: 'mid', xy: [650, 520], p: 3 },
+    { id: 'across-p4', region: 'mid', xy: [650, 540], p: 4 },
+  ];
+
+  it('across a default ridge, p=2 and p=3 are hidden and p=4 peeks over (peekMargin 1)', () => {
+    const v = see(across);
     expect(v.of('near-p2')).toBe('revealed');
     expect(v.of('across-p2')).toBe('hidden');
-    expect(v.of('across-p3')).toBe('silhouette');
+    expect(v.of('across-p3')).toBe('hidden');
+    expect(v.of('across-p4')).toBe('silhouette');
   });
 
-  it('an h=4 ridge hides p=3 (and p=4), while p=5 peeks over it', () => {
+  it('with peekMargin 0 it is the M3 rule: p=3 peeks over a default ridge', () => {
+    const { world, positions } = scene(across);
+    const res = computeVisibility(world, positions, () => 'untouched', terrain, { ...cfg, peekMargin: 0 });
+    expect(res.visibility.get('across-p2')).toBe('hidden');
+    expect(res.visibility.get('across-p3')).toBe('silhouette');
+  });
+
+  it('an h=4 ridge hides everything, even p=5; a cleared tower lets p≥4 peek over it', () => {
     const v = see(
       [
         { id: 'e3', region: 'east', xy: [1050, 500], p: 3 },
@@ -100,7 +111,18 @@ describe('surface rule (§6.2, §13 M3)', () => {
     );
     expect(v.of('e3')).toBe('hidden');
     expect(v.of('e4')).toBe('hidden');
-    expect(v.of('e5')).toBe('silhouette');
+    expect(v.of('e5')).toBe('hidden');
+    // A cleared tower counts the ridge 2 lower: h=2, so p=4 and p=5 peek over.
+    const t = see(
+      [
+        { id: 'tower-mid', region: 'mid', kind: 'tower', p: 5, xy: [950, 500] },
+        { id: 'e3', region: 'east', xy: [1050, 500], p: 3 },
+        { id: 'e4', region: 'east', xy: [1050, 540], p: 4 },
+      ],
+      { 'tower-mid': 'cleared' },
+      { vantage: [100, 150] },
+    );
+    expect([t.of('e3'), t.of('e4')]).toEqual(['hidden', 'silhouette']);
   });
 
   it('a cleared tower reveals across an h=2 ridge, with its bonus radius', () => {
@@ -180,13 +202,20 @@ describe('sky rule (§6.3)', () => {
     { id: 'tower-isle', region: 'isle', kind: 'tower', p: 5, xy: [800, 300] },
     { id: 'sky-a', region: 'isle', xy: [760, 280], links: ['ground'] },
     { id: 'sky-b', region: 'isle', xy: [840, 320] },
+    { id: 'sky-c', region: 'isle', xy: [800, 340], links: ['far-ground'] },
+    { id: 'sky-d', region: 'isle', xy: [820, 260], links: ['sky-a'] },
     { id: 'ground', region: 'west', xy: [350, 500] },
     { id: 'ground-2', region: 'west', xy: [350, 600], links: ['sky-b'] },
+    { id: 'far-ground', region: 'east', xy: [1400, 500] },
   ];
 
-  it('sky shrines are never hidden; the tower is always revealed', () => {
+  it('the tower is always revealed; a sky shrine is a silhouette once a launch point is in plain sight, else hidden', () => {
     const v = see(specs);
     expect([v.of('tower-isle'), v.of('sky-a'), v.of('sky-b')]).toEqual(['revealed', 'silhouette', 'silhouette']);
+    expect(v.of('far-ground')).toBe('hidden');
+    expect(v.of('sky-c')).toBe('hidden');
+    // Links between sky shrines don't count: you can't see an updraft from another island.
+    expect(v.of('sky-d')).toBe('hidden');
   });
 
   it('a launch point (linked either way) opens a sky shrine once it is active', () => {
@@ -252,7 +281,11 @@ describe('a fresh repo (tiny fixture, real geometry)', () => {
     for (const s of world.shrines) {
       const vis = v.get(s.id)!;
       if (s.layer === 'depths') expect(vis, s.id).toBe('hidden');
-      if (s.layer === 'sky') expect(vis, s.id).toBe(s.kind === 'tower' ? 'revealed' : 'silhouette');
+      if (s.layer === 'sky' && s.kind === 'tower') expect(vis, s.id).toBe('revealed');
+      if (s.layer === 'sky' && s.kind !== 'tower') {
+        const launch = world.shrines.some((o) => o.layer !== 'sky' && (o.links.includes(s.id) || s.links.includes(o.id)) && v.get(o.id) === 'revealed');
+        expect(vis, s.id).toBe(launch ? 'silhouette' : 'hidden');
+      }
       if (s.layer !== 'surface') continue;
       if (s.kind === 'tower') expect(vis, s.id).not.toBe('hidden');
       if (vis === 'revealed' && !world.start.plateau.includes(s.id)) {

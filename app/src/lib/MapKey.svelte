@@ -69,7 +69,7 @@
         <dd>Your pin: the Horizon routes toward it</dd>
       </div>
     </dl>
-    <p class="fog">Grey wash: fog, land no vantage can see yet. Camps, cairns, clears and climbed towers are vantages.</p>
+    <p class="fog">Blank paper: land nobody has looked at yet. Everywhere you camp or clear, you see out to the nearest high ridge; a climbed tower charts its whole region.</p>
   </aside>
 {:else}
   <button class="key-tab" onclick={ontoggle} title="What do the symbols mean? (key K)" aria-expanded="false">Key<kbd>K</kbd></button>

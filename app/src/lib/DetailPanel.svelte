@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Layer, MapData, MapShrine } from '@stratum/core/mapdata';
   import { renderInline, renderMarkdown } from './markdown.ts';
+  import { regionOf } from './names.ts';
 
   let {
     shrine,
@@ -94,7 +95,7 @@
 <aside class="panel" aria-label="Shrine details">
   <header>
     <div class="eyebrow">
-      {LAYER_NAME[shrine.layer]} · {regionName.get(shrine.region) ?? shrine.region}{shrine.theme ? ` · ${shrine.theme}` : ''}
+      {LAYER_NAME[shrine.layer]} · {regionOf(regionName, shrine)}{shrine.theme && shrine.charted ? ` · ${shrine.theme}` : ''}
     </div>
     <h2>{shrine.titleKnown ? shrine.title : '???'}</h2>
     <button class="close" onclick={onclose} aria-label="Close details" title="Close (Esc)">×</button>
@@ -163,7 +164,7 @@
                 class="chip {s.layer} {s.status}"
                 disabled={s.visibility === 'hidden'}
                 onclick={() => onselect(s.id)}
-                title="{LAYER_NAME[s.layer]} · {regionName.get(s.region) ?? s.region}"
+                title="{LAYER_NAME[s.layer]} · {regionOf(regionName, s)}"
               >
                 <span class="chip-dot"></span>{chipLabel(s)}
               </button>

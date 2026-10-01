@@ -244,9 +244,11 @@ Definitions:
 - For tower vantages, use `R(p) + 300` and `H − 2` (floored at 0).
 
 A shrine `s` with prominence `p` is:
-- **revealed** if some `v ∈ V` has `d(v,s) ≤ R(p)` and `p > H(v,s)`,
-- else **silhouette** if some `v` has `d(v,s) ≤ 1.6·R(p)` and `p ≥ H(v,s)`,
+- **revealed** if some `v ∈ V` has `d(v,s) ≤ R(p)` and `H(v,s) = 0` (after the tower bonus),
+- else **silhouette** if some `v` has `d(v,s) ≤ 1.6·R(p)` and `p > H(v,s) + m`, where the peek margin is `m = 1`,
 - else **hidden**.
+
+*(Revised in M4b; see docs/plans/unknown.md. The v1 formulas were `p > H` and `p ≥ H`, which showed over half the world from the start vantage.)*
 
 Overrides are applied in this order:
 1. Plateau shrines are revealed.
@@ -255,7 +257,7 @@ Overrides are applied in this order:
 4. Towers are at least silhouette everywhere on the surface. Their prominence of 5 makes this mostly automatic, but guarantee it.
 5. Temples with unmet needs are at most silhouette.
 
-The effect: ordinary (p=2) shrines in the next region are hidden behind a default ridge of height 2. Only landmarks (p≥3) peek over it, as silhouettes. That is the intended "a few things call to you" behaviour. High ridges (h=4, e.g. Tick Canyon ↔ Agent Workshops) hide almost everything, so you have to walk around through a neighbouring region.
+The effect: across the plateau's low (h=1) borders, p≥3 shrines peek over as silhouettes. Behind a default ridge (h=2) only the tall landmarks (p≥4) do. That is the intended "a few things call to you" behaviour: a fresh repo shows about a fifth of the world. High ridges (h=4, e.g. Tick Canyon ↔ Agent Workshops) hide everything, so you have to walk around through a neighbouring region, or climb a tower (whose bonus lets p≥4 peek over them).
 
 **Silhouette presentation.** A silhouette shows its glyph, size and region, but not its prompt. Its title shows on hover only if p ≥ 3 (landmarks are recognisable from afar); otherwise it shows "???". Setting out to a silhouette is allowed and reveals it.
 
@@ -264,7 +266,7 @@ The effect: ordinary (p=2) shrines in the next region are hidden behind a defaul
 - Island outlines and names are always visible, both on the sky layer and as faint shadows on the surface.
 - A sky tower is always revealed.
 - A sky shrine is **revealed** if its island's tower is cleared, or if any shrine in its `links` (in either direction) is cleared or in progress. That linked shrine is its *launch point*.
-- Otherwise the sky shrine is a **silhouette**. Sky shrines are never hidden: you can always see the islands overhead.
+- Otherwise it is a **silhouette** if a launch point on another layer is revealed (you can see the updraft from the ground), and **hidden** if not. *(Revised in M4b: in v1 sky shrines were never hidden.)*
 - On the surface, a launch point (a shrine linked to a sky shrine) gets a small upward-draft marker.
 
 ### 6.4 Depths rule
@@ -379,7 +381,7 @@ Transitions should take under 400 ms and respect `prefers-reduced-motion`.
 **Surface**
 - Warm parchment ground with thin contour lines.
 - Ridges drawn as hatched strokes along borders.
-- Fog is a desaturated wash with a subtle paper-grain texture over areas outside every vantage's R(2) radius. The coastline and silhouettes stay faintly visible.
+- **The unknown** (M4b, docs/plans/unknown.md). The shape of the land is hidden until you have looked at it. From the start vantage and every surface shrine you've worked on, rays run out to R(2) (R(2) + 300 from a cleared tower) and stop just past the first ridge of h ≥ 2 (a cleared tower counts ridges 2 lower). A cleared tower also charts its whole region. Outside that explored land the surface is blank paper, with no coastline, borders, ridges, contours or region names. Silhouettes float on it, and their region reads "Uncharted". Explored land never shrinks.
 - The sea is a flat blue-grey with sparse wave strokes.
 
 **Sky**
@@ -499,7 +501,7 @@ Stop for review after each milestone.
 ### M3: Visibility (the triangle rule)
 - §6 in full: fog, silhouettes, sky launch points, depths light and glows, towers.
 - **Accept when** these unit tests pass:
-  - p=2 shrines across a default ridge are hidden and p=3 ones are silhouettes;
+  - p=2 shrines across a default ridge are hidden and p=3 ones are silhouettes *(p=3 hidden and p=4 silhouettes since M4b)*;
   - an h=4 ridge hides p=3;
   - the tower bonus reveals across an h=2 ridge;
   - the depths are dark until a lightroot is cleared;
@@ -513,6 +515,14 @@ Stop for review after each milestone.
   - no slot ever shows a hidden shrine;
   - pin routing picks "on the way" shrines;
   - a fixture test covers each fallback branch.
+
+### M4b: The unknown
+- Added after M4 (docs/plans/unknown.md): the peek margin, hideable sky shrines, and explored land (§9.3), with blank paper outside it.
+- **Accept when:**
+  - a fresh repo on the seed shows 15–25% of all shrines (sky included), with the whole start region revealed and non-tower shrines in at least three other regions;
+  - no coastline, border, ridge or contour is drawn outside explored land (Atlas mode excepted);
+  - clearing a tower charts its region; shelving never un-explores land;
+  - explored land is a pure, deterministic function of the repo.
 
 ### M5: Hero's Path, hours and polish
 - The Hero's Path, the hours estimate, layer transitions, reduced motion, dark UI chrome, mobile layout, Atlas mode and the static build.
@@ -543,6 +553,6 @@ Keep a `fixtures/` folder with small synthetic worlds (3 regions, about 12 shrin
 | Word minimum for a write-up | 250 | `stratum.config.yaml` |
 | Hardware available | `[linux, llm-api]` (add `gpu` once a GPU is available, e.g. a university cluster or a cloud instance) | `stratum.config.yaml` |
 | Silhouette titles shown from | p ≥ 3 | config |
-| Visibility constants | R(p) = 150 + 90p, 1.6× silhouette band, tower +300/−2, light 220 | config |
+| Visibility constants | R(p) = 150 + 90p, 1.6× silhouette band, peek margin 1, tower +300/−2, explore rays stop at h ≥ 2, light 220 | config |
 | Horizon far distance | 450 | config |
 | Project name | "Stratum" | everywhere; rename freely |
