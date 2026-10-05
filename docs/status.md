@@ -1,6 +1,6 @@
 # Status
 
-*Last updated: 2026-10-01. Keep this current at the end of every work session and milestone.*
+*Last updated: 2026-10-05. Keep this current at the end of every work session and milestone.*
 
 ## Milestones (DESIGN.md §13)
 
@@ -22,6 +22,13 @@
 | M7: expeditions (docs/plans/reset.md) | planned, optional; 4 questions open | |
 | M8: world editing (docs/plans/world-editing.md) | planned, optional; 4 questions open. **E1 (region weights) only before the first start** | |
 | M9: feature names (geography: generated) | planned, optional | |
+| M10: ready to share (renames, neutral docs, licence) | planned; 2 questions in docs/plans/template.md | |
+| M11: treasure, secrets, total completion (docs/plans/treasure.md) | planned; 4 questions | |
+| M12: world packs (engine/world split, drift check, rename) | planned | |
+| M13: learning materials (notes, papers, cards, Anki export) | planned | |
+| M14: world-design scaffold (schemas, design guide, design lint, simulate) | planned | |
+| M15: world generator (Claude Code skill) | planned | |
+| M16: template release | planned; 2 questions in template.md | |
 
 **Acceptance evidence:**
 - M0 and M1 criteria are covered by tests in `core/test/` (44 tests). M2 adds 21 in `core/test/work.test.ts`, M3 adds 17 in `core/test/visibility.test.ts`, M4 adds 17 in `core/test/horizon.test.ts`.
@@ -30,9 +37,20 @@
 
 ## Open items waiting on Tiago
 
-1. **Optional:** is seed `20261005` a keeper, and are the drafted region `biome:` values right? He was happy to commit M6 as is. A change of either needs a lockfile regeneration, so do it before the first `stratum start`.
-2. **Optional milestones M7–M9** (DESIGN.md §13) each have open questions in their plans. If he wants M8's region weights (e.g. shrink Vector Coast), do them **before setting out** on the first shrine.
-3. **Then: set out on the first real shrine.** After the first `stratum start`, the lockfile is frozen for good (CLAUDE.md).
+1. **Questions in the new plans.**
+   - `docs/plans/treasure.md`: GPU-gated content vs. the 75% rule, chest density, echo scope, when readings count.
+   - `docs/plans/template.md`: names for lightroot and Hero's Path, the licence and whether his world ships publicly, sealed shrine prose for generated worlds, distribution.
+   
+   Each has a recommended default, so a session can proceed on those if he says so.
+2. **Optional:** is seed `20261005` a keeper, and are the drafted region `biome:` values right? He was happy to commit M6 as is. Changing either needs a lockfile regeneration, so do it before the first `stratum start`.
+3. **M8's region weights** (e.g. shrinking Vector Coast), if wanted, must happen **before setting out** on the first shrine.
+4. **Then: set out on the first real shrine.** After the first `stratum start`, the lockfile is frozen for good (CLAUDE.md).
+
+## Direction (2026-10-05)
+
+Tiago wants Stratum to become a template anyone comfortable with git and a terminal can use for any topic. The key principle, in his words: assume **a model creates the content for the learner's discovery**. So the application's real job is to be the best scaffold on which a model designs a world. His world benefited from clear intent from the start; a second user's may not, which is why M14 (design guide, design lint, simulator) and M15 (an interviewing generator that writes a brief) carry most of the weight. He wants to be surprised by treasure too, so loot is model-written and sealed. Found side tasks count as clears. A "Total completion" tracker over all content appears once every region is 75% cleared.
+
+**Plans:** `docs/plans/treasure.md` (M11) and `docs/plans/template.md` (M10, M12–M16). `CLAUDE.md`'s plans list predates these; it was open in Tiago's editor when they were written, so update it next session: `docs/plans/ (template, treasure, world editing, reset: proposals; camps, unknown, geography: done)`.
 
 ## Theme and follow-up review (2026-10-01)
 
@@ -122,7 +140,12 @@ Harness results: work 23/23, visibility 17/18 (the real-geometry test is skipped
 
 ## Next
 
-All of DESIGN.md §13's original milestones (M0–M6) are done. What comes next is Tiago's choice: the optional M7–M9 (above), or setting out on the first shrine.
+All of DESIGN.md §13's original milestones (M0–M6) are done. Recommended order for what's planned:
+1. **M10** (small, any time).
+2. **M11** (improves Tiago's world now; safe after the first start).
+3. **M12 → M14 → M15 → M16,** with M13 anywhere after M12.
+
+M7 and M9 are independent. M8 E1 only before the first start. Or Tiago sets out on his first shrine, which doesn't block any of these.
 
 ## Known limitations and TODOs
 

@@ -553,7 +553,7 @@ Stop for review after each milestone.
 
 ### Future milestones (planned, optional)
 
-These are proposals, each with open questions for Tiago in its plan. They're numbered for reference, not strict order. Anything that reshapes the world is only cheap before the first `stratum start` (see M8).
+These are proposals, each with open questions for Tiago in its plan. They're numbered for reference, not strict order; the recommended order is in docs/plans/template.md (M10, then M11, then M12 → M14 → M15 → M16, with M13 anywhere after M12). Anything that reshapes the world is only cheap before the first `stratum start` (see M8).
 
 ### M7: Expeditions (docs/plans/reset.md)
 - Reset the map without losing the work: `stratum expedition new` archives `work/` into `archive/expedition-<n>/`. Also `stratum erase` (delete the work), and a new-world step (a new seed) that's only allowed with `work/` empty. All CLI only, a dry run by default, confirmed by typing a count.
@@ -570,6 +570,37 @@ These are proposals, each with open questions for Tiago in its plan. They're num
 ### M9: Feature names (docs/plans/geography.md)
 - Generated names for the M6 rivers, lakes and ranges (Tiago chose generated), filling the features' optional `name`, shown once explored. Deterministic from the seed and feature id, overridable in world-seed.yaml.
 - **Accept when:** names are stable across builds, never collide within a layer, and appear only on explored land.
+
+### M10: Ready to share (docs/plans/template.md)
+- Rename the two coined game terms (lightroot, Hero's Path), make the docs neutral ("inspired by open-world exploration games"), move personal details out of shared docs, and add a `LICENSE` plus a third-party notice.
+- **Accept when:** no game names or coined terms remain outside one inspiration sentence; tests pass; behaviour is unchanged.
+
+### M11: Treasure, secrets and total completion (docs/plans/treasure.md)
+- **Chests:** about 7% of locations, at geometry-chosen hiding spots, locked like shrines and found by exploring. Their contents come from a sealed `world/treasure.yaml`, matched to spots by affinity.
+- **Secrets:** echoes (a hidden concept unlocks when a write-up mentions it) and feats (repo facts such as a shrine plus its depths).
+- **Found side tasks clear like shrines.** Contents are written and sealed by a model, unseen by the owner.
+- **Total completion.** When every region reaches 75% cleared, a "Total completion" tracker appears covering all content: shrines, chests and secrets.
+- **Accept when:** treasure is invisible until found and stable across builds; sealed text never reaches `map.json` before it's opened; a chest task clears like a shrine; an echo unlocks from a write-up; the tracker appears exactly at the 75% threshold.
+
+### M12: World packs (docs/plans/template.md)
+- Move every topic-specific assumption into `world/pack.yaml`: the `requires` vocabulary and its probes, templates and when they're the default, task kinds and their artefact rules, and colours. Shrines get a `kind`. Content edits become safe: a lint drift check and `stratum rename`.
+- **Accept when:** Tiago's world runs unchanged from its own pack; a fixture runs with a different vocabulary; no region id appears in engine code.
+
+### M13: Learning materials (docs/plans/template.md)
+- Notes, papers and Q/A flashcards as first-class work files, counted and shown, with an Anki export. Still no spaced repetition (§15).
+- **Accept when:** a `cards`-kind shrine clears on its cards; the export round-trips into Anki.
+
+### M14: The world-design scaffold (docs/plans/template.md)
+- JSON Schemas; `docs/world-design.md` (the craft of a good world, written for models); `stratum lint --design` (measurable design properties); `stratum simulate` (a synthetic learner reports the discovery curve and reachability).
+- **Accept when:** Tiago's world passes with explained warnings and gives a baseline curve; deliberately bad fixtures are each caught.
+
+### M15: The world generator (docs/plans/template.md)
+- A Claude Code skill: interview → `world/brief.md` → staged drafting with subagents → revision against lint, design lint and simulate → sealed treasure → a spoiler-safe handoff. Generated worlds seal shrine prose by default.
+- **Accept when:** lint-clean, in-range worlds for three unlike topics, with tasks a fresh reviewer finds concrete and checkable.
+
+### M16: Template release (docs/plans/template.md)
+- A GitHub template repo with an empty starter pack, the generator, example packs, `stratum new` and `stratum doctor`, and a first-hour guide.
+- **Accept when:** a clean machine goes from clone to a generated world on the map in under 30 minutes using only the README.
 
 ---
 

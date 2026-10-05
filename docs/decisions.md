@@ -217,3 +217,14 @@ Tiago delegated the theme/follow-up review ("I'll trust your judgment").
 - **Leaning follow-ups.** A follow-up with no placed same-theme predecessor, but a placed predecessor elsewhere on its layer (another theme or region), is sampled around a point between its anchor and that predecessor: up to half the distance, at most 0.8 × the theme radius (24 units on the sky). It must still stay in its own theme's share. Sky islets keep their 60-unit margin, so sky shrines lean less.
 - **Predecessors first, everywhere.** Placement now places any same-layer predecessor first, including one in another region, so the lean has something to lean toward. This is deterministic, and file order still breaks ties.
 - **Favicon.** `app/public/favicon.svg` is original art showing the three strata: a sky band with a floating islet, a parchment surface with the shrine glyph, and the depths with a teal lightroot directly beneath it. There are PNG fallbacks: `favicon-32.png`, and a full-bleed `apple-touch-icon.png` (180 px, because iOS rounds the corners itself). Both were rendered from the SVG with `scripts/shot.mjs` through an `<img>` page (Chrome blocks `fetch` on `file://`). `theme-color` follows light/dark. Vite rewrites the links for the static build's relative base.
+
+## Direction: a template for any topic, and treasure (2026-10-05)
+
+Tiago's answers to the template and treasure questions, recorded so future sessions build on them:
+- **Write-ups are the "responses"** in which hidden concepts are mentioned, so echoes scan write-ups.
+- **Audience:** people comfortable with git and a terminal. A fork-and-go template repo, no hosted app (consistent with §15).
+- **A model authors the world for the learner's discovery.** That covers treasure (sealed, unseen even by the owner) and, by default, generated worlds' shrine prose. The application's job is to be the scaffold that makes a model's world well designed. This is why M14 (design guide, `lint --design`, `simulate`) comes before the generator (M15). The LLM still works outside the app (§15).
+- **Found side tasks count** as clears.
+- **Total completion** over all content (shrines, chests, secrets) unlocks once every region (all 22, including sky islands and depths veins) is 75% cleared. The top bar's existing "x% of the world" (cleared shrines, §10.2) stays as it is.
+- **Feats are triggers for content, never badges or scores,** which keeps §15's "no XP, levels, streaks, badges".
+- Plans: docs/plans/treasure.md (M11) and docs/plans/template.md (M10, M12–M16). The modularity report's drift check and `stratum rename` were scheduled into M12.
