@@ -48,7 +48,7 @@
 
 ## Direction (2026-10-05)
 
-Tiago wants Stratum to become a template anyone comfortable with git and a terminal can use for any topic. The key principle, in his words: assume **a model creates the content for the learner's discovery**. So the application's real job is to be the best scaffold on which a model designs a world. His world benefited from clear intent from the start; a second user's may not, which is why M14 (design guide, design lint, simulator) and M15 (an interviewing generator that writes a brief) carry most of the weight. He wants to be surprised by treasure too, so loot is model-written and sealed. Found side tasks count as clears. A "Total completion" tracker over all content appears once every region is 75% cleared.
+Tiago wants Stratum to become a template anyone comfortable with git and a terminal can use for any topic. The key principle, in his words: assume **a model creates the content for the learner's discovery**. So the application's real job is to be the best scaffold on which a model designs a world. His world benefited from clear intent from the start; a second user's may not, which is why M14 (design guide, design lint, simulator) and M15 (an interviewing generator that writes a brief) carry most of the weight. He wants to be surprised by treasure too, so loot is model-written and sealed. Found side tasks count as clears. Total completion is "how much, never where": a percentage of all content once every region is 75% cleared, and an opt-in view of remaining locations once 75% of all content is done.
 
 **Plans:** `docs/plans/treasure.md` (M11) and `docs/plans/template.md` (M10, M12–M16). `CLAUDE.md`'s plans list predates these; it was open in Tiago's editor when they were written, so update it next session: `docs/plans/ (template, treasure, world editing, reset: proposals; camps, unknown, geography: done)`.
 
@@ -138,14 +138,57 @@ Harness results: work 23/23, visibility 17/18 (the real-geometry test is skipped
 4. Press K for the map key.
 5. Clean up the scratch folders afterwards.
 
-## Next
+## Next: picking up a milestone (for a new session)
 
-All of DESIGN.md §13's original milestones (M0–M6) are done. Recommended order for what's planned:
-1. **M10** (small, any time).
-2. **M11** (improves Tiago's world now; safe after the first start).
-3. **M12 → M14 → M15 → M16,** with M13 anywhere after M12.
+All of DESIGN.md §13's original milestones (M0–M6) are done. What follows is planned. A session picking one up should:
 
-M7 and M9 are independent. M8 E1 only before the first start. Or Tiago sets out on his first shrine, which doesn't block any of these.
+1. **Read in this order:** this file, the milestone's entry in DESIGN.md §13, its plan in `docs/plans/`, and the decisions log.
+2. **Check the open questions** in the plan. If Tiago hasn't answered one, use the recommended default below and say so in the milestone report. Don't stall on it.
+3. **Build the milestone,** keeping core logic pure with vitest tests, and the app a renderer of `map.json` (CLAUDE.md).
+4. **Verify:** `npm test`, `npm run typecheck` and `npm run stratum -- lint`, plus screenshots for UI work (`scripts/screenshot.sh`).
+5. **Stop for Tiago's review** (CLAUDE.md). Update this file and `docs/decisions.md`. Commit only when asked.
+
+**Recommended order:**
+1. M10 (small, any time).
+2. M11 (improves Tiago's world now; safe after the first start).
+3. M12 → M14 → M15 → M16, with M13 anywhere after M12.
+
+M7 and M9 are independent. M8 E1 only before the first start.
+
+**Defaults where Tiago hasn't answered yet:**
+
+| Plan | Question | Default |
+|---|---|---|
+| treasure.md | GPU-gated content vs. the 75% rule | `completion.exclude: []` in config (everything counts); offer `[gpu]` for this Mac in the review |
+| treasure.md | Density | about 7% chests (≈15), about 10 secrets |
+| treasure.md | Echo scope | own region or theme only |
+| treasure.md | When readings and cards count | as soon as they're opened |
+| template.md | Names for lightroot / Hero's Path | *wellspring* / *trail* |
+| template.md | Licence; his world public? | MIT; his world stays private until he says otherwise (example packs come from the generator) |
+| template.md | Sealed shrine prose | on for generated worlds, off for Tiago's |
+| template.md | Distribution | a template repo, with `git pull upstream` for updates |
+
+**Milestone briefs:**
+- **M10, ready to share.**
+  - Rename lightroot → wellspring and Hero's Path → trail across code (`Glyph.svelte`, `MapKey.svelte`, `mapdata.ts`, `progress.ts`, `visibility.ts`, `export.ts`), UI text, tests and docs. Map-json field names may change; it's a build artefact.
+  - Make DESIGN.md and CLAUDE.md neutral, with one inspiration sentence.
+  - Move personal details into a gitignored `docs/private.md`.
+  - Add `LICENSE` and `THIRD_PARTY.md`.
+  - Done when the grep in template.md comes back clean.
+- **M11, treasure.**
+  - Follow treasure.md phases Tr1–Tr5. Spots and found state go in core (`treasure.ts`), sealing in core with `node:crypto`, the decoder CLI-only, and `map.json` carries opened contents only.
+  - **Tr5 (writing the loot) must be done without showing it to Tiago:** don't print contents in the chat, the commit message or the review.
+- **M12, world packs.** Hard-coded spots to remove:
+  - `REQUIRE_TAGS` (`types.ts`) and the probes (`hardware.ts`);
+  - `PYTHON_REGIONS` and `TEMPLATES` (`clear.ts`);
+  - `VEIN_COLOURS` (`palette.ts`);
+  - the artefact rule (`clear.ts`).
+  
+  Add the drift check and `stratum rename` (the modularity report's five cases make good tests). The scratch harness that found them was in `build/modularity.ts` (gitignored; recreate it if it's gone).
+- **M13, learning materials.** Coordinate `papers:` with M8 E1, whichever lands first. Export to Anki CSV only; no spaced repetition.
+- **M14, the world-design scaffold.** Generate JSON Schemas from the loader's types; write `docs/world-design.md` from Tiago's world; `lint --design`; `simulate`. Record his world's metrics as the baseline before changing anything.
+- **M15, the generator.** A Claude Code skill (`.claude/skills/generate-world/`) driving subagents. Test on three unlike topics in scratch roots (`--root`), never on Tiago's world.
+- **M16, release.** A template repo, `stratum new` and `stratum doctor`, and a first-hour guide, timed on a clean clone.
 
 ## Known limitations and TODOs
 

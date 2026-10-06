@@ -8,7 +8,7 @@ Rare things on the map that are around to be looked for: extra tasks, readings, 
 - **Hidden concepts are found through write-ups.** A concept unlocks when a write-up mentions it.
 - **He wants to be surprised by the treasure too.** A model writes the contents and seals them; nobody, the owner included, reads them before they're found.
 - **Found tasks count.** A side task from a chest is a real clear.
-- **Total completion is a reward of its own.** Once 75% of every region is cleared, a tracker appears showing total completion out of *all* the content on the map: shrines, chests and secrets.
+- **Total completion is a reward of its own,** in two steps. Once 75% of every region is cleared, a tracker shows the *percentage* of all content completed (shrines, chests, secrets), but never where anything is. Once 75% of all content is done, an *optional* view can mark the locations of what's left.
 
 ## Constraints it has to respect
 
@@ -67,10 +67,33 @@ This is a seal, not security: anyone determined can run the decoder. It exists o
 
 ## Total completion
 
+Clarified by Tiago on 2026-10-05: **show how much, never where.** There are two unlocks, at two different thresholds.
+
+**1. The tracker: a percentage, no locations.** It unlocks when every region reaches 75% cleared.
+- **Which regions:** all 22 (the surface regions, sky islands and depths veins). Each region counts its own shrines plus any chest tasks inside it.
+- **What it shows:** a "Total completion" readout with one percentage: completed content out of *all* the content the map contains. That covers cleared shrines and chest tasks, opened chests, and unlocked secrets.
+- **Optionally, a percentage per kind** (shrines, chests, secrets). These are percentages, not counts, so the number of chests stays a mystery.
+- **What it never shows:** no markers, no lists of what's left, and no hints of where.
+- **Until it unlocks,** nothing anywhere says how much treasure exists.
+- **The unlock is a moment:** a one-time toast, and a line in `stratum status`.
 - **The existing readout stays.** "x% of the world" in the top bar counts cleared shrines, as specified in §10.2.
-- **The tracker is new.** It unlocks when every region reaches 75% cleared. That's all 22 regions (the surface regions, sky islands and depths veins), counting each region's own shrines, plus any chest tasks inside it.
-- **Once unlocked,** a "Total completion" panel shows cleared tasks, opened treasure and unlocked secrets out of everything the map contains, with a breakdown by kind. It's the first time the true totals are visible. Until then, nothing anywhere says how much treasure exists.
-- **The unlock is itself a moment:** a one-time toast, and a note in `stratum status`.
+
+**2. The remaining-locations view: an option, off by default.** It unlocks when 75% of *all* content is complete. That's the overall percentage from the tracker, not per region.
+- **What it does:** a toggle (a key, a top-bar button, and `?remaining=1`) that marks *where* every incomplete item is:
+  - uncleared shrines, as their glyphs;
+  - unopened chests, as a closed-chest outline;
+  - echoes, as a faint shimmer over their scope (shrine, theme or region).
+  
+  Feats have no place, so they appear only as part of the percentage.
+- **How it differs from the Atlas:**
+  - it reveals *locations, not contents*;
+  - prose follows the normal silhouette rules (titles only at p ≥ 3, otherwise "???");
+  - chest contents stay sealed;
+  - it doesn't reveal terrain.
+  
+  The Atlas remains the all-spoilers authoring view.
+- **It's a view, not progress.** It's off by default and turned off again with the same toggle. Like the Atlas, it's kept in the URL, never in the repo or browser storage. Below the threshold the toggle doesn't exist; it isn't just greyed out.
+- **The threshold** gets its own one-time toast: "The rest of the map can now be marked: press R."
 
 ## Phases
 
@@ -79,7 +102,7 @@ This is a seal, not security: anyone determined can run the decoder. It exists o
 | Tr1 | Spot finder (geometry → candidate hiding spots per layer), locked chest slots, found/opened state, glyphs and the detail panel | medium |
 | Tr2 | `world/treasure.yaml` schema, affinity matching, sealing and `stratum treasure seal/open`, chest tasks as startable shrines | medium |
 | Tr3 | Echoes and feats (write-up scan, repo-fact triggers), secret glyphs and toasts | small–medium |
-| Tr4 | The 75% unlock and the Total completion panel | small |
+| Tr4 | Total completion: the percentage tracker (every region ≥ 75%) and the remaining-locations view (all content ≥ 75%) | small–medium |
 | Tr5 | A Claude session authors and seals the loot for Tiago's world (unseen by him) | small |
 
 **Accept when:**
@@ -88,7 +111,8 @@ This is a seal, not security: anyone determined can run the decoder. It exists o
 - Sealed text never appears in `map.json` before it's opened.
 - A chest task clears like a shrine.
 - An echo unlocks from a write-up mention.
-- The tracker appears exactly when every region crosses 75%.
+- The tracker appears exactly when every region crosses 75%, and shows a percentage with no locations.
+- The remaining-locations view exists only once all content crosses 75%, is off by default, and never reveals contents or prose beyond the silhouette rules.
 
 ## Questions for Tiago
 

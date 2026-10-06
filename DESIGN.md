@@ -579,8 +579,10 @@ These are proposals, each with open questions for Tiago in its plan. They're num
 - **Chests:** about 7% of locations, at geometry-chosen hiding spots, locked like shrines and found by exploring. Their contents come from a sealed `world/treasure.yaml`, matched to spots by affinity.
 - **Secrets:** echoes (a hidden concept unlocks when a write-up mentions it) and feats (repo facts such as a shrine plus its depths).
 - **Found side tasks clear like shrines.** Contents are written and sealed by a model, unseen by the owner.
-- **Total completion.** When every region reaches 75% cleared, a "Total completion" tracker appears covering all content: shrines, chests and secrets.
-- **Accept when:** treasure is invisible until found and stable across builds; sealed text never reaches `map.json` before it's opened; a chest task clears like a shrine; an echo unlocks from a write-up; the tracker appears exactly at the 75% threshold.
+- **Total completion: how much, never where.**
+  - When every region reaches 75% cleared, a tracker shows the *percentage* of all content completed (shrines, chests, secrets), with no locations.
+  - When 75% of all content is complete, an *optional* remaining-locations view (off by default; it shows locations, never contents) can mark where everything still incomplete is.
+- **Accept when:** treasure is invisible until found and stable across builds; sealed text never reaches `map.json` before it's opened; a chest task clears like a shrine; an echo unlocks from a write-up; the tracker appears exactly at the per-region threshold and shows no locations; the remaining-locations view unlocks only at 75% of all content and is opt-in.
 
 ### M12: World packs (docs/plans/template.md)
 - Move every topic-specific assumption into `world/pack.yaml`: the `requires` vocabulary and its probes, templates and when they're the default, task kinds and their artefact rules, and colours. Shrines get a `kind`. Content edits become safe: a lint drift check and `stratum rename`.
