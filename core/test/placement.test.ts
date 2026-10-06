@@ -65,7 +65,7 @@ describe('placement (M1 acceptance)', () => {
     const res = placeShrines(w2, new Geometry(w2, SEED), first.lock);
     for (const s of world.shrines) expect(res.positions.get(s.id), s.id).toEqual(first.positions.get(s.id));
     expect(res.placed.sort()).toEqual(['new-depth', 'new-sky', 'new-surface']);
-    // The new lightroot joins godbolt-reading's ring without landing on a locked one.
+    // The new wellspring joins godbolt-reading's ring without landing on a locked one.
     const anchor = res.positions.get('godbolt-reading')!;
     const newDepth = res.positions.get('new-depth')!;
     expect(dist(newDepth, anchor)).toBeCloseTo(PLACEMENT.depthsRing, 0);

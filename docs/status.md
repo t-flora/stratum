@@ -1,6 +1,6 @@
 # Status
 
-*Last updated: 2026-10-05. Keep this current at the end of every work session and milestone.*
+*Last updated: 2026-10-05 (M10). Keep this current at the end of every work session and milestone.*
 
 ## Milestones (DESIGN.md §13)
 
@@ -16,13 +16,13 @@
 | M4: Horizon, pins, dev API, SSE | 🟡 implemented, **unverified here** (see below), awaiting review | on `main` |
 | (extra) Camps, cairns, shelving, map key (docs/plans/camps.md) | 🟡 implemented, unverified here, awaiting review | on `main` |
 | M4b: the unknown (docs/plans/unknown.md): peek margin, hideable sky shrines, explored land | ✅ done; Tiago continued to M5 without changes | `1873880` |
-| M5: Hero's Path, hours, polish, Atlas mode, static build | ✅ done; Tiago moved on to M6 | `275e0d7` |
+| M5: the trail, hours, polish, Atlas mode, static build | ✅ done; Tiago moved on to M6 | `275e0d7` |
 | M6: geography (docs/plans/geography.md): a generated continent, biomes, ranges, rivers, lakes | ✅ done, committed with Tiago's OK | `22a99f0` |
 | (extra) Theme/follow-up review, learning-path placement, favicon | ✅ done | on `main` |
 | M7: expeditions (docs/plans/reset.md) | planned, optional; 4 questions open | |
 | M8: world editing (docs/plans/world-editing.md) | planned, optional; 4 questions open. **E1 (region weights) only before the first start** | |
 | M9: feature names (geography: generated) | planned, optional | |
-| M10: ready to share (renames, neutral docs, licence) | planned; 2 questions in docs/plans/template.md | |
+| M10: ready to share (renames, neutral docs, licence) | ✅ done, approved by Tiago (names and MIT kept) | branch `worktree-m10-ready-to-share` |
 | M11: treasure, secrets, total completion (docs/plans/treasure.md) | planned; 4 questions | |
 | M12: world packs (engine/world split, drift check, rename) | planned | |
 | M13: learning materials (notes, papers, cards, Anki export) | planned | |
@@ -39,7 +39,7 @@
 
 1. **Questions in the new plans.**
    - `docs/plans/treasure.md`: GPU-gated content vs. the 75% rule, chest density, echo scope, when readings count.
-   - `docs/plans/template.md`: names for lightroot and Hero's Path, the licence and whether his world ships publicly, sealed shrine prose for generated worlds, distribution.
+   - `docs/plans/template.md`: whether his world ships publicly, sealed shrine prose for generated worlds, distribution. (Names, licence and fresh M16 docs were settled at the M10 review.)
    
    Each has a recommended default, so a session can proceed on those if he says so.
 2. **Optional:** is seed `20261005` a keeper, and are the drafted region `biome:` values right? He was happy to commit M6 as is. Changing either needs a lockfile regeneration, so do it before the first `stratum start`.
@@ -50,7 +50,7 @@
 
 Tiago wants Stratum to become a template anyone comfortable with git and a terminal can use for any topic. The key principle, in his words: assume **a model creates the content for the learner's discovery**. So the application's real job is to be the best scaffold on which a model designs a world. His world benefited from clear intent from the start; a second user's may not, which is why M14 (design guide, design lint, simulator) and M15 (an interviewing generator that writes a brief) carry most of the weight. He wants to be surprised by treasure too, so loot is model-written and sealed. Found side tasks count as clears. Total completion is "how much, never where": a percentage of all content once every region is 75% cleared, and an opt-in view of remaining locations once 75% of all content is done.
 
-**Plans:** `docs/plans/treasure.md` (M11) and `docs/plans/template.md` (M10, M12–M16). `CLAUDE.md`'s plans list predates these; it was open in Tiago's editor when they were written, so update it next session: `docs/plans/ (template, treasure, world editing, reset: proposals; camps, unknown, geography: done)`.
+**Plans:** `docs/plans/treasure.md` (M11) and `docs/plans/template.md` (M10, M12–M16). `CLAUDE.md`'s plans list was brought up to date in M10.
 
 ## Theme and follow-up review (2026-10-01)
 
@@ -59,6 +59,24 @@ Tiago chose to be surprised by the themes and asked Claude to review them for th
 - **21 follow-up edges added** (now 63) where one shrine prepares another, e.g. `spsc-ring-buffer` after `memory-order-litmus`, `sae-training` after `toy-superposition`, `theory-arith-intensity` after `theory-roofline`, `udp-multicast-feed` after `binary-serialization`.
 - **Placement now follows paths across boundaries:** each region's themes are ordered around the ring so linked themes are neighbours, and a follow-up whose predecessor is in another theme or region leans toward it. See docs/decisions.md.
 - **The lockfile was regenerated** (approved; nothing started). A fresh repo still shows 53 of 217.
+
+## M10: what was built and how it was checked (2026-10-05)
+
+Built on the plan's defaults for names and licence. **Reviewed 2026-10-05:** Tiago kept *wellspring*, *trail* and MIT, and agreed that M16's template starts with fresh docs. Details are in docs/decisions.md ("M10").
+
+Checked in the worktree: `npm test` (140 passed), `npm run typecheck` (0 errors) and `stratum lint` (0 errors, 0 warnings). A screenshot of the depths with the map key open (`build/debug/m10-key.png` in the worktree) shows the wellspring glyph still styled, the renamed key text, and 53 of 217 in sight, as before. The acceptance grep (the game titles, studio, motif and both old terms, plus the email and programme) finds nothing outside the git history.
+
+**What changed:**
+- **The depths node is now the *wellspring*,** and the line through your clears is the *trail*. This covers code, tests, UI text, the favicon comment, DESIGN.md, CLAUDE.md, the README, the logs and three schema comments in world-seed.yaml (no shrine prose). map.json is unchanged: the field was already `path`.
+- **A temple is now "sealed until its needs are cleared"** (it said "trail" before, which would have clashed).
+- **Neutral docs.** DESIGN.md and CLAUDE.md name no game; one sentence says "inspired by open-world exploration games". DESIGN.md says "the owner" instead of Tiago.
+- **`docs/private.md`** (gitignored) now holds his name and email, programme, RemNote and the Mac/Linux machines. CLAUDE.md keeps all the working agreements and points to the file.
+- **`LICENSE`** (MIT, © 2026 Tiago Flora) and **`THIRD_PARTY.md`**. The bundle includes BSD-licensed highlight.js, d3-ease and entities, so it isn't only MIT/ISC as the plan said; all are permissive.
+- **README** rewritten for a stranger.
+
+**Follow-ups:**
+1. `docs/private.md` is gitignored, so it isn't in git. **Copy it into the main checkout** (`cp .claude/worktrees/m10-ready-to-share/docs/private.md docs/`) before the worktree is removed.
+2. The logs (status, decisions, plans) still use his name, as history. M16's template starts with fresh docs (agreed).
 
 ## M6: what was built and how it was checked
 
@@ -85,7 +103,7 @@ Checked on the Mac: `npm test` (138 tests; new: `core/test/landmass.test.ts`, wh
 Checked on the Mac: `npm test` (126 tests; new: `progress.test.ts`, `propose.test.ts`), `npm run typecheck`, and screenshots of a scratch copy of the world with three clears in a throwaway git history (`build/fresh-root/`, gitignored; `npm run stratum -- --root build/fresh-root dev` shows it). Lighthouse accessibility scored 100 (mobile emulation) and 100 (desktop, detail panel open).
 
 **Built:**
-- **Hero's Path** (§9.4): a dotted line through the clears on each layer, with the dates on hover.
+- **The trail** (§9.4): a dotted line through the clears on each layer, with the dates on hover.
 - **Hours** (§10.3): "≈ 2.5 h" in the detail panel and the region readout. Self-reported `hours` wins.
 - **Region readout** (§10.2): hover a charted region or a sky island to see cleared / revealed / total, surveyed, and hours. Completion % is in the top bar.
 - **Search** (§6.5): the top-bar box (`/` focuses it). It finds only what you've seen, and silhouettes by title only.
@@ -98,10 +116,10 @@ Checked on the Mac: `npm test` (126 tests; new: `progress.test.ts`, `propose.tes
 
 **To review:**
 1. `npm run dev`. Then try `/` to search, hover a region, open the Atlas (A, then T), and resize the window to phone width.
-2. `npm run stratum -- --root build/fresh-root dev --port 5180` for the world with a Hero's Path.
+2. `npm run stratum -- --root build/fresh-root dev --port 5180` for the world with a trail.
 3. `npm run stratum -- propose --from <id>` on a write-up with loose threads (it writes to `world/proposed.yaml`, so revert it if you're just trying it).
 
-**Not built:** the Hero's Path week-density toggle (optional in §9.4), and Playwright screenshots (optional in §14).
+**Not built:** the trail's week-density toggle (optional in §9.4), and Playwright screenshots (optional in §14).
 
 **Noticed along the way (not changed):**
 - `stratum dev` only watches `work/` if it existed at startup.
@@ -149,7 +167,7 @@ All of DESIGN.md §13's original milestones (M0–M6) are done. What follows is 
 5. **Stop for Tiago's review** (CLAUDE.md). Update this file and `docs/decisions.md`. Commit only when asked.
 
 **Recommended order:**
-1. M10 (small, any time).
+1. ~~M10~~ (done 2026-10-05).
 2. M11 (improves Tiago's world now; safe after the first start).
 3. M12 → M14 → M15 → M16, with M13 anywhere after M12.
 
@@ -163,18 +181,13 @@ M7 and M9 are independent. M8 E1 only before the first start.
 | treasure.md | Density | about 7% chests (≈15), about 10 secrets |
 | treasure.md | Echo scope | own region or theme only |
 | treasure.md | When readings and cards count | as soon as they're opened |
-| template.md | Names for lightroot / Hero's Path | *wellspring* / *trail* |
-| template.md | Licence; his world public? | MIT; his world stays private until he says otherwise (example packs come from the generator) |
+| template.md | Names for the depths node / the clear history | *wellspring* / *trail* (**answered**: kept) |
+| template.md | Licence; his world public? | MIT (**answered**: kept); his world stays private until he says otherwise (example packs come from the generator) |
 | template.md | Sealed shrine prose | on for generated worlds, off for Tiago's |
 | template.md | Distribution | a template repo, with `git pull upstream` for updates |
 
 **Milestone briefs:**
-- **M10, ready to share.**
-  - Rename lightroot → wellspring and Hero's Path → trail across code (`Glyph.svelte`, `MapKey.svelte`, `mapdata.ts`, `progress.ts`, `visibility.ts`, `export.ts`), UI text, tests and docs. Map-json field names may change; it's a build artefact.
-  - Make DESIGN.md and CLAUDE.md neutral, with one inspiration sentence.
-  - Move personal details into a gitignored `docs/private.md`.
-  - Add `LICENSE` and `THIRD_PARTY.md`.
-  - Done when the grep in template.md comes back clean.
+- **M10, ready to share.** Done 2026-10-05; see "M10: what was built" above.
 - **M11, treasure.**
   - Follow treasure.md phases Tr1–Tr5. Spots and found state go in core (`treasure.ts`), sealing in core with `node:crypto`, the decoder CLI-only, and `map.json` carries opened contents only.
   - **Tr5 (writing the loot) must be done without showing it to Tiago:** don't print contents in the chat, the commit message or the review.

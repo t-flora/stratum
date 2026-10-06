@@ -38,7 +38,7 @@
       </div>
       <div>
         <dt><svg viewBox="-11 -8 22 16"><path d="M-9,6 H9 V2.5 H6 V-1 H3 V-4.5 H-3 V-1 H-6 V2.5 H-9 Z" fill="#b98f52" stroke={INK} stroke-width="1.2" /></svg></dt>
-        <dd>Temple: a capstone, sealed until its trail is cleared</dd>
+        <dd>Temple: a capstone, sealed until its needs are cleared</dd>
       </div>
       <div>
         <dt><svg viewBox="-10 -10 20 20"><circle r="5" fill="#fbf5e6" stroke={SKY} stroke-width="2" /></svg></dt>
@@ -46,7 +46,7 @@
       </div>
       <div>
         <dt class="dark"><svg viewBox="-10 -10 20 20"><polygon points="0,-8 1.8,-2.6 7,-3.2 3,0.8 5,6.4 0,3.2 -5,6.4 -3,0.8 -7,-3.2 -1.8,-2.6" fill="#3fd0c4" stroke="#fff" stroke-width="0.6" /></svg></dt>
-        <dd>Lightroot (depths); a faint point is a glow under active work above</dd>
+        <dd>Wellspring (depths); a faint point is a glow under active work above</dd>
       </div>
       <div>
         <dt><svg viewBox="-8 -9 16 16"><path d="M0,-8 C3.8,-4.4 5.2,-1.6 5.2,1.4 C5.2,4.4 2.9,6.4 0,6.4 C-2.9,6.4 -5.2,4.4 -5.2,1.4 C-5.2,-1.2 -3.4,-2.8 -2.3,-5.2 C-1.7,-3.2 -0.9,-2.4 -0.2,-2.2 C0.3,-4 0.3,-6 0,-8 Z" fill="#e2572b" stroke="#7a2a12" stroke-width="0.6" /></svg></dt>
@@ -58,7 +58,7 @@
       </div>
       <div>
         <dt><svg viewBox="-9 -6 12 12"><path d="M-8,2 C-6,0.1 -3,-0.1 -1,1.7 C-3.1,3.1 -5.9,3.3 -8,2 Z" fill="#2b2216" opacity="0.7" /></svg></dt>
-        <dd>Chasm: a lightroot glows below this shrine</dd>
+        <dd>Chasm: a wellspring glows below this shrine</dd>
       </div>
       <div>
         <dt><svg viewBox="-6 -8 12 12"><path d="M-2.2,0 l2.2,-2.4 l2.2,2.4 M-2.2,-4 l2.2,-2.4 l2.2,2.4" fill="none" stroke={SKY} stroke-width="1.2" stroke-linecap="round" /></svg></dt>

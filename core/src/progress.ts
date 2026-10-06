@@ -1,4 +1,4 @@
-// Progress signals (§9.4, §10.2, §10.3, §6.5): hours, the Hero's Path, region readouts and search text. Pure.
+// Progress signals (§9.4, §10.2, §10.3, §6.5): hours, the trail, region readouts and search text. Pure.
 import type { Layer, Visibility } from './mapdata.ts';
 import type { Shrine, World } from './types.ts';
 
@@ -47,10 +47,10 @@ export interface PathStop {
 }
 
 /**
- * §9.4 Hero's Path: cleared shrines in `clearedAt` order, per layer. Same-day clears keep file order, so the path is
+ * §9.4 The trail: cleared shrines in `clearedAt` order, per layer. Same-day clears keep file order, so the path is
  * deterministic for a given repo.
  */
-export function heroPath(world: World, clearedAt: (id: string) => string | undefined): Record<Layer, PathStop[]> {
+export function trail(world: World, clearedAt: (id: string) => string | undefined): Record<Layer, PathStop[]> {
   const out: Record<Layer, PathStop[]> = { sky: [], surface: [], depths: [] };
   const stops = world.shrines
     .map((s, i) => ({ s, i, date: clearedAt(s.id) }))

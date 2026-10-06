@@ -161,7 +161,7 @@ describe('the Horizon (§7, §13 M4)', () => {
   });
 
   describe('Slot 2: the Vertical', () => {
-    it('1: a glowing lightroot under a recent clear', () => {
+    it('1: a glowing wellspring under a recent clear', () => {
       const h = horizon([
         { id: 'c1', region: 'west', xy: [300, 500], st: cleared('2026-09-20') },
         { id: 'root', region: 'vein', below: 'c1', xy: [300, 500], st: silhouette },

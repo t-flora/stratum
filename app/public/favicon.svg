@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Stratum: three strata. Sky with a floating islet, the surface with a shrine, and the depths with the lightroot
-       directly beneath it (each lightroot sits under its surface shrine). Original artwork. -->
+  <!-- Stratum: three strata. Sky with a floating islet, the surface with a shrine, and the depths with the wellspring
+       directly beneath it (each wellspring sits under its surface shrine). Original artwork. -->
   <defs>
     <clipPath id="tile"><rect width="64" height="64" rx="14" /></clipPath>
     <radialGradient id="glow" cx="32" cy="53" r="13" gradientUnits="userSpaceOnUse">

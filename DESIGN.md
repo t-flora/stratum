@@ -1,8 +1,8 @@
 # Stratum: a three-layer exploration map for deep technical study
 
-*Design document, v1. Author: Tiago (with Claude). Status: ready for implementation.*
+*Design document, v1, written with Claude. Status: ready for implementation.*
 
-Stratum is a personal study world inspired by the exploration design of *Breath of the Wild* and *Tears of the Kingdom*. The world is a map in three layers (**sky**, **surface**, **depths**) covering C++, software design, performance engineering for AI interpretability, and HPC hardware. You explore it by clearing **shrines**. A shrine is a small implementation plus a written explanation of it, committed to this git repo. The map is rendered *from the repo*: fog lifts, lightroots glow and paths appear only as a side effect of doing the work.
+Stratum is a personal study world inspired by open-world exploration games. The world is a map in three layers (**sky**, **surface**, **depths**) covering C++, software design, performance engineering for AI interpretability, and HPC hardware. You explore it by clearing **shrines**. A shrine is a small implementation plus a written explanation of it, committed to this git repo. The map is rendered *from the repo*: fog lifts, wellsprings glow and paths appear only as a side effect of doing the work.
 
 ---
 
@@ -15,22 +15,22 @@ Stratum is a personal study world inspired by the exploration design of *Breath 
   2. **Clearing requires artefacts.** Nothing in the UI marks a shrine cleared by a click.
   3. **The triangle rule (§6, §7) is the core feature.** The map must never show everything at once, except in the explicit authoring view (Atlas mode).
   4. **Placement is stable.** A shrine's position never changes once assigned (§8.4). Spatial memory is part of how the map motivates.
-- Visual design must be **original**. No Nintendo assets, logos, fonts, sounds, character names or the Sheikah eye motif. The game-inspired *vocabulary* used here (shrine, tower, lightroot, sky island, depths, chasm, camp, cairn) is generic and fine.
+- Visual design must be **original**. No assets, logos, fonts, sounds, character names or motifs from any existing game. The *vocabulary* used here (shrine, tower, wellspring, sky island, depths, chasm, camp, cairn, trail) is generic and fine.
 - Where this document is silent, choose the simplest thing that preserves the constraints above, and record the decision in `docs/decisions.md`.
 
 ---
 
 ## 1. Purpose
 
-Tiago is in the final quarter of an MS in Financial Mathematics and wants to spend many more hours on consequential technical concepts. The obstacle isn't interest. It's the *pull*: nothing in ordinary study produces the "I can see that mountain, I have to go there" feeling that the games do. Stratum tries to reproduce that feeling with four mechanisms borrowed from the games:
+The owner wants to spend many more hours on consequential technical concepts. The obstacle isn't interest. It's the *pull*: nothing in ordinary study produces the "I can see that mountain, I have to go there" feeling that the games do. Stratum tries to reproduce that feeling with four mechanisms borrowed from the games:
 
 | Game mechanism | What it does in the game | Stratum equivalent |
 |---|---|---|
 | Towers | Reveal the terrain of a region, not its secrets | A region survey. It reveals the region's shrines as silhouettes and forces you to propose new shrines (§5.3) |
 | Shrines | Small, finishable challenges with a clear reward | A bounded build plus a write-up, sized S/M/L (§5) |
-| Depths mirror the surface | Each lightroot lies under a surface shrine | Each depths shrine sits under a surface shrine and covers the mechanism beneath it (§6.4) |
+| Depths mirror the surface | The underworld mirrors the land above it, point for point | Each depths shrine sits under a surface shrine and covers the mechanism beneath it (§6.4) |
 | The triangle rule | Terrain hides most landmarks, so only a few call to you at once | Line of sight with ridges and prominence (§6), plus a 3-slot Horizon (§7) |
-| Hero's Path, map pins | Your own history and intentions written on the map | A path drawn from git history, a camp (and cairns) for work in progress, and pins (§10) |
+| A recorded path, map pins | Your own history and intentions written on the map | A path drawn from git history, a camp (and cairns) for work in progress, and pins (§10) |
 
 ### 1.1 Design principles
 
@@ -49,7 +49,7 @@ Tiago is in the final quarter of an MS in Financial Mathematics and wants to spe
 |---|---|---|---|
 | **Sky** | High-level frameworks: agentic LLM coding for HPC, software design, interpretability theory, performance theory, numerics | Design and argument. A small prototype, with the write-up doing most of the work | Islands are always visible. Their shrines open through *launch points*, which are linked surface clears (§6.3) |
 | **Surface** | Concrete features, implementations, algorithms and tools | Implementation. Build it, test it, benchmark it | Line of sight with ridges: the triangle rule (§6.2) |
-| **Depths** | ISA, microarchitecture, memory hierarchy, compilers, GPU hardware, OS, bit-level numerics | Measurement. Counters, disassembly, profilers | Darkness. Only light from cleared lightroots, and glows under cleared surface shrines (§6.4) |
+| **Depths** | ISA, microarchitecture, memory hierarchy, compilers, GPU hardware, OS, bit-level numerics | Measurement. Counters, disassembly, profilers | Darkness. Only light from cleared wellsprings, and glows under cleared surface shrines (§6.4) |
 
 A **chasm** is any `links` edge that crosses layers. It is drawn as an opening on the surface (downward) or a launch point (upward).
 
@@ -61,7 +61,7 @@ A **chasm** is any `links` edge that crosses layers. It is drawn as an opening o
 | Sky | 5 islands | 33 | 5 | 0 |
 | Depths | 7 veins | 60 | none (depths are explored by light) | 0 |
 
-The world is deliberately larger than one quarter can cover. A partly explored map is the intended state.
+The world is deliberately larger than one term of study can cover. A partly explored map is the intended state.
 
 ---
 
@@ -71,9 +71,9 @@ The world is deliberately larger than one quarter can cover. A partly explored m
 2. Pick one and press **Set out**. That runs `stratum start <id>`, which scaffolds `work/<id>/` from a template and makes camp there on the map.
 3. Build. Commit as you go. Before stopping, write one line in `NEXT.md` ("where I left off"). The Horizon's camp card shows it next time.
 4. Write `WRITEUP.md`. Run `stratum clear <id>`, which validates the clear (§5) and stamps the date. Commit.
-5. The map updates live. The fog recedes from the new vantage point, the lightroot below starts to glow, a sky shrine linked to this one opens, and the Hero's Path extends. The Horizon recomputes.
+5. The map updates live. The fog recedes from the new vantage point, the wellspring below starts to glow, a sky shrine linked to this one opens, and the trail extends. The Horizon recomputes.
 
-Flashcards are optional. Tiago writes RemNote cards on his own and can list links in the write-up's frontmatter. They are displayed as a count but never required.
+Flashcards are optional. The learner can keep cards in their own tool (e.g. RemNote) and list links in the write-up's frontmatter. They are displayed as a count but never required.
 
 ---
 
@@ -189,7 +189,7 @@ For every shrine:
 | `xy` | position | §8 |
 | `hoursEstimate` | number | §10.3 |
 
-`build/map.json` contains the world (with positions), the regions (with generated geometry), the derived state, the Hero's Path, the pins and the Horizon. The front end is a pure renderer of this JSON. **All game logic lives in a shared TS module (`core/`) that both the CLI and the app import.** This keeps it unit-testable.
+`build/map.json` contains the world (with positions), the regions (with generated geometry), the derived state, the trail, the pins and the Horizon. The front end is a pure renderer of this JSON. **All game logic lives in a shared TS module (`core/`) that both the CLI and the app import.** This keeps it unit-testable.
 
 ---
 
@@ -223,7 +223,7 @@ A tower clears like a shrine, except that it has no artefact requirement. In add
 
 ## 6. Visibility: the triangle rule
 
-In BotW the designers use terrain (large and small "triangles") to control how many landmarks are visible at once. Large rises hide what lies behind them, which forces a choice: go around or climb. Small rises let you peek over them. Tall landmarks (towers, peaks) stay visible from far away and pull you toward them. Stratum implements this literally, as 2D line of sight across ridges.
+Open-world games use terrain (large and small "triangles") to control how many landmarks are visible at once. Large rises hide what lies behind them, which forces a choice: go around or climb. Small rises let you peek over them. Tall landmarks (towers, peaks) stay visible from far away and pull you toward them. Stratum implements this literally, as 2D line of sight across ridges.
 
 Constants live in `stratum.config.yaml`. Coordinates are in world units on a 1600×1000 canvas shared by all three layers, so vertical alignment is meaningful.
 
@@ -276,7 +276,7 @@ The depths are dark.
 - Each depths shrine sits at the exact position of its `below` surface shrine (§8.3).
 - A depths shrine **glows**, which is its silhouette state, if its `below` shrine is cleared or in progress. On the surface layer this shows as a faint chasm mark beside that shrine.
 - A depths shrine is **revealed** if it lies within `lightRadius = 220` of any cleared depths shrine, or if it is in progress or cleared.
-- Anything else in the depths is **hidden**, and so is the terrain. The depths layer renders black except inside light circles (radius 220 around cleared lightroots) and small glows (radius 40).
+- Anything else in the depths is **hidden**, and so is the terrain. The depths layer renders black except inside light circles (radius 220 around cleared wellsprings) and small glows (radius 40).
 - Depths "veins" (regions) are thematic. They colour the light (e.g. the Cache vein is teal and the Silicon vein is green) but have no borders.
 
 ### 6.5 Search
@@ -407,7 +407,7 @@ Transitions should take under 400 ms and respect `prefers-reduced-motion`.
 - Near-black.
 - Light circles are radial gradients tinted by vein colour.
 - Glows are small pulsing points (static if reduced motion is on).
-- Cleared lightroots are bright nodes.
+- Cleared wellsprings are bright nodes.
 
 **Glyphs** (simple, original SVG)
 
@@ -417,14 +417,14 @@ Transitions should take under 400 ms and respect `prefers-reduced-motion`.
 | Tower | Tall narrow obelisk |
 | Temple | Stepped pyramid |
 | Sky shrine | Ring |
-| Lightroot | Starburst |
+| Wellspring | Starburst |
 | Camp | Small flame, fading over 14 days since last touched, then embers (visual only) |
 | Cairn | Three stacked stones |
 | Pin | Stamp |
 
 **Typography.** A serif for map labels (e.g. Cormorant Garamond via Google Fonts), a clean sans for UI and a monospace for code. Colours are defined as CSS tokens. The UI chrome supports light and dark modes. The map layers keep their own palettes in both.
 
-### 9.4 Hero's Path
+### 9.4 The trail
 
 A thin dotted line connects cleared shrines in `clearedAt` order, per layer. Hovering over a segment shows its dates. There's an optional toggle to show path density by week.
 
@@ -518,7 +518,7 @@ Stop for review after each milestone.
   - p=2 shrines across a default ridge are hidden and p=3 ones are silhouettes *(p=3 hidden and p=4 silhouettes since M4b)*;
   - an h=4 ridge hides p=3;
   - the tower bonus reveals across an h=2 ridge;
-  - the depths are dark until a lightroot is cleared;
+  - the depths are dark until a wellspring is cleared;
   - glows appear under cleared surface shrines;
   - a fresh repo shows only the plateau, the silhouettes visible from the start vantage, the towers and the sky islands.
 
@@ -538,8 +538,8 @@ Stop for review after each milestone.
   - clearing a tower charts its region; shelving never un-explores land;
   - explored land is a pure, deterministic function of the repo.
 
-### M5: Hero's Path, hours and polish
-- The Hero's Path, the hours estimate, layer transitions, reduced motion, dark UI chrome, mobile layout, Atlas mode and the static build.
+### M5: The trail, hours and polish
+- The trail, the hours estimate, layer transitions, reduced motion, dark UI chrome, mobile layout, Atlas mode and the static build.
 - **Accept when** Lighthouse accessibility is at least 90, and the map is usable at 390 px width with the Horizon as a bottom sheet.
 
 ### M6: Geography
@@ -553,7 +553,7 @@ Stop for review after each milestone.
 
 ### Future milestones (planned, optional)
 
-These are proposals, each with open questions for Tiago in its plan. They're numbered for reference, not strict order; the recommended order is in docs/plans/template.md (M10, then M11, then M12 → M14 → M15 → M16, with M13 anywhere after M12). Anything that reshapes the world is only cheap before the first `stratum start` (see M8).
+These are proposals, each with open questions for the owner in its plan. They're numbered for reference, not strict order; the recommended order is in docs/plans/template.md (M10, then M11, then M12 → M14 → M15 → M16, with M13 anywhere after M12). Anything that reshapes the world is only cheap before the first `stratum start` (see M8).
 
 ### M7: Expeditions (docs/plans/reset.md)
 - Reset the map without losing the work: `stratum expedition new` archives `work/` into `archive/expedition-<n>/`. Also `stratum erase` (delete the work), and a new-world step (a new seed) that's only allowed with `work/` empty. All CLI only, a dry run by default, confirmed by typing a count.
@@ -568,11 +568,11 @@ These are proposals, each with open questions for Tiago in its plan. They're num
 - **Accept when:** every edit goes through the core module with a dry-run diff; the YAML validates against the schemas; no edit moves a locked shrine except by an explicit `--replace`.
 
 ### M9: Feature names (docs/plans/geography.md)
-- Generated names for the M6 rivers, lakes and ranges (Tiago chose generated), filling the features' optional `name`, shown once explored. Deterministic from the seed and feature id, overridable in world-seed.yaml.
+- Generated names for the M6 rivers, lakes and ranges (the owner chose generated), filling the features' optional `name`, shown once explored. Deterministic from the seed and feature id, overridable in world-seed.yaml.
 - **Accept when:** names are stable across builds, never collide within a layer, and appear only on explored land.
 
 ### M10: Ready to share (docs/plans/template.md)
-- Rename the two coined game terms (lightroot, Hero's Path), make the docs neutral ("inspired by open-world exploration games"), move personal details out of shared docs, and add a `LICENSE` plus a third-party notice.
+- Rename the two coined game terms (to *wellspring* and *trail*), make the docs neutral ("inspired by open-world exploration games"), move personal details out of shared docs, and add a `LICENSE` plus a third-party notice.
 - **Accept when:** no game names or coined terms remain outside one inspiration sentence; tests pass; behaviour is unchanged.
 
 ### M11: Treasure, secrets and total completion (docs/plans/treasure.md)
@@ -586,7 +586,7 @@ These are proposals, each with open questions for Tiago in its plan. They're num
 
 ### M12: World packs (docs/plans/template.md)
 - Move every topic-specific assumption into `world/pack.yaml`: the `requires` vocabulary and its probes, templates and when they're the default, task kinds and their artefact rules, and colours. Shrines get a `kind`. Content edits become safe: a lint drift check and `stratum rename`.
-- **Accept when:** Tiago's world runs unchanged from its own pack; a fixture runs with a different vocabulary; no region id appears in engine code.
+- **Accept when:** the owner's world runs unchanged from its own pack; a fixture runs with a different vocabulary; no region id appears in engine code.
 
 ### M13: Learning materials (docs/plans/template.md)
 - Notes, papers and Q/A flashcards as first-class work files, counted and shown, with an Anki export. Still no spaced repetition (§15).
@@ -594,7 +594,7 @@ These are proposals, each with open questions for Tiago in its plan. They're num
 
 ### M14: The world-design scaffold (docs/plans/template.md)
 - JSON Schemas; `docs/world-design.md` (the craft of a good world, written for models); `stratum lint --design` (measurable design properties); `stratum simulate` (a synthetic learner reports the discovery curve and reachability).
-- **Accept when:** Tiago's world passes with explained warnings and gives a baseline curve; deliberately bad fixtures are each caught.
+- **Accept when:** the owner's world passes with explained warnings and gives a baseline curve; deliberately bad fixtures are each caught.
 
 ### M15: The world generator (docs/plans/template.md)
 - A Claude Code skill: interview → `world/brief.md` → staged drafting with subagents → revision against lint, design lint and simulate → sealed treasure → a spoiler-safe handoff. Generated worlds seal shrine prose by default.
@@ -622,7 +622,7 @@ Keep a `fixtures/` folder with small synthetic worlds (3 regions, about 12 shrin
 
 ---
 
-## 16. Defaults Tiago can change later
+## 16. Defaults the owner can change later
 
 | Decision | Default | Where |
 |---|---|---|

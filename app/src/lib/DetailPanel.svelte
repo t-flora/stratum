@@ -87,7 +87,7 @@
 
   /** A silhouette shows its glyph, size and region, not its prompt; its title only if p is high enough (§6.2). */
   const seen = $derived(shrine.visibility === 'revealed');
-  /** From afar you learn nothing about connections, except a sealed temple's trail (its constellation, §5.2). */
+  /** From afar you learn nothing about connections, except a sealed temple's needs (their constellation, §5.2). */
   const shownRelations = $derived(seen ? relations : shrine.kind === 'temple' ? relations.filter((g) => g.label === 'Needs') : []);
   const chipLabel = (s: MapShrine) => (s.visibility !== 'hidden' && s.titleKnown ? s.title : '???');
 </script>
@@ -147,7 +147,7 @@
       <p>
         {shrine.layer === 'depths' ? 'A faint glow in the dark.' : 'Seen from afar.'}
         {shrine.kind === 'temple' && shrine.needs.some((n) => byId.get(n)?.status !== 'cleared')
-          ? 'The temple is sealed until its trail is cleared.'
+          ? 'The temple is sealed until its needs are cleared.'
           : 'Set out to find out what it asks.'}
       </p>
     </section>

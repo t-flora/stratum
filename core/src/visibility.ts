@@ -117,7 +117,7 @@ export function computeVisibility(
     visibility.set(s.id, v);
   }
 
-  // §6.4 depths: darkness, lit by cleared lightroots; glows under active surface shrines.
+  // §6.4 depths: darkness, lit by cleared wellsprings; glows under active surface shrines.
   const lit = new Set(world.shrines.filter((s) => s.layer === 'depths' && cleared(s.id)).map((s) => s.id));
   const glowing = new Set<string>();
   for (const s of world.shrines) {

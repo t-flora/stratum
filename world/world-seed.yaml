@@ -13,7 +13,7 @@
 #             High-p shrines "peek over ridges" (the triangle rule).
 #   size      S (2-3h) | M (4-6h, default) | L (8-12h)
 #   requires  optional hardware/tool tags: gpu, arm, x86, avx512, linux, llm-api
-#   below     (depths only) id of the surface shrine this lightroot sits under
+#   below     (depths only) id of the surface shrine this wellspring sits under
 #   theme     (surface/sky shrines) named sub-area of the region; shrines sharing a theme cluster together
 #   after     optional ids this shrine follows up on; placed next to its predecessor when in the same region
 #   links     optional ids across layers (chasms / launch points), or other related ids
@@ -50,7 +50,7 @@ regions:
   - { id: interp-theory,       layer: sky, name: "Isles of Interpretation", centroid: [900, 770],  radius: 180 }
   - { id: performance-theory,  layer: sky, name: "Roofline Heights",        centroid: [1190, 380], radius: 190 }
   - { id: numerical-heights,   layer: sky, name: "Numerical Heights",       centroid: [1420, 740], radius: 140 }
-  # --- DEPTHS ("veins": thematic colours; each lightroot's position is its `below` shrine's) ---
+  # --- DEPTHS ("veins": thematic colours; each wellspring's position is its `below` shrine's) ---
   - { id: isa-assembly,        layer: depths, name: "Vein of Instructions" }
   - { id: microarchitecture,   layer: depths, name: "Pipeline Vein" }
   - { id: memory-hierarchy,    layer: depths, name: "Cache Vein" }
@@ -1911,7 +1911,7 @@ shrines:
     Failing inputs for the naive version and a proof sketch of stability.
 
 # =============================================================================
-# DEPTHS  (each lightroot sits under its `below` surface shrine)
+# DEPTHS  (each wellspring sits under its `below` surface shrine)
 # =============================================================================
 
 # ---- Vein of Instructions (isa-assembly) --------------------------------------

@@ -5,7 +5,7 @@ import type { Geometry } from './geometry.ts';
 import type { HorizonCard, MapData, MapGeometry, MapRegion, MapShrine, MapTheme, MultiPolygon } from './mapdata.ts';
 import { themeKey, themesByRegion } from './placement.ts';
 import { hash32, mulberry32 } from './prng.ts';
-import { heroPath, regionStats, searchText, shrineHours } from './progress.ts';
+import { trail, regionStats, searchText, shrineHours } from './progress.ts';
 import type { Region, RequireTag, Vec2, World } from './types.ts';
 import { titleKnown, type VisibilityConfig, type VisibilityResult } from './visibility.ts';
 import type { ShrineWork } from './work.ts';
@@ -178,7 +178,7 @@ function archipelago(world: World, geo: Geometry, region: Region, positions: Map
   return contour(f, n, n, step, 0.45).map((poly) => poly.map((ring) => ring.map(([x, y]) => [q(x + x0, 1), q(y + y0, 1)] as Vec2)));
 }
 
-/** Depths terrain beneath the landmass: vein territories (nearest lightroot's vein) and rock strata. Rendering only. */
+/** Depths terrain beneath the landmass: vein territories (nearest wellspring's vein) and rock strata. Rendering only. */
 function depthsTerrain(world: World, geo: Geometry, positions: Map<string, Vec2>, land: Float64Array, n: number, m: number): MapGeometry['depths'] {
   const veinIds = world.regions.filter((r) => r.layer === 'depths').map((r) => r.id);
   const roots = veinIds.map((v) => world.shrines.filter((s) => s.region === v && positions.has(s.id)).map((s) => positions.get(s.id)!));
@@ -299,7 +299,7 @@ export function buildMapData(
     shrines,
     themes,
     sight: buildSight(world, positions, state),
-    path: heroPath(world, (id) => work.get(id)?.clearedAt),
+    path: trail(world, (id) => work.get(id)?.clearedAt),
     horizon: state?.horizon ?? [],
     pin: state?.pin ?? null,
     week: state?.week ?? '',

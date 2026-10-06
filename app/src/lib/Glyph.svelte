@@ -78,9 +78,9 @@
     <!-- A glow: something down here, lit faintly from above (§6.4) -->
     <circle class="glow-point" r="2.6" />
   {:else if shrine.layer === 'depths'}
-    <!-- Lightroot: starburst -->
+    <!-- Wellspring: starburst -->
     <polygon
-      class="lightroot"
+      class="wellspring"
       points="0,-8 1.8,-2.6 7,-3.2 3,0.8 5,6.4 0,3.2 -5,6.4 -3,0.8 -7,-3.2 -1.8,-2.6"
     />
   {:else if shrine.kind === 'tower'}
@@ -100,7 +100,7 @@
     <circle class="dot" r="1.6" />
   {/if}
   {#if shrine.marks.chasm}
-    <!-- Chasm: an opening beside a shrine whose lightroot glows below (§6.4) -->
+    <!-- Chasm: an opening beside a shrine whose wellspring glows below (§6.4) -->
     <path class="chasm" d="M-13.5,6.5 C-11.5,4.6 -8.5,4.4 -6.5,6.2 C-8.6,7.6 -11.4,7.8 -13.5,6.5 Z" />
   {/if}
   {#if shrine.marks.draft && state !== 'silhouette'}
@@ -241,16 +241,16 @@
     stroke: var(--sky-ink);
   }
 
-  /* Depths: glows are faint points; revealed lightroots are dim until cleared, then bright nodes (§9.3) */
-  .lightroot {
+  /* Depths: glows are faint points; revealed wellsprings are dim until cleared, then bright nodes (§9.3) */
+  .wellspring {
     fill: var(--c, #fff);
     stroke: rgba(255, 255, 255, 0.7);
     stroke-width: 0.6;
   }
-  .depths.revealed .lightroot {
+  .depths.revealed .wellspring {
     fill-opacity: 0.45;
   }
-  .depths.cleared .lightroot {
+  .depths.cleared .wellspring {
     stroke: #fff;
     stroke-width: 1;
     filter: drop-shadow(0 0 3px var(--c, #fff));
@@ -276,10 +276,10 @@
 
   .glyph:hover .body,
   .glyph:hover .ring,
-  .glyph:hover .lightroot,
+  .glyph:hover .wellspring,
   .glyph:focus-visible .body,
   .glyph:focus-visible .ring,
-  .glyph:focus-visible .lightroot {
+  .glyph:focus-visible .wellspring {
     stroke: var(--ui-accent);
     stroke-width: 2.2;
   }

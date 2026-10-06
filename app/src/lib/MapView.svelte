@@ -125,7 +125,7 @@
   const named = $derived(new Set(map.regions.filter((r) => atlas || r.surveyed || (r.explored?.share ?? 0) >= 0.15).map((r) => r.id)));
   const lights = $derived(
     atlas
-      ? // The atlas lights every lightroot dimly, so the depths read as a whole.
+      ? // The atlas lights every wellspring dimly, so the depths read as a whole.
         map.shrines.filter((s) => s.layer === 'depths').map((s) => ({ xy: s.xy, region: s.region, kind: 'light' as const, r: 70 }))
       : map.sight.lights.map((l) => ({ ...l, r: l.kind === 'light' ? map.sight.lightRadius : map.sight.glowRadius })),
   );
@@ -134,7 +134,7 @@
   /** The pin (§7): a stamp above the pinned shrine, on its own layer, if it's in sight. */
   const pinned = $derived(map.pin ? map.shrines.find((s) => s.id === map.pin && s.visibility !== 'hidden') : undefined);
 
-  /** §9.4 Hero's Path on this layer: one dotted segment per step, dated on hover. */
+  /** §9.4 The trail on this layer: one dotted segment per step, dated on hover. */
   const pathSegments = $derived(
     map.path[layer].slice(1).map((to, i) => {
       const from = map.path[layer][i]!;
@@ -420,8 +420,8 @@
       </g>
     {/if}
     {#if pathSegments.length}
-      <!-- Hero's Path (§9.4): drawn over the glyphs but thin, so it never hides them -->
-      <g class="hero-path {layer}">
+      <!-- The trail (§9.4): drawn over the glyphs but thin, so it never hides them -->
+      <g class="trail {layer}">
         {#each pathSegments as seg (seg.key)}
           <g class="step">
             <title>{seg.from === seg.to ? seg.to : `${seg.from} → ${seg.to}`}</title>
@@ -528,7 +528,7 @@
     stroke-dasharray: 0.9 2.6;
     stroke-linecap: butt;
   }
-  .hero-path .step-line {
+  .trail .step-line {
     stroke: var(--path);
     stroke-width: 1.6;
     stroke-dasharray: 1.5 4;
@@ -536,18 +536,18 @@
     vector-effect: non-scaling-stroke;
     pointer-events: none;
   }
-  .hero-path.sky .step-line {
+  .trail.sky .step-line {
     stroke: var(--sky-ink);
   }
-  .hero-path.depths .step-line {
+  .trail.depths .step-line {
     stroke: var(--depths-label);
   }
-  .hero-path .step-hit {
+  .trail .step-hit {
     stroke: transparent;
     stroke-width: 10;
     vector-effect: non-scaling-stroke;
   }
-  .hero-path .step:hover .step-line {
+  .trail .step:hover .step-line {
     stroke-width: 2.6;
   }
   .region-readout {

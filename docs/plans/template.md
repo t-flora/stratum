@@ -36,11 +36,11 @@ templates/            # starter files for `stratum start`, per task kind (moves 
 
 ## Milestones
 
-### M10: Ready to share (small, can go first)
-- **Renames.** "Lightroot" is a *Tears of the Kingdom* coinage (about 40 uses across code, UI, docs and tests), and "Hero's Path" is a *Breath of the Wild* feature name (about 20 uses). Proposed replacements are *wellspring* and *trail*. Every other term (shrine, tower, depths, sky island, campfire, chest) is generic.
+### M10: Ready to share (small, can go first) — done 2026-10-05
+- **Renames.** Two terms were coinages of a specific game: the depths node and the line through your clears. They're now *wellspring* and *trail* (Tiago kept them; the old names are in git history before M10). Every other term (shrine, tower, depths, sky island, campfire, chest) is generic.
 - **Neutral docs.** DESIGN.md and CLAUDE.md say "inspired by open-world exploration games" and drop the game names, and the README is written for a stranger.
 - **Personal details.** For a public repo, move Tiago's email, programme and personal context out of DESIGN.md and CLAUDE.md, into a gitignored or private note.
-- **Licence:** a `LICENSE` file (MIT recommended), plus a third-party notice (dependencies are MIT/ISC; the fonts are OFL).
+- **Licence:** a `LICENSE` file (MIT recommended), plus a third-party notice (dependencies are MIT, ISC, BSD and MPL-2.0, all permissive; the fonts are OFL). Done: `LICENSE` and `THIRD_PARTY.md`.
 - **Accept when:** a grep for the game names and coined terms finds nothing outside a single "inspiration" sentence; `npm test` passes; the map and CLI read the same apart from the renamed terms.
 
 ### M12: World packs (the engine/world split)
@@ -77,7 +77,7 @@ What a model needs to design a *good* world, not just a valid one.
 
 1. **JSON Schemas** for `pack.yaml`, `world-seed.yaml`, `treasure.yaml` and the write-up frontmatter, generated from the loader's types and published under `schema/`. The loader stays the authority; the schemas are its contract for tools.
 2. **`docs/world-design.md`, the craft, written for models.** It distils what made Tiago's world work, so a second world doesn't depend on its author's clarity:
-   - **Layers:** sky = frameworks and big ideas; surface = practice; depths = the mechanisms underneath. Each lightroot explains the machinery under the practice shrine above it.
+   - **Layers:** sky = frameworks and big ideas; surface = practice; depths = the mechanisms underneath. Each wellspring explains the machinery under the practice shrine above it.
    - **Shape:** 6–12 surface regions, 8–14 shrines each. One tower per region, with a survey prompt that generates proposals. 0–2 temples, each needing 3–4 shrines from different themes.
    - **Pacing with ridges and prominence:**
      - Low ridges join regions that belong together, and high ridges make the learner go around.
@@ -149,7 +149,7 @@ What a model needs to design a *good* world, not just a valid one.
 
 ## Questions for Tiago
 
-1. **Names for the two coined terms:** *wellspring* for lightroot and *trail* for Hero's Path, or something you like better?
-2. **Licence and your world:** MIT for the engine? And should your world ship publicly as the example pack, or stay private with the generator's example packs shown instead?
+1. ~~**Names for the two coined terms.**~~ **Answered:** *wellspring* and *trail*, kept at the M10 review.
+2. **Licence and your world:** MIT (answered, kept). Still open: should your world ship publicly as the example pack, or stay private with the generator's example packs shown instead?
 3. **Sealed shrine prose** (`seal: shrines`) as the default for generated worlds? Your own world would stay unsealed, since you've already read it.
 4. **Distribution:** a template repo with `git pull upstream` for updates (recommended for now), or an engine package from the start?

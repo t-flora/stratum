@@ -35,7 +35,7 @@ export interface MapShrine {
   titleKnown: boolean;
   /** Surface shrines on explored land (sky and depths: always true). Uncharted silhouettes float on blank paper, region unknown. */
   charted: boolean;
-  /** Surface markers: `chasm` beside a shrine whose lightroot glows; `draft` on a launch point to the sky (§6.3, §6.4). */
+  /** Surface markers: `chasm` beside a shrine whose wellspring glows; `draft` on a launch point to the sky (§6.3, §6.4). */
   marks: { chasm?: boolean; draft?: boolean };
   /** `requires` tags this machine lacks (§7 hardware filter): kept on the map, left out of the Horizon. */
   unavailable: RequireTag[];
@@ -101,7 +101,7 @@ export interface MapGeometry {
   /** Each sky region is an archipelago: one islet per theme, a rock for the tower, and a few bare rocks. */
   islands: Record<string, MultiPolygon>;
   depths: {
-    /** Vein territories: each point belongs to the vein of its nearest lightroot. */
+    /** Vein territories: each point belongs to the vein of its nearest wellspring. */
     veins: Record<string, MultiPolygon>;
     strata: MultiPolygon[];
   };
@@ -133,7 +133,7 @@ export interface MapSight {
    * at high ridges. Surveyed regions are explored in full on top of these. Everything else on the surface is unknown.
    */
   explored: Ring[];
-  /** Depths: light circles around cleared lightroots, and small glows under active surface shrines. */
+  /** Depths: light circles around cleared wellsprings, and small glows under active surface shrines. */
   lights: { xy: Vec2; region: string; kind: 'light' | 'glow' }[];
   lightRadius: number;
   glowRadius: number;
@@ -165,7 +165,7 @@ export interface MapData {
   shrines: MapShrine[];
   themes: MapTheme[];
   sight: MapSight;
-  /** §9.4 Hero's Path: cleared shrines in clearedAt order, per layer. */
+  /** §9.4 The trail: cleared shrines in clearedAt order, per layer. */
   path: Record<Layer, { id: string; date: string }[]>;
   /** At most three cards (§7). */
   horizon: HorizonCard[];

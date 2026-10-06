@@ -9,7 +9,7 @@ Today every in-progress shrine (a `work/<id>/` folder without a valid clear) is 
 - Five fires look like five equal obligations, which works against §1.1 principle 2 ("a few choices, not a menu") and principle 5 (no guilt).
 - The fires do real work that isn't visible:
   - each one is a **vantage** (§6.1), so fog lifts around it;
-  - it lights the **glow** of the lightroot below (§6.4);
+  - it lights the **glow** of the wellspring below (§6.4);
   - it can open a **sky launch point** (§6.3);
   - and the most recently touched one becomes the **Thread** card (§7).
   None of this is explained on the map.

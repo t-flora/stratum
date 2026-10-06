@@ -435,7 +435,7 @@ function uniformInRegion(s: Shrine, layer: Surf, geo: Geometry, region: Region, 
 
 /**
  * A point 60–85% of the way from the centroid to the region border (§8.3). The ray points toward the temple's
- * same-region `needs` when there are any, so the capstone sits at the end of the trail. Later attempts widen the angle.
+ * same-region `needs` when there are any, so the capstone sits beyond them. Later attempts widen the angle.
  */
 function sampleTemple(s: Shrine, ctx: Ctx, rand: () => number, attempt: number): Vec2 | null {
   const { world, geo } = ctx;

@@ -28,12 +28,12 @@ Choices made where DESIGN.md is silent (§0: "choose the simplest thing that pre
 - **Spacing is per layer.** Surface shrines keep 38 from other surface shrines, sky 26 from other sky shrines. Surface placement also keeps 10 units from the coast so glyphs don't hang off. Sky shrines stay within 0.95 × the archipelago radius; see the M1 revision below. The seed places with no relaxation.
 - **Already-fixed positions are placed first.** Every locked or `xy` shrine is fixed before new shrines are placed, so a new shrine keeps clear of locked shrines later in file order too.
 - **Temples** are rejection-sampled along random rays at 60–85% of the centroid-to-border distance. Tests verify the ratio.
-- **Depths joining a locked ring.** Existing lightroots are locked. When a new depths shrine joins a group whose members are locked, it takes the ring slot (for the new group size k) farthest from the locked members, rather than reshuffling the ring.
+- **Depths joining a locked ring.** Existing wellsprings are locked. When a new depths shrine joins a group whose members are locked, it takes the ring slot (for the new group size k) farthest from the locked members, rather than reshuffling the ring.
 - **The lockfile keeps stale ids.** Entries for removed shrines stay, so re-adding an id restores its position. Coordinates are rounded to 0.1 and keys sorted, one per line.
 - **Geometry export.** Region outlines come from marching squares (d3-contour, 4-unit grid) on the soft field `min(d_nearest_other − d_own, land)`, which is positive exactly inside the region, so borders are smooth and agree with `classify`. Ridges are the zero set of `d_b − d_a`, clipped to where a and b are the two nearest regions on land. Contours use an 8-unit grid.
 - **App ↔ core.** The app imports only types, from `@stratum/core/mapdata`, never the Node-side code. `stratum dev` builds, then starts Vite with a middleware serving `build/map.json`. The watcher, API and SSE are M4. Until then, re-run `stratum build` and reload.
 - **`?layer=sky|surface|depths`** sets the initial layer (handy for links and screenshots).
-- **M1 is an atlas view.** Every shrine renders revealed and untouched. Depths show small vein-tinted glows around every lightroot; the real darkness and light rules are M3.
+- **M1 is an atlas view.** Every shrine renders revealed and untouched. Depths show small vein-tinted glows around every wellspring; the real darkness and light rules are M3.
 
 ## M1 revision: thematic clusters, archipelagos, depths territory
 
@@ -50,7 +50,7 @@ Added after the M1 review, at Tiago's request. These extend DESIGN.md §4.2 and 
   - Theme anchors sit on a ring at 0.6 × radius. The sky tower stands on its own rock at the centre.
   - Each themed sky shrine must be at least 60 units closer to its own anchor than to any other anchor or the centre, so islets never merge.
   - Islet outlines are metaballs (σ ≈ 17, with noise) drawn *around placed shrines*: adding a shrine grows its islet and moves nothing. 3–5 seeded bare rocks per archipelago add texture.
-- **Depths territory.** Rendering only. Beneath the landmass, each point belongs to the vein of its nearest lightroot (domain-warped), which draws vein territories, plus rock-strata level lines. M3 will show it only inside light circles, per §6.4. The M1 atlas view shows it dimly everywhere.
+- **Depths territory.** Rendering only. Beneath the landmass, each point belongs to the vein of its nearest wellspring (domain-warped), which draws vein territories, plus rock-strata level lines. M3 will show it only inside light circles, per §6.4. The M1 atlas view shows it dimly everywhere.
 - **Labels.** Region names show at zoom < 1.5, placed by a small search around the centroid for the spot with the most clearance from glyphs. Theme names show at 1.5–2.4 on the surface (above the cluster) and always on the sky (below each islet). Shrine titles show at ≥ 2.4. `?zoom=<k>` sets the initial zoom.
 - The lockfile was regenerated for this change (no clears existed yet).
 
@@ -86,9 +86,9 @@ Added after the M1 review, at Tiago's request. These extend DESIGN.md §4.2 and 
 - **Vantages.** Start vantage, active (cleared or in-progress) surface shrines, and cleared towers with the bonus. An in-progress tower is an ordinary vantage. Plateau shrines are revealed but aren't vantages.
 - **Overrides** apply in the §6.2 order, so a `--force`-started temple with unmet needs stays a silhouette.
 - **Terrain is injected.** `computeVisibility` takes a `Terrain` (`regionAt`, `ridgeHeight`). `Geometry` satisfies it, so rendering, placement and line of sight share one classifier; tests use synthetic bands.
-- **map.json** gains `sight` (surface vantages and fog radii; depths lights and glows with their radii), `surveyed` on regions, and per shrine `titleKnown` and `marks` (`chasm` beside an active shrine with lightroots below it, `draft` on a launch point to a sky shrine). The app still receives every shrine, including hidden ones, and filters; Atlas mode (M5) needs them.
+- **map.json** gains `sight` (surface vantages and fog radii; depths lights and glows with their radii), `surveyed` on regions, and per shrine `titleKnown` and `marks` (`chasm` beside an active shrine with wellsprings below it, `draft` on a launch point to a sky shrine). The app still receives every shrine, including hidden ones, and filters; Atlas mode (M5) needs them.
 - **Fog** is a soft-edged mask: land outside every vantage's R(2) (R(2) + 300 for cleared towers) and outside surveyed regions gets a grey paper wash at 74% opacity. The coastline draws over it; silhouettes draw over it.
-- **Depths.** Terrain (vein territories, strata) is masked to light circles (220 around cleared lightroots) and glows (40 under active surface shrines). Glowing lightroots render as small points with a pulsing halo, revealed ones as dim starbursts, cleared ones bright.
+- **Depths.** Terrain (vein territories, strata) is masked to light circles (220 around cleared wellsprings) and glows (40 under active surface shrines). Glowing wellsprings render as small points with a pulsing halo, revealed ones as dim starbursts, cleared ones bright.
 - **Silhouettes in the UI.** "???" for titles when p < 3, in tooltips, labels, chips and the panel. The panel hides the prompt, `done` and relations for silhouettes, except that a sealed temple shows its `needs` (the constellation of §5.2, in the panel rather than on the map). Theme labels appear once a member is revealed.
 - **`stratum start`** now refuses hidden shrines without `--force`; silhouettes may be started (§6.2). It runs the build pipeline without writing to get visibility.
 - **Search (§6.5)** isn't built yet; there's no search box. It belongs with the top-bar work in M5.
@@ -96,7 +96,7 @@ Added after the M1 review, at Tiago's request. These extend DESIGN.md §4.2 and 
 ## Atlas toggle (pulled forward from M5)
 
 - **Map half of §9.5, now.** Asked for after M3, to check the full world. Press **A** or the top-bar **Atlas** button, or open `?atlas=1`. A spoiler warning comes first every time, and A or the button again returns to the real view. The URL keeps `?atlas=1` while it's on.
-- **Presentation only.** `atlasView` marks every shrine revealed and named in the app's copy of map.json. MapView drops the fog and draws the depths terrain dimly everywhere, with a small glow at each lightroot, as the M1 atlas view did. Work state is unchanged, and nothing is stored in the browser.
+- **Presentation only.** `atlasView` marks every shrine revealed and named in the app's copy of map.json. MapView drops the fog and draws the depths terrain dimly everywhere, with a small glow at each wellspring, as the M1 atlas view did. Work state is unchanged, and nothing is stored in the browser.
 - **Still M5:** the sortable table of every shrine.
 
 ## M4
@@ -106,7 +106,7 @@ Added after the M1 review, at Tiago's request. These extend DESIGN.md §4.2 and 
 - **L** is the latest `clearedAt` (ties: later in file order), else the start vantage on the surface. **Recent** is the last three clears in that order.
 - **Slot 1.** The most recently touched campfire. "Touched" means the latest of NEXT.md's mtime, the last commit, and the start date. Otherwise, with a pin, the revealed candidate on L's layer within `farDistance` minimising `d(L,s) + d(s,pin)`, ties by id. If none is that close, it falls back to the nearest revealed candidate (ties: p descending, then id). A pin on a cleared or unknown shrine is ignored.
 - **Slot 2** takes the first rule with a match, each resolved by nearest-to-L:
-  1. a glowing lightroot under a Recent shrine;
+  1. a glowing wellspring under a Recent shrine;
   2. a revealed sky shrine linked either way to a Recent shrine;
   3. if L is a depths shrine, the surface shrine above it, else the nearest revealed surface candidate;
   4. the nearest revealed candidate on a layer other than Slot 1's.
@@ -158,7 +158,7 @@ Agreed with Tiago: about 20% in sight on a fresh repo, sky included; the peek ma
 
 - **M4b sign-off.** Tiago asked to continue to M5 on 2026-09-30 without changes to M4b, so it stands as built. The island ground shadows (an open M4b question) now draw at 0.12 on explored land and 0.05 on blank paper. The islands are always visible (§6.3), but their shadows shouldn't sketch terrain you haven't seen.
 - **Hours (§10.3)** live in `core/src/progress.ts`. Commits are sorted, and a gap of 2 h or more starts a new session, so exactly 2 h splits. Each session counts its span + 0.5 h, rounded to 0.1 h. Self-reported `hours` wins. map.json gains `hoursEstimate: {hours, estimated}` on worked shrines; `estimated` shows as "≈".
-- **Hero's Path (§9.4).** `map.path[layer]` lists the valid clears in `clearedAt` order, with same-day ties in file order. The app draws one dotted segment per step, with the dates on hover. The optional week-density toggle is not built.
+- **The trail (§9.4).** `map.path[layer]` lists the valid clears in `clearedAt` order, with same-day ties in file order. The app draws one dotted segment per step, with the dates on hover. The optional week-density toggle is not built.
 - **Region readout (§10.2).** `regions[].stats` has cleared / revealed / total (revealed counts cleared shrines too) and an hours total, `estimated` if any part of it is an estimate. It appears on hover over a surface region whose name is shown (≥ 15% explored, or surveyed), and over sky islands. It doesn't cover depths veins, which have no borders. The global completion (cleared / all shrines) is the first item of the top-bar readout.
 - **Search (§6.5).** Core decides what may be found. `shrines[].search` is the lower-cased text search may match: revealed shrines by title, id, theme and prompt; named silhouettes (p ≥ 3) by title; everything else "". The app only does substring matching, with title matches first and at most 8 results. `/` focuses the box. Picking a result selects the shrine, switches layer and centres it at zoom ≥ 2. In Atlas mode the box still follows the real rules; the Atlas table has its own filter.
 - **Layer transitions (§9.2).** The depths "dive" (opacity, then scale from 1.05) in 320 ms, and the sky islands rise 16 px in 340 ms. The surface and backdrop already cross-fade in 300 ms. With `prefers-reduced-motion` the Svelte transitions take 0 ms, and app.css already zeroes CSS transitions and animations.
@@ -216,7 +216,7 @@ Tiago delegated the theme/follow-up review ("I'll trust your judgment").
 - **Theme ring order (`themeRingOrder`).** On a first build, a region's themes go around the ring of anchors in the order that puts the most cross-theme `after` edges between neighbouring slots (brute force: at most 5 themes, at most 24 orders). The first theme stays in slot 0 and ties keep file order. Locked anchors are never reordered.
 - **Leaning follow-ups.** A follow-up with no placed same-theme predecessor, but a placed predecessor elsewhere on its layer (another theme or region), is sampled around a point between its anchor and that predecessor: up to half the distance, at most 0.8 × the theme radius (24 units on the sky). It must still stay in its own theme's share. Sky islets keep their 60-unit margin, so sky shrines lean less.
 - **Predecessors first, everywhere.** Placement now places any same-layer predecessor first, including one in another region, so the lean has something to lean toward. This is deterministic, and file order still breaks ties.
-- **Favicon.** `app/public/favicon.svg` is original art showing the three strata: a sky band with a floating islet, a parchment surface with the shrine glyph, and the depths with a teal lightroot directly beneath it. There are PNG fallbacks: `favicon-32.png`, and a full-bleed `apple-touch-icon.png` (180 px, because iOS rounds the corners itself). Both were rendered from the SVG with `scripts/shot.mjs` through an `<img>` page (Chrome blocks `fetch` on `file://`). `theme-color` follows light/dark. Vite rewrites the links for the static build's relative base.
+- **Favicon.** `app/public/favicon.svg` is original art showing the three strata: a sky band with a floating islet, a parchment surface with the shrine glyph, and the depths with a teal wellspring directly beneath it. There are PNG fallbacks: `favicon-32.png`, and a full-bleed `apple-touch-icon.png` (180 px, because iOS rounds the corners itself). Both were rendered from the SVG with `scripts/shot.mjs` through an `<img>` page (Chrome blocks `fetch` on `file://`). `theme-color` follows light/dark. Vite rewrites the links for the static build's relative base.
 
 ## Direction: a template for any topic, and treasure (2026-10-05)
 
@@ -229,3 +229,15 @@ Tiago's answers to the template and treasure questions, recorded so future sessi
 - **Feats are triggers for content, never badges or scores,** which keeps §15's "no XP, levels, streaks, badges".
 - Plans: docs/plans/treasure.md (M11) and docs/plans/template.md (M10, M12–M16). The modularity report's drift check and `stratum rename` were scheduled into M12.
 - **Total completion, clarified (2026-10-05): "how much, never where."** The tracker unlocked by every region reaching 75% shows a *percentage* of all content (shrines, chests, secrets), never locations or lists. A separate *remaining-locations view*, which marks where incomplete items are, unlocks at 75% of all content (overall, not per region). It's opt-in and off by default, and like the Atlas it lives in the URL (`?remaining=1`), not in progress files. Unlike the Atlas, it reveals locations only: contents stay sealed and prose follows the silhouette rules.
+
+## M10: ready to share (2026-10-05)
+
+Built on the plan's defaults, since Tiago hadn't answered template.md's questions 1 and 2 yet (status.md says to proceed on them and say so).
+- **Two terms renamed.** The depths node is now the **wellspring**, and the dotted line through your clears is the **trail**. Both were coinages of a specific game; every other term was already generic. The old names survive only in git history before M10. In code, the progress function is now `trail()` and the CSS classes are `.trail` and `.wellspring`. The map.json field stays `path`, which was already neutral, so the app/core contract is unchanged.
+- **The temple's "trail" became its "needs".** The map key and detail panel used to say a temple is "sealed until its trail is cleared", which would now read as the clear history. They say "needs", matching DESIGN.md §5.2. This is the only UI wording changed beyond the two renames.
+- **One inspiration sentence.** DESIGN.md §0 opens with "inspired by open-world exploration games", and CLAUDE.md and the README say the same. No game title, studio or motif is named anywhere else. The visual-originality constraint now forbids assets and motifs "from any existing game" rather than naming one.
+- **Personal details** (the owner's name and email, programme, flashcard tool and machines) moved from DESIGN.md and CLAUDE.md into `docs/private.md`, which is gitignored. CLAUDE.md tells agents to read it if present, and keeps every working agreement itself (in terms of "the owner"), because worktrees, fresh clones and cloud sessions won't have the private file. The status, decisions and plan logs still name Tiago. They're project history, and M16's template will start with fresh docs rather than ship these.
+- **World seed:** only three schema comments changed (to say wellspring). No shrine prose was touched. The one MSFM reference in a shrine prompt is world content and stays.
+- **Licence:** MIT, copyright Tiago Flora, 2026. `THIRD_PARTY.md` lists what the static build redistributes (MIT, ISC, BSD-2/3), what's only used at build time, and the three Google Fonts (OFL, loaded at runtime, not bundled). The plan's "MIT/ISC" was slightly off: highlight.js and d3-ease are BSD-3-Clause, entities is BSD-2-Clause, and lightningcss (build only) is MPL-2.0.
+- **README** rewritten for a stranger: what it is, the loop, a quick start, where things live and the licence. M16's first-hour guide will go further.
+- **Reviewed (2026-10-05).** Tiago kept *wellspring*, *trail* and MIT, and agreed that M16's template starts with fresh docs rather than shipping these logs.

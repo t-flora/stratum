@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { estimateHours, heroPath, regionStats, searchText, shrineHours, type Region, type Shrine, type World } from '../src/index.ts';
+import { estimateHours, trail, regionStats, searchText, shrineHours, type Region, type Shrine, type World } from '../src/index.ts';
 
 const H = 3600;
 
@@ -41,14 +41,14 @@ function world(specs: (Partial<Shrine> & { id: string; region: string })[]): Wor
   };
 }
 
-describe("Hero's Path (§9.4)", () => {
+describe('the trail (§9.4)', () => {
   it('orders clears by date per layer, same-day clears in file order', () => {
     const w = world([
       { id: 'a', region: 'west' }, { id: 'b', region: 'west' }, { id: 'c', region: 'west' },
       { id: 'd', region: 'west' }, { id: 's', region: 'isle' },
     ]);
     const dates: Record<string, string> = { a: '2026-10-05', b: '2026-10-02', c: '2026-10-05', s: '2026-10-03' };
-    const path = heroPath(w, (id) => dates[id]);
+    const path = trail(w, (id) => dates[id]);
     expect(path.surface.map((x) => x.id)).toEqual(['b', 'a', 'c']);
     expect(path.sky).toEqual([{ id: 's', date: '2026-10-03' }]);
     expect(path.depths).toEqual([]);

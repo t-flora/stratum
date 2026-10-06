@@ -5,3 +5,5 @@ stratum.local.yaml
 # editor swap files
 *.swp
 *.swo
+# personal context for agents (M10): see CLAUDE.md
+docs/private.md

@@ -25,7 +25,7 @@ Rare things on the map that are around to be looked for: extra tasks, readings, 
 - **Spots** are chosen by the engine from the geometry:
   - **Sky:** the bare rocks of each archipelago (about 20 exist already).
   - **Surface:** offshore islets, river sources and mouths, lake shores, cliff tops, and the far side of h ≥ 3 ridges.
-  - **Depths:** dark pockets between veins, far from any lightroot.
+  - **Depths:** dark pockets between veins, far from any wellspring.
   
   Spots are picked deterministically (`mulberry32(hash32(...))`) at a density of about 7% of all locations, which is about 15 chests for 217 shrines (config `treasure.density`). They're kept apart (minimum spacing, at most one per theme area) and written to `positions.lock.json` under `!chest/<id>` keys.
 - **Found** when the spot is explored (surface), lit (depths), or in view of a revealed launch point (sky). Derived at build time, like visibility, with no state.
@@ -36,7 +36,7 @@ Rare things on the map that are around to be looked for: extra tasks, readings, 
 
 - **Echoes.** A hidden concept is attached to a shrine, theme or region, as a few accepted phrasings: `concept: ["Little's law", "L = λW"]`. It unlocks when a write-up *in its scope* mentions any of them. The match is case-insensitive and on word boundaries, so it's checkable without judgement and needs no LLM (§15).
 - **Feats.** These unlock on repo facts:
-  - clearing a shrine and the lightroot beneath it;
+  - clearing a shrine and the wellspring beneath it;
   - clearing every shrine in a theme;
   - finishing a follow-up chain;
   - clearing a temple.

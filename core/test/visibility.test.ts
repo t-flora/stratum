@@ -253,7 +253,7 @@ describe('depths rule (§6.4, §13 M3)', () => {
     expect(v.glowing).toEqual(new Set(['root-1', 'root-3']));
   });
 
-  it('a cleared lightroot lights everything within lightRadius', () => {
+  it('a cleared wellspring lights everything within lightRadius', () => {
     const v = see(specs, { 'root-1': 'cleared' });
     expect(v.of('root-1')).toBe('revealed');
     expect(v.of('root-2')).toBe('revealed'); // 150 away

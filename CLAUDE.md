@@ -1,26 +1,27 @@
 # Stratum: agent onboarding
 
-Stratum is a personal study map: a three-layer world (sky, surface, depths) of "shrines", each a small implementation plus a write-up, rendered *from this repo's files and git history*. The owner is Tiago (tiagomflora@gmail.com).
+Stratum is a personal study map: a three-layer world (sky, surface, depths) of "shrines", each a small implementation plus a write-up, rendered *from this repo's files and git history*. It's inspired by open-world exploration games, but the design and vocabulary are its own.
 
 ## Read first, in this order
 
 1. **`docs/status.md`** covers where the project is: milestones done, open review items, and what to do next.
 2. **`DESIGN.md`** is the spec. §0 (constraints) and §13 (milestones) are mandatory reading. Treat it as authoritative except where `docs/decisions.md` extends it.
 3. **`docs/decisions.md`** records every choice made where DESIGN.md is silent, plus agreed extensions (`theme`, `after`, archipelagos, the `x86` tag). Add a bullet there for any new choice.
+4. **`docs/private.md`**, if it exists. It's gitignored and holds the owner's personal context: who they are, their background and their machines. Fresh clones, worktrees and cloud sessions won't have it, and the agreements below still apply.
 
-## Working agreements (from Tiago)
+## Working agreements (from the owner)
 
-- **Stop for review at the end of every milestone** (DESIGN.md §13). Tiago explicitly wants these reviews. Don't roll into the next milestone without one.
+- **Stop for review at the end of every milestone** (DESIGN.md §13). The owner explicitly wants these reviews. Don't roll into the next milestone without one.
 - **Hard constraints (DESIGN.md §0).** Never trade these away:
   - The repo is the only source of truth: no database, no browser storage.
   - Clearing requires artefacts: nothing in the UI clears a shrine by click.
   - The triangle rule: the map never shows everything, except in Atlas mode.
   - Positions never change once assigned.
-- **The world content is Tiago's.** Don't rewrite `world/world-seed.yaml` prose. Adding structural fields (tags, `theme`, `after`) requires his approval; the current drafts are pending his review (see status).
+- **The world content is the owner's.** Don't rewrite `world/world-seed.yaml` prose. Adding structural fields (tags, `theme`, `after`, `biome`) requires the owner's approval (see status for what's pending).
 - **`world/positions.lock.json` is committed and sacred.** Only regenerate it (delete and rebuild) with explicit approval, and never once any shrine has been started or cleared. Use `stratum build --replace <id>` for single moves.
 - **Commits:** only when asked. End commit messages with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Work on `main` unless told otherwise.
-- **Visual design must be original.** No Nintendo assets, names, fonts or the Sheikah eye.
-- **Hardware:** the dev machine is an Apple M2 Mac, and x86 work runs on a separate Linux server. Each machine runs `npm run stratum -- setup` once, which writes a gitignored `stratum.local.yaml` (Mac: `[arm, llm-api]`).
+- **Visual design must be original.** No assets, names, fonts or motifs from existing games.
+- **Hardware:** each machine runs `npm run stratum -- setup` once, which writes a gitignored `stratum.local.yaml` with the hardware tags it detected. The owner's machines are listed in `docs/private.md`.
 
 ## Commands
 
@@ -59,7 +60,7 @@ core/src/          all game logic; pure TS, no DOM. Imported by cli and (types o
   git.ts           GitReader interface (injected; tests fake it or use a temp repo) and git log parsing
   work.ts          scan work/, derive status/committed/touches/camp (one camp, the rest cairns), `start`, `clear`, `shelve`
   horizon.ts       §7 Horizon: three slots and their fallbacks, ISO week, pin routing (pure)
-  progress.ts      §9.4 Hero's Path, §10.3 hours, §10.2 region stats, §6.5 search text (pure)
+  progress.ts      §9.4 the trail, §10.3 hours, §10.2 region stats, §6.5 search text (pure)
   propose.ts       `stratum propose`: loose threads → proposal stub → proposed.yaml text (pure)
   pins.ts          state/pins.yaml read/write/validate
   visibility.ts    §6 triangle rule: line of sight over ridges (peek margin), vantages, sky launch points, depths light (pure; Terrain injected)
@@ -78,7 +79,7 @@ templates/         WRITEUP.md, NEXT.md, cpp/ and python/ scaffolds for `stratum 
 world/             world-seed.yaml (content), proposed.yaml, positions.lock.json (committed)
 fixtures/          tiny/ (clean 3-region world), planted-errors/ (lint test)
 state/pins.yaml    the map pin (`pin: <id>` or null)
-docs/              status.md, decisions.md, plans/ (world editing, reset: proposals; camps, unknown, geography: done)
+docs/              status.md, decisions.md, private.md (gitignored), plans/ (template, treasure, world editing, reset: proposals; camps, unknown, geography: done)
 ```
 
 ## Architecture rules
