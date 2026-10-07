@@ -192,12 +192,11 @@
       });
     select(svg).call(z).on('dblclick.zoom', null);
     if (initialZoom !== 1) select(svg).call(z.scaleTo, initialZoom);
-    else if (svg.clientWidth < 640) {
-      // A phone sees the whole canvas at a quarter scale: open on the start instead, close enough to read (§13 M5).
-      // Before a sky start lands, that's the opening shrine on its island (§6.6).
-      const opening = !map.start.landed && layer === 'sky' ? map.shrines.find((s) => s.id === map.start.sky[0]) : undefined;
-      const [cx, cy] = opening?.xy ?? map.start.vantage;
-      select(svg).call(z.scaleTo, 2.4).call(z.translateTo, cx, cy);
+    else if (layer === map.focus.layer) {
+      // Open close to where you are (map.focus), not on the whole canvas: phones closer, since they see a quarter of
+      // it (§13 M5). Other layers (a ?layer link) keep the whole-canvas view.
+      const [cx, cy] = map.focus.xy;
+      select(svg).call(z.scaleTo, svg.clientWidth < 640 ? 2.4 : 1.7).call(z.translateTo, cx, cy);
     }
   });
 </script>

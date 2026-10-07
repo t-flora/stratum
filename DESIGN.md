@@ -396,6 +396,7 @@ After placement, write `world/positions.lock.json` (`{id: [x, y]}`) and commit i
 - **Top bar:** the layer switch (Sky · Surface · Depths; keys 1/2/3), search, and a small region-completion readout.
 - **Left:** the Horizon (3 cards). On narrow screens it collapses into a bottom sheet.
 - **Centre:** the map, with pan and zoom (d3-zoom) and zoom-dependent labels. Region names show at low zoom and shrine titles at high zoom.
+- **Where it opens** (`map.focus`, derived from the repo, so no browser storage): your camp; else your latest clear (a cleared opening shrine means the landing); else, on a fresh sky start, the opening shrine, selected so the start is explicit; else the start vantage. The map opens on that layer, zoomed in on it.
 - **Right (on selection):** the detail panel:
   - title, layer, region, size, `requires`
   - prompt and **Done when**
@@ -483,9 +484,10 @@ Run the CLI with `npx tsx cli/index.ts`, aliased as `stratum`.
 | Command | Behaviour |
 |---|---|
 | `stratum lint` | Validate the world (§4.2) and every WRITEUP.md |
-| `stratum build [--replace <id>] [--static]` | Compute positions (respecting the lockfile), derived state, visibility and Horizon, and write `build/map.json` |
+| `stratum build [--replace <id>] [--static [--public [--link <url>]]]` | Compute positions (respecting the lockfile), derived state, visibility and Horizon, and write `build/map.json`. `--static` bundles the app into `build/static/`. `--public` makes that the public site's map: built fresh (no `work/`, no pin), with hidden shrines dropped and unrevealed prompts blanked, no Atlas, and a note linking to `--link` |
+| `stratum tutorial [--reset]` | Copy `examples/tutorial/` (the Practice Isle) into `build/tutorial/` with its own git history, and serve it like `dev` (port 5174) |
 | `stratum dev` | Vite dev server plus a local API (localhost only), with a file watcher that rebuilds on changes under `world/`, `work/` and `state/` and pushes updates over SSE |
-| `stratum start <id> [--force]` | Scaffold `work/<id>/` from a template (cpp or python, based on `region`, with a flag to override) and set `status: in-progress` and `started`. Refuses to start a hidden shrine or a locked temple without `--force`. |
+| `stratum start <id> [--force]` | Scaffold `work/<id>/` from a template (cpp or python, based on `region`, with a flag to override) and set `status: in-progress` and `started`. Copies `world/kits/<id>/` instead of the code template when a kit exists (§5.5). Refuses to start a hidden shrine or a locked one (§5.4) without `--force`. |
 | `stratum clear <id>` | Validate (§5), stamp the date, and print the checklist and suggested commit |
 | `stratum status` | Counts by layer and region, plus the camp, cairns and shelved work |
 | `stratum shelve <id>` | Set in-progress work aside (`status: shelved`); `start` resumes it |

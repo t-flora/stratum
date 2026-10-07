@@ -31,6 +31,7 @@ npm test                         # vitest (all core tests; pure functions of wor
 npm run typecheck                # tsc (core+cli) and svelte-check (app)
 npm run stratum -- lint          # validate world + write-ups + config
 npm run stratum -- build         # place shrines (respects lockfile) → build/map.json; --static also bundles the app → build/static/
+npm run stratum -- build --static --public  # the public site (Pages): a fresh, spoiler-free map; no work/, pin or Atlas
 npm run stratum -- setup         # one-time per machine: detect hardware tags
 npm run stratum -- start <id>    # scaffold work/<id>/ and make camp there (resumes shelved work); --template, --force
 npm run stratum -- clear <id>    # validate §5, stamp the date, suggest a commit (never commits)
@@ -40,10 +41,11 @@ npm run stratum -- horizon       # the three Horizon cards
 npm run stratum -- pin <id>      # set the pin (--clear removes it)
 npm run stratum -- propose --from <id>  # list the write-up's loose threads; --thread <n> / --text appends a stub to world/proposed.yaml
 npm run dev                      # Vite + dev API at http://127.0.0.1:5173; rebuilds live on world/work/state changes
+npm run tutorial                 # the tutorial world (examples/tutorial) in a throwaway copy, build/tutorial/, on :5174; -- --reset starts over
 scripts/screenshot.sh sky 1      # headless screenshot of the running dev server → build/debug/sky-1.png (MOBILE=1 … 390x844 for a phone)
 ```
 
-URL params: `?layer=sky|surface|depths`, `?zoom=<k>`, `?select=<id>` (opens the detail panel), `?atlas=1` (reveal everything, behind a spoiler warning; key A toggles). Keys: 1/2/3 layers, H folds the Horizon, K map key, / search, T the Atlas table (in Atlas mode). The CLI takes `--root <dir>` to point at another world, for example `fixtures/tiny`.
+With no URL params the map opens at `map.focus` (your camp, your latest clear, or on a fresh sky start the opening shrine, selected). URL params: `?layer=sky|surface|depths`, `?zoom=<k>`, `?select=<id>` (opens the detail panel), `?atlas=1` (reveal everything, behind a spoiler warning; key A toggles). Keys: 1/2/3 layers, H folds the Horizon, K map key, / search, T the Atlas table (in Atlas mode). The CLI takes `--root <dir>` to point at another world, for example `fixtures/tiny`.
 
 To check UI work visually, run `npm run dev` in the background, run `scripts/screenshot.sh <layer> <zoom>`, and read the PNG. It lands under `build/` on purpose, since reads outside the repo may be blocked.
 
@@ -77,9 +79,10 @@ cli/dev.ts         dev API Vite plugin: /api/{health,map,events,start,pin,shelve
 app/src/           Svelte 5 + Vite renderer of build/map.json (MapView, Glyph, DetailPanel, HorizonPanel, MapKey, SearchBox, AtlasTable, Geography; api.ts, camp.ts, markdown.ts)
 templates/         WRITEUP.md, NEXT.md, cpp/ and python/ scaffolds for `stratum start`
 world/             world-seed.yaml (content), proposed.yaml, positions.lock.json (committed), kits/<id>/ (starter kits, content)
+examples/tutorial/ the Practice Isle: a 10-shrine tutorial world (played via `npm run tutorial`; also the format's worked example)
 fixtures/          tiny/ (clean 3-region world), planted-errors/ (lint test)
 state/pins.yaml    the map pin (`pin: <id>` or null)
-docs/              status.md, decisions.md, private.md (gitignored), plans/ (self-contained, template, treasure, world editing, reset: proposals; camps, unknown, geography: done)
+docs/              guide.md (the newcomer track), status.md, decisions.md, private.md (gitignored), plans/ (self-contained, template, treasure, world editing, reset: proposals; camps, unknown, geography: done)
 ```
 
 ## Architecture rules

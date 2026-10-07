@@ -150,6 +150,6 @@ What a model needs to design a *good* world, not just a valid one.
 ## Questions for Tiago
 
 1. ~~**Names for the two coined terms.**~~ **Answered:** *wellspring* and *trail*, kept at the M10 review.
-2. **Licence and your world:** MIT (answered, kept). Still open: should your world ship publicly as the example pack, or stay private with the generator's example packs shown instead?
+2. **Licence and your world:** MIT (answered, kept). His world is public (answered 2026-10-07: the repo and its Pages site are public; the site shows the fresh, spoiler-free view and his playthrough lives in a private copy). The original question: should your world ship publicly as the example pack, or stay private with the generator's example packs shown instead?
 3. **Sealed shrine prose** (`seal: shrines`) as the default for generated worlds? Your own world would stay unsealed, since you've already read it.
 4. **Distribution:** a template repo with `git pull upstream` for updates (recommended for now), or an engine package from the start?

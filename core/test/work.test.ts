@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   DEFAULT_CONFIG, NO_GIT, build, clearShrine, countWords, defaultTemplate, deriveWorkState, gitReader, isArtefact, loadWorld,
-  lintWorkFolders, parseWorkLog, readGitWork, readWorkFolder, readWorkState, setFrontmatter, shelveShrine, startShrine, validateClear, writeupSections,
+  lintWorkFolders, parseWorkLog, publicView, readGitWork, readWorkFolder, readWorkState, setFrontmatter, shelveShrine, startShrine, validateClear, writeupSections,
   type ClearInput, type Shrine, type World,
 } from '../src/index.ts';
 
@@ -183,6 +183,24 @@ describe('start and clear (§13 M2)', () => {
   it('refuses a locked temple unless forced', () => {
     expect(startShrine(dir, world, work(), 'temple-x')).toMatchObject({ outcome: 'refused' });
     expect(startShrine(dir, world, work(), 'temple-x', { force: true })).toMatchObject({ outcome: 'started' });
+  });
+
+  it('the public view: a fresh build ignores your work, and map.json carries nothing you have not seen', () => {
+    startShrine(dir, world, work(), 'a-one');
+    expect(mapShrine('a-one').status).toBe('in-progress');
+    const fresh = build(dir, { git: NO_GIT, now: 0, fresh: true, write: false }).map!;
+    expect(fresh.shrines.find((s) => s.id === 'a-one')!.status).toBe('untouched');
+    const view = publicView(fresh, 'https://example.invalid/guide');
+    expect(view.public).toEqual({ total: fresh.shrines.length, link: 'https://example.invalid/guide' });
+    const hidden = fresh.shrines.filter((s) => s.visibility === 'hidden').map((s) => s.id);
+    expect(hidden.length).toBeGreaterThan(0);
+    const kept = new Set(view.shrines.map((s) => s.id));
+    for (const id of hidden) expect(kept.has(id)).toBe(false);
+    for (const s of view.shrines) {
+      for (const ref of [...s.links, ...s.after, ...s.needs, ...(s.locked ?? [])]) expect(kept.has(ref), `${s.id} → ${ref}`).toBe(true);
+      if (s.visibility !== 'revealed') expect([s.prompt, s.done]).toEqual(['', '']);
+    }
+    expect(JSON.stringify(view)).not.toContain(`"${hidden[0]}"`);
   });
 
   it('a starter kit replaces the code template; untouched kit files are scaffold, not artefacts', () => {

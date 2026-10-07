@@ -26,6 +26,8 @@
   /** Atlas mode (§9.5): everything revealed. `?atlas=1` or the A key, always behind a spoiler warning. */
   let atlas = $state(false);
   let atlasAsk = $state(params.get('atlas') === '1');
+  /** The public site's map (`build --static --public`): a fresh start with no spoilers in it, so no Atlas. */
+  const isPublic = $derived(!!built?.public);
   const map = $derived(built && atlas ? atlasView(built) : built);
 
   /** Atlas mode shows the map with everything revealed, or the table of every shrine (§9.5). */
@@ -41,6 +43,7 @@
     history.replaceState(null, '', url);
   }
   function toggleAtlas() {
+    if (isPublic) return;
     if (atlas) setAtlas(false);
     else atlasAsk = true;
   }
@@ -126,9 +129,12 @@
       error = null;
       const s = selectedId ? built?.shrines.find((x) => x.id === selectedId) : null;
       if (s && !params.get('layer')) layer = s.layer;
-      // §6.6: a sky start opens on its island, and the descent takes you down to the surface when it happens live.
-      else if (wasLanded === undefined && built && !built.start.landed && !params.get('layer')) layer = 'sky';
-      else if (wasLanded === false && built?.start.landed) {
+      else if (wasLanded === undefined && built && !params.get('layer')) {
+        // The map opens where you are (map.focus): your camp, your latest clear, or on a first visit the opening
+        // shrine on its island, shown so the start is explicit (§6.6, §9.1).
+        layer = built.focus.layer;
+        if (built.focus.reason === 'opening' && built.focus.id && !selectedId) selectedId = built.focus.id;
+      } else if (wasLanded === false && built?.start.landed) {
         if (layer === 'sky') layer = 'surface';
         say('You glide down from the island: the ground is in plain sight now.');
       }
@@ -214,7 +220,7 @@
     {#if built}
       <span class="readout">
         {completion}% of the world<span class="long">&nbsp;· {counts.cleared} cleared · {counts.started} in progress</span> ·
-        {atlas ? `atlas: all ${built.shrines.length} shown` : `${counts.inSight} of ${built.shrines.length} in sight`}
+        {atlas ? `atlas: all ${built.shrines.length} shown` : `${counts.inSight} of ${built.public?.total ?? built.shrines.length} in sight`}
       </span>
       {#if atlas}
         <div class="layers" role="radiogroup" aria-label="Atlas view">
@@ -224,9 +230,11 @@
           </button>
         </div>
       {/if}
-      <button class="atlas-toggle" class:active={atlas} aria-pressed={atlas} onclick={toggleAtlas} title="Atlas mode: reveal everything (key A)">
-        Atlas<kbd>A</kbd>
-      </button>
+      {#if !isPublic}
+        <button class="atlas-toggle" class:active={atlas} aria-pressed={atlas} onclick={toggleAtlas} title="Atlas mode: reveal everything (key A)">
+          Atlas<kbd>A</kbd>
+        </button>
+      {/if}
     {/if}
   </header>
 
@@ -262,7 +270,7 @@
     {#if toast}
       <div class="toast" role="status">{toast}</div>
     {/if}
-    {#if atlasAsk && built}
+    {#if atlasAsk && built && !isPublic}
       <div class="spoiler" role="dialog" aria-modal="true" aria-labelledby="spoiler-title">
         <div class="spoiler-card">
           <h2 id="spoiler-title">Open the atlas?</h2>

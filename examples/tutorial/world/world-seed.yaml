@@ -1,0 +1,145 @@
+# The Practice Isle: a tutorial world for Stratum
+# ----------------------------------------------------------------------------
+# Ten small shrines, each teaching one part of the game. The tasks are tiny and work in any language: the point is
+# to learn the loop, not the material. Play it with `npm run tutorial` (a throwaway copy under build/tutorial/).
+#
+# It's also a worked example of the format: copy this file to start a world of your own, and see docs/guide.md.
+# Shrine fields are documented at the top of world/world-seed.yaml and in DESIGN.md §4.
+# ----------------------------------------------------------------------------
+
+canvas: { width: 1600, height: 1000 }
+
+start:
+  sky:                       # you begin on the island, looking down; clearing this is the descent (DESIGN.md §6.6)
+    - tut-first-steps
+  vantage: [720, 520]        # where you land: the middle of the Trailhead
+  plateau:                   # revealed once you land
+    - tower-trailhead
+    - tut-time-it
+    - tut-make-a-tool
+
+regions:
+  - { id: trailhead, layer: surface, name: "The Trailhead", centroid: [720, 520], biome: plateau }
+  - { id: far-field, layer: surface, name: "The Far Field", centroid: [1180, 480], biome: steppe }
+  - { id: lookout,   layer: sky,     name: "The Lookout",   centroid: [700, 330], radius: 150 }
+  - { id: roots,     layer: depths,  name: "The Roots" }
+
+ridges:
+  default: 2
+  overrides:
+    # A high ridge: only the tallest landmark peeks over it. Walk around, or climb a tower (DESIGN.md §6.2).
+    - { between: [trailhead, far-field], h: 3 }
+
+shrines:
+
+# ---- The Lookout (sky): where you wake ---------------------------------------
+- id: tower-lookout
+  title: "Tower: the Lookout"
+  region: lookout
+  kind: tower
+  size: S
+  prompt: >-
+    Survey what you'd want a map of your own to teach you: three topics, and for each one the first small thing
+    you could build.
+  done: >-
+    A short survey, plus 3 proposed shrines added with `stratum propose --from tower-lookout --text "..."`.
+
+- id: tut-first-steps
+  title: First steps
+  region: lookout
+  size: S
+  p: 4
+  links: [tut-time-it]
+  prompt: >-
+    Write a program, in any language, that prints the numbers 1 to 10 and how long that took. Then write the
+    three sections of WRITEUP.md and run `stratum clear tut-first-steps`.
+  done: >-
+    The program runs, the write-up has its three sections, and the clear passes. You glide down to the Trailhead.
+
+# ---- The Trailhead: where you land -------------------------------------------
+- id: tower-trailhead
+  title: "Tower: the Trailhead"
+  region: trailhead
+  kind: tower
+  size: S
+  prompt: >-
+    Climb the tower: list what you can see from here and what you can't, and why (ridges, prominence, the dark
+    below).
+  done: >-
+    A short survey of the region, plus 3 proposed shrines (`stratum propose --from tower-trailhead --text "..."`).
+
+- id: tut-time-it
+  title: Time it
+  region: trailhead
+  size: S
+  prompt: >-
+    Sum the integers from 1 to 10 million in a loop, time it three times, and report the median. Before you
+    stop, write where you left off on the first line of NEXT.md.
+  done: >-
+    The program and its three timings. NEXT.md's first line shows on your camp on the map.
+
+- id: tut-make-a-tool
+  title: Make a tool
+  region: trailhead
+  size: S
+  prompt: >-
+    Write a function that reverses a string, with three tests: an empty string, one character, and a word.
+  done: >-
+    The tests pass. Something elsewhere on the isle needs this tool.
+
+- id: tut-use-the-tool
+  title: Use your tool
+  region: trailhead
+  size: S
+  p: 3
+  needs: [tut-make-a-tool]
+  after: [tut-make-a-tool]
+  prompt: >-
+    Use your string reverser (Make a tool) to find the palindromes in a list of 20 words you write yourself.
+  done: >-
+    The palindromes found. This shrine was locked until you had the tool (DESIGN.md §5.4).
+
+- id: temple-trailhead
+  title: "Temple: the Trailhead"
+  region: trailhead
+  kind: temple
+  size: S
+  needs: [tut-time-it, tut-use-the-tool]
+  prompt: >-
+    Time your palindrome finder on 100,000 generated words, and explain where the time goes.
+  done: >-
+    A timing, and one sentence on what dominates it. Temples open once their needs are cleared.
+
+# ---- The Far Field: behind the high ridge ------------------------------------
+- id: tower-far-field
+  title: "Tower: the Far Field"
+  region: far-field
+  kind: tower
+  size: S
+  prompt: >-
+    From the far side of the ridge, survey what this region could hold if it were yours to fill.
+  done: >-
+    A short survey plus 3 proposed shrines (`stratum propose --from tower-far-field --text "..."`).
+
+- id: tut-far-landmark
+  title: The far landmark
+  region: far-field
+  size: S
+  p: 5
+  after: [tut-time-it]
+  prompt: >-
+    Rewrite your timing loop (Time it) in a second language, and compare the two timings.
+  done: >-
+    Both programs and both timings. You saw this one over the ridge because it's tall (p5).
+
+# ---- The Roots (depths): under the Trailhead ---------------------------------
+- id: tut-below
+  title: What it turns into
+  region: roots
+  size: S
+  below: tut-time-it
+  prompt: >-
+    Look at what your timing loop (Time it) compiles or interprets to: Compiler Explorer for compiled languages,
+    `python -m dis` for Python. Explain one instruction in it.
+  done: >-
+    The listing and your explanation. It glowed once you started Time it; clearing it lights the dark around it.

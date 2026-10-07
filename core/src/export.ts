@@ -5,7 +5,7 @@ import type { Geometry } from './geometry.ts';
 import type { HorizonCard, MapData, MapGeometry, MapRegion, MapShrine, MapTheme, MultiPolygon } from './mapdata.ts';
 import { themeKey, themesByRegion } from './placement.ts';
 import { hash32, mulberry32 } from './prng.ts';
-import { trail, regionStats, searchText, shrineHours } from './progress.ts';
+import { mapFocus, trail, regionStats, searchText, shrineHours } from './progress.ts';
 import type { Region, RequireTag, Vec2, World } from './types.ts';
 import { titleKnown, unmetNeeds, type VisibilityConfig, type VisibilityResult } from './visibility.ts';
 import type { ShrineWork } from './work.ts';
@@ -291,6 +291,7 @@ export function buildMapData(
     builtAt,
     canvas: world.canvas,
     start: { vantage: world.start.vantage, plateau: world.start.plateau, sky: world.start.sky ?? [], landed: state?.sight.landed ?? true },
+    focus: mapFocus(world, positions, (id) => work.get(id), state?.sight.landed ?? true),
     regions: world.regions.map((r) => {
       const out: MapRegion = { ...r, stats: stats.get(r.id)! };
       if (state?.sight.surveyed.has(r.id)) out.surveyed = true;
@@ -324,5 +325,41 @@ function buildSight(world: World, positions: Map<string, Vec2>, state: MapState 
     lights,
     lightRadius: cfg?.lightRadius ?? 0,
     glowRadius: cfg?.glowRadius ?? 0,
+  };
+}
+
+/**
+ * The public site's map (build --static --public): spoiler-free, so visitors get the first-time experience and the
+ * JSON shows nothing more than the map does. Hidden shrines are dropped (even their ids name topics), with every
+ * reference to them; silhouettes keep their glyph and, if the map would name them, their title, but no prompt.
+ */
+export function publicView(map: MapData, link?: string): MapData {
+  const kept = map.shrines.filter((s) => s.visibility !== 'hidden');
+  const ids = new Set(kept.map((s) => s.id));
+  const only = (list: string[]) => list.filter((id) => ids.has(id));
+  const shrines = kept.map((s): MapShrine => {
+    const out: MapShrine = { ...s, links: only(s.links), after: only(s.after), needs: only(s.needs) };
+    if (s.locked) {
+      const locked = only(s.locked);
+      if (locked.length) out.locked = locked;
+      else delete out.locked;
+    }
+    if (s.below && !ids.has(s.below)) delete out.below;
+    if (s.from && !ids.has(s.from)) delete out.from;
+    if (s.visibility !== 'revealed') {
+      out.prompt = '';
+      out.done = '';
+      if (!s.titleKnown) out.title = '';
+      delete out.theme;
+    }
+    return out;
+  });
+  return {
+    ...map,
+    public: { total: map.shrines.length, ...(link ? { link } : {}) },
+    shrines,
+    themes: map.themes.map((t) => ({ ...t, members: only(t.members) })).filter((t) => t.members.length),
+    horizon: map.horizon.filter((c) => ids.has(c.id)),
+    pin: map.pin && ids.has(map.pin) ? map.pin : null,
   };
 }

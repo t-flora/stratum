@@ -24,8 +24,9 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      # Static build uses relative asset paths, so it works under /stratum/.
-      - run: npm run stratum -- build --static
+      # Static build uses relative asset paths, so it works under /stratum/. --public makes it the map a newcomer
+      # sees: no work/ progress, no pin, nothing hidden in map.json, no Atlas.
+      - run: npm run stratum -- build --static --public --link "${{ github.server_url }}/${{ github.repository }}/blob/main/docs/guide.md"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/static

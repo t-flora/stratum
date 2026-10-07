@@ -1,5 +1,5 @@
 // `stratum dev` (§11): Vite plus a localhost-only API, a file watcher that rebuilds, and SSE live updates.
-import { watch, type FSWatcher } from 'node:fs';
+import { mkdirSync, watch, type FSWatcher } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { join, sep } from 'node:path';
 import { build, loadWorld, setPin, shelveShrine, startShrine, type BuildCache, type MapData } from '@stratum/core';
@@ -69,6 +69,9 @@ export function stratumApi(root: string, log: (msg: string) => void): Plugin {
     configureServer(server) {
       rebuild();
       for (const dir of ['world', 'work', 'state']) {
+        // A fresh world has no work/ yet: create it (an empty folder isn't tracked) so the first set out and clear
+        // show up live instead of waiting for a restart.
+        if (dir !== 'world') mkdirSync(join(root, dir), { recursive: true });
         try {
           const w = watch(join(root, dir), { recursive: true }, (_event, file) => {
             const rel = `${dir}${sep}${file ?? ''}`;
@@ -76,7 +79,7 @@ export function stratumApi(root: string, log: (msg: string) => void): Plugin {
           });
           watchers.push(w);
         } catch {
-          // work/ or state/ may not exist yet; `stratum start` creates work/ and the next world change rebuilds.
+          // Watching can still fail (e.g. no recursive watch on this filesystem); the next world change rebuilds.
         }
       }
       server.httpServer?.on('close', () => {

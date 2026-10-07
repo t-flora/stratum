@@ -122,6 +122,8 @@ export interface BuildOptions {
   /** Build time (ms): stamps map.json and picks the ISO week for the Horizon. */
   now?: number;
   cache?: BuildCache;
+  /** Ignore work/ and the pin: the map a newcomer sees (the public site, `build --static --public`). */
+  fresh?: boolean;
 }
 
 /** Load, validate, place, and assemble map.json. Writes the lockfile and map unless `write` is false. */
@@ -143,13 +145,13 @@ export function build(root: string, opts: BuildOptions = {}): BuildResult {
   const before = readLock(root);
   const placement = placeShrines(world, geo, before, opts.replace);
   const lockChanged = serializeLock(before) !== serializeLock(placement.lock);
-  const work = readWorkState(root, world, config, readGitWork(opts.git ?? gitReader(root)));
+  const work = opts.fresh ? new Map<string, ShrineWork>() : readWorkState(root, world, config, readGitWork(opts.git ?? gitReader(root)));
   const status = (id: string) => work.get(id)?.status ?? 'untouched';
   const sight = computeVisibility(world, placement.positions, status, geo, config.visibility);
   const explored = computeExplored(world, placement.positions, status, geo, config.visibility);
   const now = opts.now ?? Date.now();
   const week = isoWeek(new Date(now));
-  const pin = readPin(root);
+  const pin = opts.fresh ? null : readPin(root);
   const horizon = computeHorizon({
     world, positions: placement.positions, pin, available: config.hardware.available, config, week,
     state: (id) => {

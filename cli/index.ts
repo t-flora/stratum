@@ -1,12 +1,12 @@
 #!/usr/bin/env -S npx tsx
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { Command } from 'commander';
 import {
   CONFIG_PATH, Geometry, LAYERS, PROPOSED_PATH, appendProposal, looseThreads, parseWriteup, proposalStub, LOCAL_CONFIG_PATH, LOCK_PATH, MAP_PATH, PINS_PATH, TEMPLATES, build, clearShrine, gitReader,
   hasLocalConfig, lintClears, lintGeometry, lintPin, lintWorkFolders, loadConfig, loadWorld, readGitWork, readWorkState, setPin,
-  shelveShrine, startShrine, summarize, validateConfig,
+  publicView, shelveShrine, startShrine, summarize, validateConfig,
   type BuildResult, type ClearCheck, type Diagnostic, type MapData, type TemplateName, type World,
 } from '@stratum/core';
 import { stratumApi } from './dev.ts';
@@ -77,7 +77,14 @@ program
   .description(`Place shrines (respecting ${LOCK_PATH}) and write ${MAP_PATH}`)
   .option('--replace <ids...>', 'deliberately re-place these shrines')
   .option('--static', 'also bundle the app with map.json into build/static/ (no dev API: buttons copy CLI commands)')
-  .action(async (opts: { replace?: string[]; static?: boolean }) => {
+  .option('--public', 'with --static: the public site\'s map, a fresh start with no spoilers (your work/ and pin are left out)')
+  .option('--link <url>', 'with --public: where visitors can get Stratum for themselves (e.g. the GitHub repo)')
+  .action(async (opts: { replace?: string[]; static?: boolean; public?: boolean; link?: string }) => {
+    if (opts.public && !opts.static) {
+      console.log('--public only applies to --static');
+      process.exitCode = 1;
+      return;
+    }
     const t0 = performance.now();
     const res = build(root(), { replace: opts.replace });
     const { errors } = printDiagnostics(res.diagnostics);
@@ -99,14 +106,21 @@ program
     const vis = res.map.shrines.map((s) => s.visibility);
     console.log(`${vis.filter((v) => v === 'revealed').length} revealed, ${vis.filter((v) => v === 'silhouette').length} silhouettes, ${vis.filter((v) => v === 'hidden').length} hidden`);
     console.log(`wrote ${MAP_PATH} in ${Math.round(performance.now() - t0)} ms`);
-    if (opts.static) await buildStatic(root());
+    if (!opts.static) return;
+    if (!opts.public) return void (await buildStatic(root(), res.map));
+    // The public site: the map a newcomer sees, whatever this repo's own progress is.
+    const fresh = build(root(), { fresh: true, write: false });
+    if (!fresh.map) return void (process.exitCode = 1);
+    const view = publicView(fresh.map, opts.link);
+    await buildStatic(root(), view);
+    console.log(`public view: ${view.shrines.length} of ${view.public!.total} shrines in sight; no work, no pin, no Atlas`);
   });
 
 /**
  * `stratum build --static` (§11): the app plus a copy of map.json, servable from any folder (relative base).
  * Without the dev API the app notices and makes Set out / Pin / Shelve copy the CLI command instead.
  */
-async function buildStatic(dir: string) {
+async function buildStatic(dir: string, map: MapData) {
   const { build: viteBuild } = await import('vite');
   const appDir = join(dirname(new URL(import.meta.url).pathname), '..', 'app');
   const outDir = resolve(dir, 'build', 'static');
@@ -116,7 +130,7 @@ async function buildStatic(dir: string) {
     logLevel: 'warn',
     build: { outDir, emptyOutDir: true },
   });
-  copyFileSync(join(dir, MAP_PATH), join(outDir, 'map.json'));
+  writeFileSync(join(outDir, 'map.json'), JSON.stringify(map));
   console.log(`wrote build/static/ (serve it, e.g. \`npx vite preview --outDir build/static\`; file:// can't fetch map.json)`);
 }
 
@@ -124,27 +138,62 @@ program
   .command('dev')
   .description('Serve the map on localhost with the dev API; rebuilds and pushes updates when world/, work/ or state/ change')
   .option('--port <n>', 'port', '5173')
-  .action(async (opts: { port: string }) => {
-    const dir = root();
-    const res = build(dir);
-    const { errors } = printDiagnostics(res.diagnostics);
-    if (errors.length) {
-      console.log(`build failed: ${errors.length} error(s)`);
+  .action(async (opts: { port: string }) => serve(root(), Number(opts.port)));
+
+program
+  .command('tutorial')
+  .description('Play the tutorial world (examples/tutorial) in a throwaway copy under build/tutorial/; your world is untouched')
+  .option('--reset', 'start the tutorial over')
+  .option('--port <n>', 'port', '5174')
+  .action(async (opts: { reset?: boolean; port: string }) => {
+    const repo = root();
+    const src = join(repo, 'examples', 'tutorial');
+    const dest = join(repo, 'build', 'tutorial');
+    if (!existsSync(join(src, 'world', 'world-seed.yaml'))) {
+      console.log(`no tutorial world at ${src}`);
       process.exitCode = 1;
       return;
     }
-    process.env.STRATUM_ROOT = dir;
-    const { createServer } = await import('vite');
-    const appDir = join(dirname(new URL(import.meta.url).pathname), '..', 'app');
-    const server = await createServer({
-      configFile: join(appDir, 'vite.config.ts'),
-      // Localhost only (§11): the API can scaffold folders and write state/pins.yaml.
-      server: { host: '127.0.0.1', port: Number(opts.port) },
-      plugins: [stratumApi(dir, (msg) => console.log(`[stratum] ${msg}`))],
-    });
-    await server.listen();
-    server.printUrls();
+    if (opts.reset) rmSync(dest, { recursive: true, force: true });
+    if (!existsSync(dest)) {
+      // Copy the world (not its own build/ output) and the templates `start` scaffolds from.
+      cpSync(src, dest, { recursive: true, filter: (p) => !relative(src, p).split(sep).includes('build') });
+      cpSync(join(repo, 'templates'), join(dest, 'templates'), { recursive: true });
+      // Its own repository, so commits, hours and "not committed yet" behave as they do in a real world.
+      const vcs = (...args: string[]) => spawnSync('git', ['-C', dest, ...args], { encoding: 'utf8' });
+      vcs('init', '-q');
+      vcs('add', '-A');
+      if (vcs('commit', '-q', '-m', 'The Practice Isle').status !== 0) {
+        vcs('-c', 'user.name=Stratum', '-c', 'user.email=tutorial@example.invalid', 'commit', '-q', '-m', 'The Practice Isle');
+      }
+      console.log('Set up the tutorial in build/tutorial/, with its own history. Your own world is untouched.');
+      console.log('CLI commands take --root: npm run stratum -- --root build/tutorial clear tut-first-steps');
+      console.log('Start over any time: npm run tutorial -- --reset\n');
+    } else console.log('Resuming the tutorial in build/tutorial/ (npm run tutorial -- --reset starts over)\n');
+    await serve(dest, Number(opts.port));
   });
+
+/** Build, then serve the map with the dev API (localhost only) and live rebuilds. */
+async function serve(dir: string, port: number) {
+  const res = build(dir);
+  const { errors } = printDiagnostics(res.diagnostics);
+  if (errors.length) {
+    console.log(`build failed: ${errors.length} error(s)`);
+    process.exitCode = 1;
+    return;
+  }
+  process.env.STRATUM_ROOT = dir;
+  const { createServer } = await import('vite');
+  const appDir = join(dirname(new URL(import.meta.url).pathname), '..', 'app');
+  const server = await createServer({
+    configFile: join(appDir, 'vite.config.ts'),
+    // Localhost only (§11): the API can scaffold folders and write state/pins.yaml.
+    server: { host: '127.0.0.1', port },
+    plugins: [stratumApi(dir, (msg) => console.log(`[stratum] ${msg}`))],
+  });
+  await server.listen();
+  server.printUrls();
+}
 
 /** Load the world or print its diagnostics and fail. */
 function loadOrFail(dir: string): World | null {

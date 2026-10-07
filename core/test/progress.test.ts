@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { estimateHours, trail, regionStats, searchText, shrineHours, type Region, type Shrine, type World } from '../src/index.ts';
+import { estimateHours, mapFocus, trail, regionStats, searchText, shrineHours, type Region, type Shrine, type Vec2, type World } from '../src/index.ts';
 
 const H = 3600;
 
@@ -52,6 +52,27 @@ describe('the trail (§9.4)', () => {
     expect(path.surface.map((x) => x.id)).toEqual(['b', 'a', 'c']);
     expect(path.sky).toEqual([{ id: 's', date: '2026-10-03' }]);
     expect(path.depths).toEqual([]);
+  });
+});
+
+describe('where the map opens (§9.1)', () => {
+  const w = { ...world([{ id: 'open', region: 'isle' }, { id: 'a', region: 'west' }, { id: 'b', region: 'west' }]) };
+  w.start = { ...w.start, sky: ['open'] };
+  const pos = new Map<string, Vec2>([['open', [800, 300]], ['a', [400, 500]], ['b', [500, 520]]]);
+  type W = { status: string; clearedAt?: string; camp?: { current: boolean } };
+  const focus = (state: Record<string, W>, landed: boolean) => mapFocus(w, pos, (id) => state[id], landed);
+
+  it('a fresh sky start opens on the opening shrine; a plain world on the start vantage', () => {
+    expect(focus({}, false)).toEqual({ id: 'open', layer: 'sky', xy: [800, 300], reason: 'opening' });
+    expect(focus({}, true)).toEqual({ layer: 'surface', xy: [300, 500], reason: 'start' });
+  });
+
+  it('clearing the opening shrine puts you at the landing; later clears and camps take over', () => {
+    expect(focus({ open: { status: 'cleared', clearedAt: '2026-10-01' } }, true)).toMatchObject({ reason: 'landed', layer: 'surface', xy: [300, 500] });
+    const later = { open: { status: 'cleared', clearedAt: '2026-10-01' }, a: { status: 'cleared', clearedAt: '2026-10-03' } };
+    expect(focus(later, true)).toMatchObject({ id: 'a', reason: 'last-clear' });
+    const camped = { ...later, b: { status: 'in-progress', camp: { current: true } } };
+    expect(focus(camped, true)).toMatchObject({ id: 'b', reason: 'camp', xy: [500, 520] });
   });
 });
 

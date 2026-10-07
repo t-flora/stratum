@@ -1,6 +1,6 @@
 // Progress signals (§9.4, §10.2, §10.3, §6.5): hours, the trail, region readouts and search text. Pure.
-import type { Layer, Visibility } from './mapdata.ts';
-import type { Shrine, World } from './types.ts';
+import type { Layer, MapFocus, Visibility } from './mapdata.ts';
+import type { Shrine, Vec2, World } from './types.ts';
 
 /** Commits closer together than this belong to one session (§10.3). */
 export const SESSION_GAP_S = 2 * 3600;
@@ -52,12 +52,37 @@ export interface PathStop {
  */
 export function trail(world: World, clearedAt: (id: string) => string | undefined): Record<Layer, PathStop[]> {
   const out: Record<Layer, PathStop[]> = { sky: [], surface: [], depths: [] };
-  const stops = world.shrines
+  for (const s of trailOrder(world, clearedAt)) out[s.layer].push({ id: s.id, date: clearedAt(s.id)! });
+  return out;
+}
+
+/**
+ * Where the map opens (§9.1): where you are, derived from the repo so it needs no browser storage. Your camp if you
+ * have one; else your latest clear (a cleared opening shrine means you've landed, so the landing); else, on a fresh
+ * sky start, the first opening shrine; else the start vantage.
+ */
+export function mapFocus(
+  world: World, positions: Map<string, Vec2>,
+  work: (id: string) => { status: string; clearedAt?: string; camp?: { current: boolean } } | undefined, landed: boolean,
+): MapFocus {
+  const at = (s: Shrine, reason: MapFocus['reason']): MapFocus => ({ id: s.id, layer: s.layer, xy: positions.get(s.id)!, reason });
+  const landing: MapFocus = { layer: 'surface', xy: world.start.vantage, reason: 'start' };
+  const camp = world.shrines.find((s) => work(s.id)?.status === 'in-progress' && work(s.id)?.camp?.current);
+  if (camp) return at(camp, 'camp');
+  const last = trailOrder(world, (id) => (work(id)?.status === 'cleared' ? work(id)?.clearedAt : undefined)).at(-1);
+  if (last) return world.start.sky?.includes(last.id) ? { ...landing, reason: 'landed' } : at(last, 'last-clear');
+  const opening = world.start.sky?.[0];
+  if (opening && !landed) return at(world.shrineById.get(opening)!, 'opening');
+  return landing;
+}
+
+/** Cleared shrines in trail order (`clearedAt`, then file order). */
+function trailOrder(world: World, clearedAt: (id: string) => string | undefined): Shrine[] {
+  return world.shrines
     .map((s, i) => ({ s, i, date: clearedAt(s.id) }))
     .filter((x): x is { s: Shrine; i: number; date: string } => x.date !== undefined)
-    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.i - b.i));
-  for (const { s, date } of stops) out[s.layer].push({ id: s.id, date });
-  return out;
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.i - b.i))
+    .map((x) => x.s);
 }
 
 export interface RegionStats {

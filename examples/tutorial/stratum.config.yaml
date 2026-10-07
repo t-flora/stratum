@@ -1,0 +1,6 @@
+# The tutorial's tunables. Write-ups are short here: the point is to learn the loop.
+world:
+  seed: 7
+
+writeup:
+  minWords: 60

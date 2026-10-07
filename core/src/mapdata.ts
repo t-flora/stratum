@@ -157,6 +157,14 @@ export interface HorizonCard {
   bearing?: number;
 }
 
+/** Where the map opens: your camp, your latest clear, the opening shrine on a fresh sky start, or the landing. */
+export interface MapFocus {
+  id?: string;
+  layer: Layer;
+  xy: Vec2;
+  reason: 'camp' | 'last-clear' | 'opening' | 'landed' | 'start';
+}
+
 export interface MapData {
   version: 1;
   /** When map.json was built (ms since epoch). */
@@ -167,6 +175,12 @@ export interface MapData {
    * a sky start is still looking down from its island (§6.6), and the app opens on the sky then.
    */
   start: { vantage: Vec2; plateau: string[]; sky: string[]; landed: boolean };
+  focus: MapFocus;
+  /**
+   * Set on the public site's map (`build --static --public`): a fresh map with nothing you haven't seen in it.
+   * Hidden shrines are left out, so `total` is the world's real size; the app has no Atlas then.
+   */
+  public?: { total: number; link?: string };
   regions: MapRegion[];
   shrines: MapShrine[];
   themes: MapTheme[];

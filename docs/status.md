@@ -1,6 +1,6 @@
 # Status
 
-*Last updated: 2026-10-07 (self-contained shrines, locks, kits). Keep this current at the end of every work session and milestone.*
+*Last updated: 2026-10-07 (where the map opens, the public site, the tutorial). Keep this current at the end of every work session and milestone.*
 
 ## Milestones (DESIGN.md §13)
 
@@ -25,6 +25,7 @@
 | M10: ready to share (renames, neutral docs, licence) | ✅ done, approved by Tiago (names and MIT kept) | `4d609d0` |
 | (extra) The sky start: begin on an island, descend to the plateau (DESIGN.md §6.6) | ✅ done; Tiago chose *Zero-cost, verified* as the opening and kept "earned by the first clear" | `6de3836` |
 | (extra) Self-contained shrines: locks, starter kits, rewordings, lockfile regenerated (docs/plans/self-contained.md) | ✅ done; Tiago skimmed the prose and kept the 12 locks; the Agent Workshops task was hardened after review | `561c4d3` and later |
+| (extra) Where the map opens, a spoiler-free public site, the tutorial world and the newcomer track (docs/guide.md) | ✅ built, **awaiting review** | on `main` |
 | M11: treasure, secrets, total completion (docs/plans/treasure.md) | planned; 4 questions | |
 | M12: world packs (engine/world split, drift check, rename) | planned | |
 | M13: learning materials (notes, papers, cards, Anki export) | planned | |
@@ -39,14 +40,16 @@
 
 ## Open items waiting on Tiago
 
-1. **Questions in the new plans.**
+1. **Play the tutorial** (`npm run tutorial`) as the first playthrough, and say what's rough. Then **set up the private journey repo** (docs/guide.md, "Play this world, privately") before the first real `stratum start`, so `work/` never lands in the public repo.
+2. **Pushing `main` deploys the public site,** now the fresh, spoiler-free view (`build --static --public`).
+3. **Questions in the new plans.**
    - `docs/plans/treasure.md`: GPU-gated content vs. the 75% rule, chest density, echo scope, when readings count.
-   - `docs/plans/template.md`: whether his world ships publicly, sealed shrine prose for generated worlds, distribution. (Names, licence and fresh M16 docs were settled at the M10 review.)
+   - `docs/plans/template.md`: sealed shrine prose for generated worlds, distribution. (Names, licence and fresh M16 docs were settled at the M10 review.)
    
    Each has a recommended default, so a session can proceed on those if he says so.
-2. **Optional:** is seed `20261005` a keeper, and are the drafted region `biome:` values right? He was happy to commit M6 as is. Changing either needs a lockfile regeneration, so do it before the first `stratum start`.
-3. **M8's region weights** (e.g. shrinking Vector Coast), if wanted, must happen **before setting out** on the first shrine.
-4. **Then: set out on the first real shrine.** After the first `stratum start`, the lockfile is frozen for good (CLAUDE.md).
+4. **Optional:** is seed `20261005` a keeper, and are the drafted region `biome:` values right? He was happy to commit M6 as is. Changing either needs a lockfile regeneration, so do it before the first `stratum start`.
+5. **M8's region weights** (e.g. shrinking Vector Coast), if wanted, must happen **before setting out** on the first shrine.
+6. **Then: set out on the first real shrine.** After the first `stratum start`, the lockfile is frozen for good (CLAUDE.md).
 
 ## Direction (2026-10-05)
 
@@ -154,7 +157,7 @@ Checked on the Mac: `npm test` (126 tests; new: `progress.test.ts`, `propose.tes
 **Not built:** the trail's week-density toggle (optional in §9.4), and Playwright screenshots (optional in §14).
 
 **Noticed along the way (not changed):**
-- `stratum dev` only watches `work/` if it existed at startup.
+- `stratum dev` only watched `work/` if it existed at startup. *(Fixed 2026-10-07: it now creates `work/` and `state/` first.)*
 - `scripts/screenshot.sh` used to hang: headless Chrome on the Mac writes the PNG but never exits, and it enforces a minimum window width, so it couldn't do 390 px. **Fixed after M5:** it now drives Chrome over the DevTools protocol (`scripts/shot.mjs`). Same arguments as before, plus `MOBILE=1` (phone emulation), `QUERY='&select=…'` and `SCHEME=light|dark`.
 - Running `npm i` in a subfolder installs into the root workspace. I hit this installing Lighthouse, restored `package.json` and `package-lock.json`, and pruned `node_modules`.
 

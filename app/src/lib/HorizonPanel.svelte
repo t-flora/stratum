@@ -113,7 +113,12 @@
       <button onclick={() => onpin(null)}>Remove</button>
     </div>
   {/if}
-  {#if !live}
+  {#if map.public}
+    <p class="static-note">
+      A fresh copy of this study map, as a newcomer sees it. Nothing here is saved.
+      {#if map.public.link}<a href={map.public.link}>Make your own</a>.{/if}
+    </p>
+  {:else if !live}
     <p class="static-note">Static map: buttons copy the CLI command.</p>
   {/if}
 </aside>
@@ -197,6 +202,10 @@
     margin: 8px 0 0;
     color: var(--ui-muted);
     font-size: 12px;
+  }
+  .static-note a {
+    color: var(--ui-fg);
+    text-underline-offset: 2px;
   }
   .descent {
     margin: 0 0 10px;
