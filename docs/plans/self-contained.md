@@ -1,6 +1,6 @@
 # Plan: self-contained shrines (no hunting for outside material)
 
-*Asked for by Tiago on 2026-10-06, after noticing that* Regular types *says "redesign a reference-heavy API" without saying which. Status: audit done, fixes proposed and awaiting his approval. The world's prose is his, so nothing in world-seed.yaml has been changed.*
+*Asked for by Tiago on 2026-10-06, after noticing that* Regular types *says "redesign a reference-heavy API" without saying which. Status: **applied 2026-10-07** on his answers below (locks, kits, rewordings, tags, `after` edges, lockfile regenerated); the reworded prose awaits his read. See docs/decisions.md ("Self-contained shrines…").*
 
 ## The problem
 
@@ -152,7 +152,11 @@ These already say "your X", but the map doesn't know where X comes from:
 3. **Starters** need the small engine change (`world/kits/<id>/`, copied by `start`) plus the files. Three are needed now (Regular types, Data-oriented design, the Agent Workshops seed). It fits naturally with M12, where templates move into the pack.
 4. **The design-lint rule** joins M14's `lint --design`, and the generator (M15) follows it.
 
-## Questions for Tiago
+## Questions for Tiago (answered 2026-10-07)
+
+His answers: (1) dependencies are fine if not too common, as a metroidvania element: go somewhere, notice you lack the ability, come back later. This became locks (DESIGN.md §5.4), 12 of them. (2) Yes. (3) Yes. (4) Yes, a CUDA GPU is in reach.
+
+The original questions:
 
 1. **Chains vs. starters.** Chaining adds prerequisites: you can't do *Ports and adapters for trading* until the tick-to-trade temple is done. Prefer chains with a starter fallback (recommended), or starters only, which keeps every shrine independent?
 2. **May a session draft the rewordings** for the 34 vague prompts as one diff for you to review?

@@ -17,9 +17,13 @@
 #   theme     (surface/sky shrines) named sub-area of the region; shrines sharing a theme cluster together
 #   after     optional ids this shrine follows up on; placed next to its predecessor when in the same region
 #   links     optional ids across layers (chasms / launch points), or other related ids
-#   needs     (temples only) shrine ids that must be cleared before the temple opens
+#   needs     shrine ids that must be cleared first: a temple is sealed until then, a shrine is locked
+#             (you can see and read it, not start it). Use only where it works on that shrine's artefact.
 #   prompt    what to build
 #   done      the clear condition, beyond the standard write-up (DESIGN.md §5)
+#
+# Starter kits: world/kits/<id>/ is copied into work/<id>/ on `stratum start`, replacing the code template,
+# when a shrine needs material to work on and no earlier shrine provides it (docs/plans/self-contained.md).
 # ----------------------------------------------------------------------------
 
 canvas: { width: 1600, height: 1000 }
@@ -130,8 +134,8 @@ shrines:
     Write a generic `unique_handle<Traits>` that wraps file descriptors, mmap regions and
     (optionally) CUDA streams. Apply the rule of zero vs the rule of five.
   done: >-
-    The wrapper holds a file descriptor and an mmap region with no leaks under ASan/valgrind, and
-    `sizeof` matches the raw handle.
+    The wrapper holds a file descriptor and an mmap region with no leaks under ASan and macOS `leaks
+    --atExit` (valgrind on Linux), and `sizeof` matches the raw handle.
 
 - id: smart-pointer-costs
   title: What shared_ptr really costs
@@ -174,7 +178,7 @@ shrines:
   after: [ranges-pipelines]
   prompt: >-
     Implement `generator<T>` by hand (promise_type, coroutine_handle, iterator), then compare it
-    with std::generator (C++23) on a lazy tokenizer.
+    with std::generator (C++23; Homebrew GCC 14+, as Apple libc++ lacks it) on a lazy tokenizer.
   done: >-
     Both versions produce identical output. The write-up traces a coroutine's lifecycle from
     initial_suspend to final_suspend.
@@ -216,10 +220,10 @@ shrines:
   region: cpp-core
   theme: "Errors & contracts"
   size: S
-  after: [std-expected-errors]
+  after: [std-expected-errors, concepts-constraints]
   prompt: >-
-    Using a compiler with P2900 support (or a documented emulation), add pre/post
-    conditions to a small numeric library and compare the evaluation semantics
+    Using GCC trunk on Compiler Explorer (P2900) or a documented emulation, add pre/post conditions
+    to your numeric library (Concepts as contracts shrine) and compare the evaluation semantics
     (ignore/observe/enforce).
   done: >-
     A demo of each evaluation semantic, plus the codegen difference between ignore and enforce.
@@ -275,8 +279,9 @@ shrines:
   p: 3
   after: [type-traits-from-scratch]
   prompt: >-
-    Constrain a small numeric library with concepts, including subsumption-based overload
-    ordering. Rewrite one overload set in SFINAE for comparison.
+    Write abs, gcd, lerp, clamp, mean and dot as unconstrained templates, then constrain them with
+    concepts, including subsumption-based overload ordering. Rewrite one overload set in SFINAE for
+    comparison.
   done: >-
     Side-by-side error messages (concepts vs SFINAE) and a working subsumption example.
 
@@ -319,8 +324,8 @@ shrines:
   theme: "Reflection & build cost"
   p: 4
   prompt: >-
-    Using a P2996-capable compiler (e.g. the Bloomberg clang-p2996 fork or current GCC trunk),
-    auto-generate enum_to_string and a struct-to-JSON serializer through reflection.
+    Using a P2996-capable compiler on Compiler Explorer (the experimental clang-p2996, or GCC
+    trunk), auto-generate enum_to_string and a struct-to-JSON serializer through reflection.
   done: >-
     Both utilities work on 3+ types with no macros, and the write-up compares this with the pre-reflection hacks.
 
@@ -340,9 +345,11 @@ shrines:
   region: metaprogramming
   theme: "Reflection & build cost"
   size: S
+  after: [expression-templates]
   prompt: >-
-    Measure the compile time and binary size of a template-heavy header under clang
-    -ftime-trace. Reduce both with extern templates or type erasure.
+    Measure the compile time and binary size of 200 generated expressions over your expression
+    templates (Expression templates shrine) under clang -ftime-trace. Reduce both with extern
+    templates or type erasure.
   done: >-
     Before/after compile time and binary size, with the flame chart from -ftime-trace.
 
@@ -365,8 +372,9 @@ shrines:
   p: 3
   size: S
   prompt: >-
-    Build the repo's shared C++ template: target-based CMake with presets for release,
-    asan/ubsan, tsan and bench, plus Google Benchmark and a test framework via FetchContent.
+    Build the repo's shared C++ template: target-based CMake with presets for release, asan/ubsan,
+    tsan and bench, plus Google Benchmark and a test framework via FetchContent, and a Homebrew
+    preset (LLVM, GCC, TBB, libomp) for Apple's gaps.
   done: >-
     `stratum start <id>` can copy this template, and all presets build a hello-benchmark.
 
@@ -387,9 +395,10 @@ shrines:
   region: tooling-measurement
   theme: "Profilers"
   requires: [linux]
+  after: [order-book]
   prompt: >-
-    Profile a real program (e.g. your matching engine or a JSON parser) with perf stat/record
-    and produce a flame graph. Find and fix one hotspot.
+    Profile your order book (The order book shrine) replaying its synthetic stream with perf
+    stat/record and produce a flame graph. Find and fix one hotspot.
   done: >-
     Flame graphs before and after, with the counter deltas (cycles, IPC, cache misses) explained.
 
@@ -399,8 +408,9 @@ shrines:
   theme: "Bug hunting"
   size: S
   prompt: >-
-    Plant five bugs (use-after-free, overflow, signed overflow, data race, uninitialised read)
-    and catch each one with ASan/UBSan/TSan/MSan. Measure the slowdown of each sanitizer.
+    Plant five bugs (use-after-free, overflow, signed overflow, data race, uninitialised read) and
+    catch each one with ASan/UBSan/TSan, plus MSan on the Linux server (macOS has none). Measure the
+    slowdown of each sanitizer.
   done: >-
     All five caught, plus an overhead table.
 
@@ -408,9 +418,10 @@ shrines:
   title: Fuzz a parser
   region: tooling-measurement
   theme: "Bug hunting"
-  after: [sanitizers]
+  after: [sanitizers, std-expected-errors]
   prompt: >-
-    Fuzz a small binary or text parser with libFuzzer, using a corpus and a dictionary, until it finds a real bug.
+    Fuzz your parser (Errors as values shrine) with libFuzzer (Homebrew LLVM on the Mac), using a
+    corpus and a dictionary, until it finds a real bug, or plant one after 30 minutes.
   done: >-
     A minimised crashing input, the fix, and a coverage report.
 
@@ -431,9 +442,10 @@ shrines:
   region: tooling-measurement
   theme: "Profilers"
   size: S
+  after: [order-book]
   prompt: >-
-    Profile allocations in a real program with heaptrack (or a custom operator new hook), then
-    remove the top allocation site.
+    Profile allocations in your order book (The order book shrine) with a custom operator new hook
+    (or heaptrack on the Linux server), then remove the top allocation site.
   done: >-
     Allocation counts before and after, and the latency impact.
 
@@ -444,8 +456,8 @@ shrines:
   requires: [gpu]
   size: S
   prompt: >-
-    Trace a PyTorch training step with Nsight Systems. Identify kernel gaps, CPU launch
-    overhead, and memcpy stalls.
+    Trace a training step of the pytorch/examples MNIST script with Nsight Systems. Identify kernel
+    gaps, CPU launch overhead, and memcpy stalls.
   done: >-
     An annotated timeline screenshot and one optimisation that visibly closes a gap.
 
@@ -540,7 +552,7 @@ shrines:
     Build per-thread counters packed together, then padded with
     alignas(std::hardware_destructive_interference_size).
   done: >-
-    A slowdown factor measured, and the perf c2c (or equivalent) evidence.
+    A slowdown factor measured, and perf c2c evidence from the Linux server.
 
 - id: work-stealing-pool
   title: A work-stealing pool
@@ -628,6 +640,7 @@ shrines:
   theme: "Hash tables"
   requires: [x86]
   after: [open-addressing-hashmap]
+  needs: [open-addressing-hashmap]
   prompt: >-
     Add SwissTable-style control bytes and SSE2 group matching to your hash map.
   done: >-
@@ -695,7 +708,8 @@ shrines:
   prompt: >-
     Implement a small_vector<T, N> with inline storage that spills to the heap.
   done: >-
-    Tests (including exception safety), and allocation counts in a realistic workload.
+    Tests (including exception safety), and allocation counts when tokenising a generated 10 MB log
+    into one `small_vector<string_view, 8>` per line.
 
 - id: intrusive-containers
   title: Intrusive lists
@@ -714,6 +728,7 @@ shrines:
   theme: "Hash tables"
   size: S
   after: [open-addressing-hashmap, intrusive-containers]
+  needs: [open-addressing-hashmap]
   prompt: >-
     Build an LRU cache on your flat hash map with intrusive recency links, and compare it with the
     textbook unordered_map + std::list version.
@@ -762,9 +777,12 @@ shrines:
   region: parallel-simd
   theme: "Vectorization"
   size: S
+  requires: [x86]
   after: [simd-intrinsics-dot]
+  needs: [simd-intrinsics-dot]
   prompt: >-
-    Port your dot product and one more kernel to std::simd (C++26 / std::experimental::simd).
+    Port your dot product (The dot product, by hand shrine) and one more kernel to std::simd (C++26,
+    or GCC's std::experimental::simd).
   done: >-
     Performance parity (or not) with intrinsics, and asm comparison.
 
@@ -797,8 +815,8 @@ shrines:
   theme: "Multicore"
   size: S
   prompt: >-
-    Parallelise an irregular loop with OpenMP. Compare the static, dynamic and guided schedules, and
-    use reductions.
+    Parallelise an irregular loop (Mandelbrot rows, or a triangular all-pairs loop) with OpenMP.
+    Compare the static, dynamic and guided schedules, and use reductions.
   done: >-
     Scaling per schedule, with the load imbalance visualised.
 
@@ -822,8 +840,8 @@ shrines:
   theme: "Multicore"
   size: S
   prompt: >-
-    Use std::execution::par / par_unseq algorithms (TBB backend) for sort, reduce and
-    transform_reduce, and compare them with hand-rolled threads.
+    Use std::execution::par / par_unseq algorithms (TBB backend: Homebrew GCC + TBB on the Mac) for
+    sort, reduce and transform_reduce, and compare them with hand-rolled threads.
   done: >-
     A scaling plot and a note on when par_unseq is legal.
 
@@ -1020,8 +1038,8 @@ shrines:
   p: 4
   after: [activation-hooks]
   prompt: >-
-    Stream activations to disk as memory-mapped bf16 shards, and write a shuffling loader
-    for dictionary training.
+    Stream GPT-2 small activations over `NeelNanda/pile-10k` (the marsh's corpus) to disk as
+    memory-mapped bf16 shards, and write a shuffling loader for dictionary training.
   done: >-
     Write and read GB/s against the disk's peak, with the loader keeping a GPU (or CPU trainer) fed.
 
@@ -1042,7 +1060,7 @@ shrines:
   theme: "Probing & patching"
   after: [activation-hooks]
   prompt: >-
-    Train linear probes for a property (e.g. part of speech or token position) at every layer, with
+    Train linear probes on GPT-2 small for part of speech (UD English-EWT tags) at every layer, with
     Hewitt & Liang style control tasks to measure selectivity.
   done: >-
     Accuracy and selectivity per layer, and what the controls change about the interpretation.
@@ -1064,6 +1082,7 @@ shrines:
   region: interp-engineering
   theme: "Probing & patching"
   after: [activation-patching]
+  needs: [activation-patching]
   prompt: >-
     Implement attribution patching (the gradient-based linear approximation) and compare it with the real patching
     results from your harness.
@@ -1089,6 +1108,7 @@ shrines:
   p: 4
   size: L
   after: [activation-store, toy-superposition]
+  needs: [activation-store]
   prompt: >-
     Train a ReLU + L1 sparse autoencoder on GPT-2 small residual activations from your activation
     store.
@@ -1101,6 +1121,7 @@ shrines:
   theme: "Dictionary learning"
   p: 3
   after: [sae-training]
+  needs: [sae-training]
   prompt: >-
     Train a TopK SAE (Gao et al., 2024) with the AuxK loss and compare it with your ReLU SAE at matched L0.
   done: >-
@@ -1124,9 +1145,11 @@ shrines:
   region: interp-engineering
   theme: "Using features"
   after: [sae-training]
+  needs: [sae-training]
   prompt: >-
-    For each SAE latent, stream a large token corpus and keep the top-k activating contexts
-    with a bounded heap per latent. Render a small HTML dashboard.
+    For each latent of your SAE (Training an SAE shrine), stream pile-10k (the corpus from The
+    activation store) and keep the top-k activating contexts with a bounded heap per latent. Render
+    a small HTML dashboard.
   done: >-
     Dashboards for 20 latents, with the streaming memory bound verified.
 
@@ -1137,8 +1160,8 @@ shrines:
   size: S
   after: [sae-training]
   prompt: >-
-    Build contrastive steering vectors (activation addition) and SAE-feature steering for one
-    behaviour, and compare the two.
+    Build a contrastive steering vector (ActAdd's Love − Hate, GPT-2 small, layer 6) and SAE-feature
+    steering for the same behaviour with your SAE (Training an SAE shrine), and compare the two.
   done: >-
     Generation samples at several coefficients, plus a simple quantitative effect measure.
 
@@ -1160,8 +1183,8 @@ shrines:
   size: S
   links: [theory-circuits]
   prompt: >-
-    Detect induction heads in a small model using repeated random-token sequences and an
-    induction score per head.
+    Detect induction heads in GPT-2 small using repeated random-token sequences and an induction
+    score per head.
   done: >-
     A heatmap of induction scores, and an ablation showing that the top heads matter.
 
@@ -1184,10 +1207,10 @@ shrines:
   p: 4
   requires: [x86]
   prompt: >-
-    Measure with rdtsc/rdtscp and steady_clock, record into an HdrHistogram-style structure, and
-    demonstrate coordinated omission.
+    Build a toy request loop with injected stalls. Measure it with rdtsc/rdtscp and steady_clock,
+    record into an HdrHistogram-style structure, and demonstrate coordinated omission.
   done: >-
-    The same system measured naively and correctly, with percentiles that differ, and why.
+    The toy loop measured naively and correctly, with percentiles that differ, and why.
 
 - id: hot-path-logging
   title: Logging off the hot path
@@ -1206,10 +1229,10 @@ shrines:
   theme: "Measuring latency"
   size: S
   requires: [linux]
-  after: [latency-measurement]
+  after: [latency-measurement, spsc-ring-buffer]
   prompt: >-
-    Pin threads with affinity (and isolcpus if possible), then compare busy-spinning, yielding and
-    blocking consumers.
+    Pin your SPSC ring buffer's producer and consumer (The SPSC ring buffer shrine) with affinity
+    (and isolcpus if possible), then compare busy-spinning, yielding and blocking consumers.
   done: >-
     Latency histograms per configuration, and the CPU cost of each.
 
@@ -1263,6 +1286,7 @@ shrines:
   theme: "Networking & IPC"
   requires: [linux]
   after: [spsc-ring-buffer]
+  needs: [spsc-ring-buffer]
   prompt: >-
     Put your SPSC ring buffer in POSIX shared memory between two processes.
   done: >-
@@ -1273,8 +1297,10 @@ shrines:
   region: low-latency
   theme: "The hot path"
   size: S
+  after: [binary-serialization]
   prompt: >-
-    Rewrite a message-type dispatch or varint decoder to remove data-dependent branches.
+    Rewrite your flyweight codec's message-type dispatch (Flyweight codecs shrine), or a branchy
+    varint decoder you write first, to remove data-dependent branches.
   done: >-
     Branch-miss counts and latency, compared on random vs predictable inputs.
 
@@ -1311,7 +1337,8 @@ shrines:
   links: [forge-verifier-ladder]
   prompt: >-
     Using the Claude API with tool use, build an agent loop with the tools compile, run_tests and
-    run_benchmark, and let it iterate on one slow function.
+    run_benchmark, and let it iterate on the starter in this folder (a slow function with tests and
+    a benchmark).
   done: >-
     A transcript of a successful optimisation, with a clean log of every tool call.
 
@@ -1320,11 +1347,14 @@ shrines:
   region: agent-harness
   theme: "Oracles"
   p: 3
+  after: [simd-intrinsics-dot]
   prompt: >-
-    Build a scoring harness: differential correctness against a reference, then speed with
-    repetitions and a significance test, giving a single verdict per candidate.
+    Build a scoring harness for dot-product kernels, with a scalar dot as the reference:
+    differential correctness first, then speed with repetitions and a significance test, giving a
+    single verdict per candidate.
   done: >-
-    The harness correctly ranks 5 hand-written candidates, including one that is wrong but fast.
+    The harness correctly ranks 5 hand-written candidates (e.g. the accumulator variants from The
+    dot product, by hand), including one that is wrong but fast.
 
 - id: differential-testing
   title: Differential testing for kernels
@@ -1332,8 +1362,9 @@ shrines:
   theme: "Oracles"
   after: [bench-as-oracle]
   prompt: >-
-    Build property-based and differential tests for numeric kernels: random shapes,
-    adversarial values, and ULP/relative tolerances.
+    Build property-based and differential tests for numeric kernels (the dot product from The
+    benchmark as oracle, plus a gemv): random shapes, adversarial values, and ULP/relative
+    tolerances.
   done: >-
     The tests catch 3 planted bugs, including an off-by-one on odd sizes.
 
@@ -1344,9 +1375,10 @@ shrines:
   p: 3
   requires: [llm-api]
   after: [agent-tool-loop, bench-as-oracle]
+  needs: [agent-tool-loop, bench-as-oracle]
   prompt: >-
-    Let your agent optimise a SIMD or CUDA kernel against your oracle for N iterations, and log
-    every attempt.
+    Let your agent (A minimal agent loop shrine) optimise the scalar dot product against your oracle
+    (The benchmark as oracle shrine) for N iterations, and log every attempt.
   done: >-
     A taxonomy of the attempts (wins, regressions, broken code) and the final speedup.
 
@@ -1355,6 +1387,7 @@ shrines:
   region: agent-harness
   theme: "Oracles"
   after: [bench-as-oracle]
+  needs: [bench-as-oracle]
   prompt: >-
     Red-team your oracle: write candidates that cache outputs, skip work on benchmark-shaped
     inputs, or alter the timer. Add guards against each one.
@@ -1367,9 +1400,10 @@ shrines:
   theme: "Agent loops"
   requires: [llm-api]
   after: [agent-tool-loop]
+  needs: [agent-tool-loop]
   prompt: >-
-    Run the same optimisation task with different context: source only, source + perf counters,
-    and source + asm + counters.
+    Run your agent loop (A minimal agent loop shrine) on its starter task with different context:
+    source only, source + perf counters, and source + asm + counters.
   done: >-
     Success rate and speedup per condition over several runs, and what you'd conclude.
 
@@ -1377,10 +1411,13 @@ shrines:
   title: Classic autotuning
   region: agent-harness
   theme: "Tuning & tooling"
-  after: [cpu-gemm-tiling]
+  requires: [x86, llm-api]
+  after: [cpu-gemm-tiling, agent-tool-loop]
+  needs: [cpu-gemm-tiling]
   prompt: >-
-    Autotune tile sizes and unroll factors for your GEMM with grid search and then Bayesian
-    optimisation, and compare with agent-driven tuning.
+    Autotune tile sizes and unroll factors for your GEMM (CPU GEMM, climbing shrine) with grid
+    search and then Bayesian optimisation, and compare with tuning by your agent loop (A minimal
+    agent loop shrine).
   done: >-
     Best configuration found by each method, and the evaluation budget each one needed.
 
@@ -1389,6 +1426,7 @@ shrines:
   region: agent-harness
   theme: "Tuning & tooling"
   size: S
+  requires: [llm-api]
   prompt: >-
     Write a Claude Code skill or subagent for a "measure → hypothesise → change → re-measure"
     workflow, and use it on one of your own shrines.
@@ -1401,10 +1439,12 @@ shrines:
   region: interp-engineering
   kind: temple
   size: L
+  requires: [gpu]
   needs: [activation-store, topk-sae, sae-encoder-kernel, feature-dashboard]
   prompt: >-
-    Build an end-to-end high-throughput SAE pipeline: model → activation store → fused TopK training →
-    dashboards. Measure the throughput of every stage.
+    Build an end-to-end high-throughput SAE pipeline from your own parts: GPT-2 small → your
+    activation store → TopK training with your fused encoder → your feature dashboards. Measure the
+    throughput of every stage.
   done: >-
     A stage-by-stage throughput breakdown, with the bottleneck identified and one stage improved by ≥2×.
 
@@ -1416,7 +1456,8 @@ shrines:
   requires: [gpu]
   needs: [flash-attention-mini, cuda-gemm-tiled, gpu-tensor-cores]
   prompt: >-
-    Upgrade your FlashAttention forward pass to tensor cores with software pipelining.
+    Upgrade your FlashAttention forward pass (FlashAttention, small shrine) to tensor cores with
+    software pipelining.
   done: >-
     Performance as a fraction of the reference FlashAttention implementation, with the remaining gap analysed.
 
@@ -1425,10 +1466,11 @@ shrines:
   region: low-latency
   kind: temple
   size: L
+  requires: [linux]
   needs: [udp-multicast-feed, order-book, latency-measurement, hot-path-logging]
   prompt: >-
-    Wire a feed handler → order book → strategy stub → order encoder together, and measure
-    tick-to-trade latency.
+    Wire your feed handler → order book → a strategy stub → a flyweight order encoder (from A market
+    data feed handler, The order book and Flyweight codecs), and measure tick-to-trade latency.
   done: >-
     A tick-to-trade latency histogram and a budget table showing ns per stage.
 
@@ -1440,8 +1482,9 @@ shrines:
   requires: [llm-api]
   needs: [agent-tool-loop, bench-as-oracle, reward-hacking-guards, llm-kernel-optimization]
   prompt: >-
-    Build an agentic kernel optimiser that takes a kernel plus a reference and returns a verified faster
-    kernel with a report. Run it on 10 kernels.
+    Build an agentic kernel optimiser that takes a kernel plus a reference and returns a verified
+    faster kernel with a report. Run it on 10 of your own kernels (Vector Coast's, plus Kernel
+    Jungle's given a GPU).
   done: >-
     Results over the 10 kernels (speedups, failures, cheats caught), written up as an essay.
 
@@ -1452,10 +1495,11 @@ shrines:
   size: L
   needs: [work-stealing-pool, hazard-pointers, std-execution]
   prompt: >-
-    Build a small task runtime: a work-stealing scheduler exposed as a std::execution scheduler, with
-    lock-free internals.
+    Build a small task runtime: a work-stealing scheduler exposed as a std::execution scheduler (via
+    NVIDIA stdexec), with lock-free internals.
   done: >-
-    Runs a parallel benchmark suite competitively with TBB, and is TSan-clean.
+    Runs fib, quicksort (as in A work-stealing pool) and a parallel reduce competitively with TBB,
+    and is TSan-clean.
 
 - id: temple-cpu-gemm
   title: "Temple: 80% of Peak"
@@ -1465,7 +1509,8 @@ shrines:
   needs: [cpu-gemm-tiling, simd-intrinsics-dot, uarch-ports-uops]
   requires: [x86]
   prompt: >-
-    Push single-core SGEMM to at least 80% of theoretical peak, then extend it to multi-core.
+    Push your single-core SGEMM (CPU GEMM, climbing shrine) to at least 80% of theoretical peak,
+    then extend it to multi-core.
   done: >-
     Single-core and multi-core % of peak, compared with OpenBLAS/MKL.
 
@@ -1514,9 +1559,10 @@ shrines:
   title: Human and agent, divided
   region: agentic-forge
   theme: "Practice"
+  requires: [llm-api]
   prompt: >-
-    Propose a division of labour for HPC work: what to delegate, what to verify, and what to keep. Test it on
-    one real task from your coursework or a shrine.
+    Propose a division of labour for HPC work: what to delegate, what to verify, and what to keep.
+    Test it with Claude Code on one real task from your coursework or a cleared shrine.
   done: >-
     The framework, plus a retrospective on the test task.
 
@@ -1537,10 +1583,12 @@ shrines:
   title: An atlas of agent failures
   region: agentic-forge
   theme: "The evidence"
+  requires: [llm-api]
+  after: [agent-tool-loop]
   links: [memory-order-litmus]
   prompt: >-
-    Collect cases where agents fail at low-level work (memory ordering, UB, numerical
-    tolerance) and categorise the failure modes.
+    Seed 10 low-level tasks (memory ordering, UB, numerical tolerance), run an agent on each (your
+    "A minimal agent loop", or Claude Code), and categorise the failure modes.
   done: >-
     At least 10 documented cases, a taxonomy, and one mitigation tested.
 
@@ -1549,9 +1597,12 @@ shrines:
   region: agentic-forge
   theme: "Practice"
   p: 3
+  requires: [llm-api]
+  after: [llm-kernel-optimization]
   prompt: >-
     Model the economics: agent cost per verified speedup vs engineer time vs compute saved.
-    Calibrate the model on your own agent runs.
+    Calibrate the model on your own agent runs (the log from "Letting the agent optimise a kernel",
+    or 10 fresh logged runs).
   done: >-
     A parameterised model, with your data plugged in and the sensitivity discussed.
 
@@ -1574,8 +1625,8 @@ shrines:
   p: 4
   links: [move-semantics-vector]
   prompt: >-
-    Explain Stepanov's regular types and value semantics, then redesign a reference-heavy API
-    around values.
+    Explain Stepanov's regular types and value semantics, then redesign the starter in this folder
+    (a ~100-line reference-heavy order-book API) around values.
   done: >-
     Before/after API with reasoning about local reasoning, testing and performance.
 
@@ -1586,8 +1637,8 @@ shrines:
   p: 4
   links: [soa-vs-aos]
   prompt: >-
-    Refactor a small OOP simulation into a data-oriented design and explain what the transformation is
-    in general.
+    Refactor the starter in this folder (a ~110-line OOP particle simulation) into a data-oriented
+    design and explain what the transformation is in general.
   done: >-
     Performance delta, and a general recipe for the refactor.
 
@@ -1596,8 +1647,8 @@ shrines:
   region: design-archipelago
   theme: "Values & ownership"
   prompt: >-
-    Draw the ownership and lifetime graph of a real codebase (yours or a small OSS project). Find
-    one unclear ownership and fix it.
+    Draw the ownership and lifetime graph of LevelDB's core (DBImpl, VersionSet, MemTable,
+    TableCache), or a codebase of yours. Find one unclear ownership and fix it.
   done: >-
     The diagram and the fix, with the principle it illustrates.
 
@@ -1607,8 +1658,9 @@ shrines:
   theme: "Values & ownership"
   links: [std-expected-errors, contracts-26]
   prompt: >-
-    Build a decision framework for exceptions vs expected vs contracts vs abort, and apply it to three
-    components of one system.
+    Build a decision framework for exceptions vs expected vs contracts vs abort, and apply it to
+    three components of one trading system: a feed handler, an order book and an order encoder (your
+    "Temple: Tick-to-Trade" ones, if built).
   done: >-
     The framework, plus the three applied cases.
 
@@ -1649,10 +1701,12 @@ shrines:
   title: Ports and adapters for trading
   region: design-archipelago
   theme: "Abstraction & architecture"
+  after: [order-book]
   links: [order-book]
   prompt: >-
-    Separate a trading system's domain logic from IO (ports and adapters) without adding
-    hot-path overhead, and make it deterministic-replay testable.
+    Separate the domain logic of your "Temple: Tick-to-Trade" pipeline (or "The order book" plus a
+    strategy stub) from IO with ports and adapters, without adding hot-path overhead, and make it
+    deterministic-replay testable.
   done: >-
     A replay test and hot-path latency parity.
 
@@ -1673,9 +1727,11 @@ shrines:
   region: interp-theory
   theme: "Representations"
   p: 4
+  after: [toy-superposition]
   links: [toy-superposition]
   prompt: >-
-    Explain superposition and why sparsity makes it possible, grounded in your toy-model results.
+    Explain superposition and why sparsity makes it possible, grounded in your "Toy models of
+    superposition" results (or a 5-features-in-2-dims toy trained here).
   done: >-
     An explainer another MSFM student could follow, with your own plots.
 
@@ -1684,10 +1740,11 @@ shrines:
   region: interp-theory
   theme: "Representations"
   p: 3
+  after: [linear-probes]
   links: [linear-probes, steering-vectors]
   prompt: >-
-    State the hypothesis precisely, find a concept that looks linear and one that doesn't, and
-    test both.
+    State the hypothesis precisely, then in GPT-2 small test a concept that looks linear (e.g.
+    sentiment) and one that doesn't (e.g. days of the week, which Engels et al. 2024 find circular).
   done: >-
     Evidence for each case, and what would falsify the hypothesis.
 
@@ -1696,21 +1753,23 @@ shrines:
   region: interp-theory
   theme: "Mechanisms"
   p: 3
+  after: [induction-heads]
   links: [induction-heads, activation-patching]
   prompt: >-
     Explain the circuits research program through the induction-head story, from mechanism to in-context learning.
   done: >-
-    A write-up anchored in your own induction-head detection results.
+    A write-up anchored in your own induction scores (from "Finding induction heads", or computed
+    here on GPT-2 small).
 
 - id: theory-causal-abstraction
   title: Causal abstraction
   region: interp-theory
   theme: "Mechanisms"
   links: [activation-patching]
-  after: [theory-circuits]
+  after: [theory-circuits, activation-patching]
   prompt: >-
-    Formalise activation patching as an intervention on a causal model, and map your patching harness
-    onto that formalism.
+    Formalise activation patching as an intervention on a causal model, and map your "Activation
+    patching" harness (or a one-layer residual patch on GPT-2 small) onto that formalism.
   done: >-
     The formalism, plus one experiment reinterpreted in it.
 
@@ -1720,10 +1779,11 @@ shrines:
   theme: "Representations"
   p: 3
   links: [sae-training, topk-sae]
-  after: [theory-superposition]
+  after: [theory-superposition, sae-training]
   prompt: >-
-    Investigate the known SAE pathologies (feature splitting, feature absorption, unexplained
-    "dark matter" in the residual), and demonstrate feature splitting across dictionary sizes.
+    Investigate the known SAE pathologies (feature splitting, feature absorption, unexplained "dark
+    matter" in the residual), and demonstrate feature splitting across dictionary sizes with your
+    "Training an SAE" code (or a toy SAE on synthetic hierarchical features).
   done: >-
     A splitting demo across 3 dictionary sizes, and a literature summary.
 
@@ -1734,8 +1794,9 @@ shrines:
   links: [linear-probes]
   after: [theory-linear-representation]
   prompt: >-
-    Explain the difference between decodability and use, and show a probe that succeeds on information
-    the model provably doesn't use.
+    Explain the difference between decodability and use, and show a probe that succeeds on
+    information a model provably doesn't use: train a tiny MLP whose target ignores one input, then
+    probe for it.
   done: >-
     The counterexample, with the causal test that exposes it.
 
@@ -1746,8 +1807,9 @@ shrines:
   p: 4
   links: [activation-store, theory-arith-intensity]
   prompt: >-
-    Estimate the FLOPs, storage and bandwidth needed to train SAEs across all layers of a frontier-scale
-    model, calibrated against your small-model measurements.
+    Estimate the FLOPs, storage and bandwidth needed to train SAEs across all layers of a
+    frontier-scale model, calibrated against GPT-2 small measurements (from "Temple: the SAE
+    Engine", or a forward pass and SAE step timed here).
   done: >-
     A parameterised back-of-envelope with sensitivity analysis, and where HPC engineering changes the answer.
 
@@ -1768,10 +1830,11 @@ shrines:
   region: performance-theory
   theme: "Models"
   p: 5
+  after: [simd-intrinsics-dot, cpu-gemm-tiling]
   links: [cpu-gemm-tiling, simd-intrinsics-dot]
   prompt: >-
-    Measure your machine's peak FLOP/s and bandwidth, draw its roofline, and place 5 of your kernels
-    on it.
+    Measure your machine's peak FLOP/s and bandwidth, draw its roofline, and place 5 kernels on it
+    (triad, dot, stencil, naive and blocked GEMM; yours from Vector Coast where you have them).
   done: >-
     The roofline plot, with each kernel's position explained.
 
@@ -1779,10 +1842,12 @@ shrines:
   title: Amdahl, measured
   region: performance-theory
   theme: "Parallelism"
+  after: [threads-and-jthread]
   links: [threads-and-jthread]
   prompt: >-
-    Measure the speedup curve of a parallel program, fit the serial fraction (Karp–Flatt), and
-    contrast Amdahl's view with Gustafson's.
+    Measure the speedup curve of a parallel program (your reduction from "jthread and scaling", or a
+    Monte Carlo option pricer parallelised here), fit the serial fraction (Karp–Flatt), and contrast
+    Amdahl's view with Gustafson's.
   done: >-
     The fit, with the implied serial fraction located in the code.
 
@@ -1814,10 +1879,12 @@ shrines:
   title: Work and span
   region: performance-theory
   theme: "Parallelism"
+  after: [work-stealing-pool]
   links: [cuda-scan, work-stealing-pool]
   prompt: >-
-    Analyse scan and quicksort under the work–span model and predict their speedup, then check the prediction against
-    your implementations.
+    Analyse scan and quicksort under the work–span model and predict their speedup, then check the
+    prediction against implementations (your quicksort on "A work-stealing pool", and a CPU scan
+    written here).
   done: >-
     Predicted vs measured parallelism.
 
@@ -1832,15 +1899,16 @@ shrines:
     Derive the arithmetic intensity of the attention and MLP blocks in prefill vs decode, and explain
     why decode is memory-bound.
   done: >-
-    The derivations, plus a measurement on a small model confirming the regime.
+    The derivations, plus a measurement on GPT-2 small (prefill vs decode) confirming the regime.
 
 - id: theory-memory-wall
   title: The memory wall
   region: performance-theory
   theme: "Models"
   prompt: >-
-    Trace compute vs memory bandwidth trends in hardware over two decades and argue what they imply for
-    algorithm design.
+    Trace compute vs memory bandwidth trends in hardware over two decades (Karl Rupp's
+    cpu-gpu-mic-comparison data, Gholami et al.'s "AI and Memory Wall") and argue what they imply
+    for algorithm design.
   done: >-
     A data-backed essay with one chart built from sourced data.
 
@@ -1895,9 +1963,10 @@ shrines:
   theme: "Low precision"
   p: 3
   prompt: >-
-    Quantise a small model's weights to int8 and fp8 (per-tensor vs per-channel), and measure accuracy loss.
+    Quantise GPT-2 small's weights to int8 and fp8 (per-tensor vs per-channel), and measure the loss
+    in WikiText-2 perplexity.
   done: >-
-    Accuracy vs scheme, and one outlier-channel story.
+    Perplexity vs scheme, and one outlier-channel story.
 
 - id: num-stable-softmax
   title: Stable softmax and log-sum-exp
@@ -2033,6 +2102,7 @@ shrines:
 - id: uarch-store-forwarding
   title: Store-to-load forwarding
   region: microarchitecture
+  requires: [x86]
   below: binary-serialization
   prompt: >-
     Trigger store-forwarding stalls (narrow stores → wide load, misaligned), and fix them in your
@@ -2043,6 +2113,7 @@ shrines:
 - id: uarch-smt
   title: Hyperthreads
   region: microarchitecture
+  requires: [x86]
   below: core-pinning
   size: S
   prompt: >-
@@ -2126,7 +2197,7 @@ shrines:
   title: NUMA
   region: memory-hierarchy
   below: openmp-basics
-  requires: [linux]
+  requires: [linux, x86]
   prompt: >-
     On a multi-socket machine (e.g. a university cluster node), show first-touch placement and
     remote-access penalties.
@@ -2146,6 +2217,7 @@ shrines:
 - id: mem-nontemporal
   title: Non-temporal stores
   region: memory-hierarchy
+  requires: [x86]
   below: activation-store
   prompt: >-
     Use streaming (non-temporal) stores for large buffer writes, and measure when they help and
@@ -2190,7 +2262,8 @@ shrines:
   below: perf-basics
   p: 3
   prompt: >-
-    Apply LTO and then PGO (instrumented or AutoFDO) to a real program.
+    Apply LTO and then PGO (instrumented or AutoFDO) to the program you profiled in "perf and flame
+    graphs".
   done: >-
     Speedup at each step, with what PGO changed identified (layout, inlining, branch weights).
 
@@ -2248,6 +2321,7 @@ shrines:
 - id: linker-elf
   title: ELF, PLT and GOT
   region: compilers
+  requires: [linux]
   below: cmake-modern
   prompt: >-
     Trace a dynamic call through the PLT/GOT and measure its cost against static linking and -fno-plt.
@@ -2328,8 +2402,10 @@ shrines:
   below: flash-attention-mini
   p: 3
   requires: [gpu]
+  after: [cuda-gemm-tiled]
   prompt: >-
-    Write a GEMM tile with WMMA and then raw mma.sync PTX, and compare it with your SIMT kernel.
+    Write a GEMM tile with WMMA and then raw mma.sync PTX, and compare it with your SIMT kernel from
+    "SGEMM, kernel by kernel".
   done: >-
     Speedup over SIMT, with the fragment layout explained.
 
@@ -2448,6 +2524,7 @@ shrines:
 - id: os-futex
   title: The futex
   region: os-kernel
+  requires: [linux]
   below: mutex-contention
   prompt: >-
     Implement a mutex directly on futex(2) (the Drepper design) and compare it with std::mutex.
@@ -2469,10 +2546,11 @@ shrines:
 - id: os-malloc-internals
   title: Allocator internals
   region: os-kernel
+  requires: [linux]
   below: arena-allocator
   prompt: >-
-    Compare glibc malloc, jemalloc and mimalloc on a multi-threaded workload, and explain arenas,
-    tcache and size classes.
+    Compare glibc malloc, jemalloc and mimalloc on a multi-threaded workload (N threads each parsing
+    into a tree, as in "Arenas and pmr"), and explain arenas, tcache and size classes.
   done: >-
     Benchmark results, with the internal mechanism that explains the winner.
 
@@ -2538,6 +2616,7 @@ shrines:
 - id: bits-integer-tricks
   title: Bit tricks
   region: numerics-bits
+  requires: [x86]
   below: bloom-filter
   size: S
   prompt: >-

@@ -1,6 +1,6 @@
 # Status
 
-*Last updated: 2026-10-06 (the sky start). Keep this current at the end of every work session and milestone.*
+*Last updated: 2026-10-07 (self-contained shrines, locks, kits). Keep this current at the end of every work session and milestone.*
 
 ## Milestones (DESIGN.md §13)
 
@@ -24,6 +24,7 @@
 | M9: feature names (geography: generated) | planned, optional | |
 | M10: ready to share (renames, neutral docs, licence) | ✅ done, approved by Tiago (names and MIT kept) | `4d609d0` (branch `worktree-m10-ready-to-share`) |
 | (extra) The sky start: begin on an island, descend to the plateau (DESIGN.md §6.6) | ✅ done; Tiago chose *Zero-cost, verified* as the opening and kept "earned by the first clear" | same branch, uncommitted |
+| (extra) Self-contained shrines: locks, starter kits, rewordings, lockfile regenerated (docs/plans/self-contained.md) | ✅ built on Tiago's answers; **prose to review** (below) | same branch |
 | M11: treasure, secrets, total completion (docs/plans/treasure.md) | planned; 4 questions | |
 | M12: world packs (engine/world split, drift check, rename) | planned | |
 | M13: learning materials (notes, papers, cards, Anki export) | planned | |
@@ -38,7 +39,7 @@
 
 ## Open items waiting on Tiago
 
-1. **Self-contained shrines** (`docs/plans/self-contained.md`, 2026-10-06). An audit found 34 vague prompts that need unspecified outside material, 8 that are heavy on this hardware, and about 15 implicit "your X" links. Four questions, one of which is time-sensitive: tags and `after` edges are cheapest before the first start.
+1. **Read the reworded prompts** (below): 56 prompts and 9 `done`s changed, drafted for his review. `git show` on the commit "Self-contained shrines" shows them all.
 2. **Questions in the new plans.**
    - `docs/plans/treasure.md`: GPU-gated content vs. the 75% rule, chest density, echo scope, when readings count.
    - `docs/plans/template.md`: whether his world ships publicly, sealed shrine prose for generated worlds, distribution. (Names, licence and fresh M16 docs were settled at the M10 review.)
@@ -61,6 +62,22 @@ Tiago chose to be surprised by the themes and asked Claude to review them for th
 - **21 follow-up edges added** (now 63) where one shrine prepares another, e.g. `spsc-ring-buffer` after `memory-order-litmus`, `sae-training` after `toy-superposition`, `theory-arith-intensity` after `theory-roofline`, `udp-multicast-feed` after `binary-serialization`.
 - **Placement now follows paths across boundaries:** each region's themes are ordered around the ring so linked themes are neighbours, and a follow-up whose predecessor is in another theme or region leans toward it. See docs/decisions.md.
 - **The lockfile was regenerated** (approved; nothing started). A fresh repo still shows 53 of 217.
+
+## Self-contained shrines: what was done and how it was checked (2026-10-07)
+
+Tiago answered the plan's questions: dependencies are welcome as a metroidvania element if they aren't common; yes to drafting the rewordings; yes to tags, edges and the regeneration; a CUDA GPU is in reach. Details are in docs/decisions.md ("Self-contained shrines…") and DESIGN.md §5.4–5.5.
+
+**Built:**
+- **Locks** (`needs` on ordinary shrines). You can see and read a locked shrine, it shows a padlock, Set out says "Locked", the Horizon skips it, and it opens by itself with a toast. There are 12 in the seed, plus the 6 temples.
+- **Starter kits** in `world/kits/` for *Regular types*, *Data-oriented design* and *A minimal agent loop*, copied by `stratum start` in place of the code template.
+- **World edits:** 56 prompts and 9 `done`s reworded so the input is concrete; 16 tag changes; 21 `after` edges; and the lockfile regenerated (19 of 267 entries moved, one far).
+
+**Checked:** `npm test` (157 passed; new tests for locks in loader, Horizon, start and clear, and for kits), `npm run typecheck` (0 errors), `stratum lint` (0/0), and `stratum build` against the new lockfile (0 placed, unchanged). In the Atlas with *A cache-friendly LRU* selected (`build/debug/locked.png`, `locked-map.png` in the worktree), the panel shows "Locked … A flat hash map" with a disabled Locked button, and 12 padlocks are drawn. The fresh map is still 6 revealed and 46 silhouettes from the island. The three kits were built and run by the agent that wrote them.
+
+**To review:**
+1. **The prose.** Every change is in the commit diff for `world/world-seed.yaml`, and the voice is meant to be yours. Look especially at the reviewers' judgement calls (decisions.md): LevelDB as the "real codebase" for *Ownership architecture*, the Monte Carlo pricer fallback for *Amdahl*, part of speech only for *Linear probes*, and the rolling median as the Agent Workshops task.
+2. **The 12 locks:** too many, too few, or the wrong ones?
+3. **The kits:** `world/kits/*/`. They're content, so treat them like prose.
 
 ## The sky start: what was built and how it was checked (2026-10-06)
 

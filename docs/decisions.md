@@ -253,3 +253,39 @@ Asked for by Tiago after M10: begin on a sky island with a high-level design pri
 - **No placement change.** Positions, the lockfile and the plateau are untouched; `start.sky` only changes visibility, the Horizon's L and the app's opening layer.
 - **App:** it opens on the sky while `start.landed` is false (map.json), the Horizon panel says how to get down, a phone centres on the opening shrine, and a live rebuild that lands you switches to the surface with a toast.
 - **Validation:** `start.sky` entries must be known sky shrines on a single island; an empty list is an error.
+
+## Self-contained shrines, locks and starter kits (2026-10-07)
+
+Tiago's answers to docs/plans/self-contained.md:
+1. Dependencies are fine if they aren't common: "a metroidvania element where you can go somewhere, notice you don't have the ability necessary to progress, and come back later".
+2. Yes, draft the rewordings.
+3. Yes, apply the tags and edges with a lockfile regeneration.
+4. A CUDA GPU is in reach.
+
+What was done:
+- **Locks (DESIGN.md §5.4).** `needs` now works on ordinary shrines, not just temples, but never on towers and never in a cycle. A locked shrine is seen and read as usual, carries a padlock, is left out of the Horizon, and can't be started (without `--force`) or cleared until its needs are. It opens by itself, with a toast on a live map. Temples keep their extra rule (sealed, at most a silhouette). One helper, `unmetNeeds`, drives the Horizon, `start`, `clear` and the map's `locked` field.
+- **Which shrines are locked (12, about 5%).** Only where the task *is* the earlier artefact:
+  - swiss-table-probe and lru-cache: the hash map;
+  - shared-memory-ipc: the SPSC ring;
+  - std-simd: the dot product;
+  - sae-training: the activation store;
+  - topk-sae and feature-dashboard: the SAE;
+  - attribution-patching: the patching harness;
+  - llm-kernel-optimization: the agent loop and the oracle;
+  - reward-hacking-guards: the oracle;
+  - context-packing: the agent loop;
+  - autotuner: the GEMM.
+  
+  Everything else that reuses work is an `after` with a stand-in named in the prompt. Steering vectors stays open, because its ActAdd half needs no SAE.
+- **No `after` into temples.** The drafts proposed sky shrines following the tick-to-trade or SAE-engine temples. They name a stand-in instead, so a sky shrine stays doable soon after it's seen. The one sky chain is *Ports and adapters for trading*, which now follows *The order book*, with the temple as the richer option.
+- **Starter kits (DESIGN.md §5.5)** in `world/kits/<id>/`, copied byte for byte by `start` in place of the code template. An untouched kit file isn't an artefact, and lint checks kit ids. There are three: *Regular types* (a ~100-line reference-heavy order-book API), *Data-oriented design* (a ~110-line OOP particle sim with a checksum) and *A minimal agent loop* (a rolling median over price ticks, sort-per-window slow, with an exact test against a different reference algorithm and a median-time benchmark). All three build warning-free with `-Wall -Wextra -Wpedantic -Wshadow -Wconversion`.
+- **Rewordings: 56 prompts and 9 `done`s**, drafted by two reviewer agents to the plan's rules (smallest change, Tiago's voice, make the input concrete) and applied as text edits, so formatting and comments are kept. The canonical choices are GPT-2 small with `NeelNanda/pile-10k` (named in *The activation store*), WikiText-2 perplexity, and Compiler Explorer for P2900/P2996. A Homebrew preset (LLVM, GCC, TBB, libomp) was added to *cmake-modern* for Apple's toolchain gaps. Prompts that reuse your work name the earlier shrine by title, e.g. "your order book (The order book shrine)".
+- **Tags (16 changes):**
+  - `linux`: futex, ELF/PLT, glibc malloc, the tick-to-trade temple;
+  - `x86`: SMT, NUMA, store forwarding, non-temporal stores, pdep, std-simd (it compares against AVX2), the autotuner;
+  - `llm-api`: the agentic-forge shrines that run an agent, claude-code-skill, the autotuner;
+  - `gpu`: the SAE-engine temple.
+  
+  MSan and perf c2c steps say "on the Linux server" rather than tagging whole shrines that otherwise run on the M2.
+- **`after` edges: 21 added.** Then the lockfile was regenerated (approved; nothing started), computed in a scratch root and swapped in with a rename. 19 of 267 entries moved (follow-ups leaning toward their new predecessors), only one by more than 80 units. The fresh map is unchanged: 6 revealed and 46 silhouettes from the island.
+- **GPU:** Tiago has a CUDA GPU in reach. The 15 `gpu` shrines stay as they are and open on whichever machine's `stratum setup` detects it.
