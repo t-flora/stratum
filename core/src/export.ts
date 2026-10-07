@@ -288,7 +288,7 @@ export function buildMapData(
     version: 1,
     builtAt,
     canvas: world.canvas,
-    start: world.start,
+    start: { vantage: world.start.vantage, plateau: world.start.plateau, sky: world.start.sky ?? [], landed: state?.sight.landed ?? true },
     regions: world.regions.map((r) => {
       const out: MapRegion = { ...r, stats: stats.get(r.id)! };
       if (state?.sight.surveyed.has(r.id)) out.surveyed = true;

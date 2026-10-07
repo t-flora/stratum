@@ -107,19 +107,30 @@ describe('a fresh repo on the seed world (M4b acceptance)', () => {
   const world = loadWorld(root).world!;
   const geo = new Geometry(world, loadConfig(root).world.seed);
   const { positions } = placeShrines(world, geo, readLock(root));
-  const { visibility } = computeVisibility(world, positions, () => 'untouched', geo, cfg);
   const ex = computeExplored(world, positions, () => 'untouched', geo, cfg);
-  const seen = world.shrines.filter((s) => visibility.get(s.id) !== 'hidden');
   const core = world.start.plateau.map((id) => world.shrineById.get(id)!.region)[0]!;
+  const opening = world.start.sky![0]!;
+  // Fresh: on the opening island, looking down (§6.6). Landed: the opening shrine cleared, the glider earned.
+  const fresh = computeVisibility(world, positions, () => 'untouched', geo, cfg).visibility;
+  const landed = computeVisibility(world, positions, (id) => (id === opening ? 'cleared' : 'untouched'), geo, cfg).visibility;
+  const seenIn = (v: Map<string, string>) => world.shrines.filter((s) => v.get(s.id) !== 'hidden');
 
-  it('shows 15–25% of all shrines, sky included', () => {
-    expect(seen.length / world.shrines.length).toBeGreaterThanOrEqual(0.15);
-    expect(seen.length / world.shrines.length).toBeLessThanOrEqual(0.25);
+  it('shows 15–25% of all shrines, sky included, both on the island and after landing', () => {
+    for (const v of [fresh, landed]) {
+      expect(seenIn(v).length / world.shrines.length).toBeGreaterThanOrEqual(0.15);
+      expect(seenIn(v).length / world.shrines.length).toBeLessThanOrEqual(0.25);
+    }
   });
 
-  it('reveals the whole start region and some shrines in at least three others', () => {
-    for (const s of world.shrines.filter((x) => x.region === core)) expect(visibility.get(s.id), s.id).toBe('revealed');
-    const others = new Set(seen.filter((s) => s.layer === 'surface' && s.region !== core && s.kind === 'shrine').map((s) => s.region));
+  it('on the island: the opening shrine is revealed, and the start region is all silhouettes seen from above', () => {
+    expect(fresh.get(opening)).toBe('revealed');
+    for (const s of world.shrines.filter((x) => x.region === core)) expect(fresh.get(s.id), s.id).toBe('silhouette');
+    expect(world.shrines.filter((s) => s.layer === 'surface' && fresh.get(s.id) === 'revealed')).toEqual([]);
+  });
+
+  it('after landing: the whole start region is revealed, and some shrines in at least three others', () => {
+    for (const s of world.shrines.filter((x) => x.region === core)) expect(landed.get(s.id), s.id).toBe('revealed');
+    const others = new Set(seenIn(landed).filter((s) => s.layer === 'surface' && s.region !== core && s.kind === 'shrine').map((s) => s.region));
     expect(others.size).toBeGreaterThanOrEqual(3);
   });
 

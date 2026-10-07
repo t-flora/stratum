@@ -44,6 +44,8 @@
   const regionName = $derived(new Map(map.regions.map((r) => [r.id, r.name])));
   const cards = $derived(map.horizon.map((c) => ({ card: c, shrine: byId.get(c.id)! })));
   const pinned = $derived(map.pin ? byId.get(map.pin) : undefined);
+  /** §6.6: before a sky start lands, the opening shrines are how you get down. */
+  const opening = $derived(map.start.landed ? [] : map.start.sky.map((id) => byId.get(id)).filter((s) => s !== undefined));
 </script>
 
 {#if collapsed}
@@ -56,6 +58,13 @@
     Horizon <span class="week">{map.week}</span>
     <button class="fold" onclick={ontoggle} title="Fold away (key H)" aria-label="Fold the Horizon away" aria-expanded="true">‹</button>
   </h2>
+  {#if opening.length}
+    <p class="descent">
+      You're on {regionOf(regionName, opening[0]!)}, looking down. Clear
+      {#each opening as s, i (s.id)}{i ? (i === opening.length - 1 ? ' or ' : ', ') : ''}<button class="link" onclick={() => onselect(s.id)}>{s.title}</button>{/each}
+      to glide down, and the ground comes into plain sight.
+    </p>
+  {/if}
   {#if !cards.length}
     <p class="empty">Nothing in sight to set out for.</p>
   {/if}
@@ -188,6 +197,23 @@
     margin: 8px 0 0;
     color: var(--ui-muted);
     font-size: 12px;
+  }
+  .descent {
+    margin: 0 0 10px;
+    color: var(--ui-muted);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  .descent .link {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-style: italic;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
   }
   .card {
     padding: 10px 12px;

@@ -1,6 +1,6 @@
 # Status
 
-*Last updated: 2026-10-05 (M10). Keep this current at the end of every work session and milestone.*
+*Last updated: 2026-10-06 (the sky start). Keep this current at the end of every work session and milestone.*
 
 ## Milestones (DESIGN.md §13)
 
@@ -22,7 +22,8 @@
 | M7: expeditions (docs/plans/reset.md) | planned, optional; 4 questions open | |
 | M8: world editing (docs/plans/world-editing.md) | planned, optional; 4 questions open. **E1 (region weights) only before the first start** | |
 | M9: feature names (geography: generated) | planned, optional | |
-| M10: ready to share (renames, neutral docs, licence) | ✅ done, approved by Tiago (names and MIT kept) | branch `worktree-m10-ready-to-share` |
+| M10: ready to share (renames, neutral docs, licence) | ✅ done, approved by Tiago (names and MIT kept) | `4d609d0` (branch `worktree-m10-ready-to-share`) |
+| (extra) The sky start: begin on an island, descend to the plateau (DESIGN.md §6.6) | ✅ done; Tiago chose *Zero-cost, verified* as the opening and kept "earned by the first clear" | same branch, uncommitted |
 | M11: treasure, secrets, total completion (docs/plans/treasure.md) | planned; 4 questions | |
 | M12: world packs (engine/world split, drift check, rename) | planned | |
 | M13: learning materials (notes, papers, cards, Anki export) | planned | |
@@ -37,14 +38,15 @@
 
 ## Open items waiting on Tiago
 
-1. **Questions in the new plans.**
+1. **Self-contained shrines** (`docs/plans/self-contained.md`, 2026-10-06). An audit found 34 vague prompts that need unspecified outside material, 8 that are heavy on this hardware, and about 15 implicit "your X" links. Four questions, one of which is time-sensitive: tags and `after` edges are cheapest before the first start.
+2. **Questions in the new plans.**
    - `docs/plans/treasure.md`: GPU-gated content vs. the 75% rule, chest density, echo scope, when readings count.
    - `docs/plans/template.md`: whether his world ships publicly, sealed shrine prose for generated worlds, distribution. (Names, licence and fresh M16 docs were settled at the M10 review.)
    
    Each has a recommended default, so a session can proceed on those if he says so.
-2. **Optional:** is seed `20261005` a keeper, and are the drafted region `biome:` values right? He was happy to commit M6 as is. Changing either needs a lockfile regeneration, so do it before the first `stratum start`.
-3. **M8's region weights** (e.g. shrinking Vector Coast), if wanted, must happen **before setting out** on the first shrine.
-4. **Then: set out on the first real shrine.** After the first `stratum start`, the lockfile is frozen for good (CLAUDE.md).
+3. **Optional:** is seed `20261005` a keeper, and are the drafted region `biome:` values right? He was happy to commit M6 as is. Changing either needs a lockfile regeneration, so do it before the first `stratum start`.
+4. **M8's region weights** (e.g. shrinking Vector Coast), if wanted, must happen **before setting out** on the first shrine.
+5. **Then: set out on the first real shrine.** After the first `stratum start`, the lockfile is frozen for good (CLAUDE.md).
 
 ## Direction (2026-10-05)
 
@@ -59,6 +61,20 @@ Tiago chose to be surprised by the themes and asked Claude to review them for th
 - **21 follow-up edges added** (now 63) where one shrine prepares another, e.g. `spsc-ring-buffer` after `memory-order-litmus`, `sae-training` after `toy-superposition`, `theory-arith-intensity` after `theory-roofline`, `udp-multicast-feed` after `binary-serialization`.
 - **Placement now follows paths across boundaries:** each region's themes are ordered around the ring so linked themes are neighbours, and a follow-up whose predecessor is in another theme or region leans toward it. See docs/decisions.md.
 - **The lockfile was regenerated** (approved; nothing started). A fresh repo still shows 53 of 217.
+
+## The sky start: what was built and how it was checked (2026-10-06)
+
+Tiago asked, at the M10 review, for the map to begin on a sky island with a high-level design principle and then come down to the surface. It didn't need a rearchitecture: it's one visibility rule, the Horizon's starting point and some app wiring (DESIGN.md §6.6, docs/decisions.md "The sky start").
+
+Checked in the worktree: `npm test` (152 passed; new tests in visibility, horizon and loader, and the M4b acceptance test now checks both the island and the landing), `npm run typecheck` (0 errors), `stratum lint` (0/0), `stratum build` (lockfile unchanged). Screenshots under `build/debug/` in the worktree:
+- `sky-start.png`: the default URL opens on the sky. The Horizon says "You're on Design Archipelago, looking down. Clear *Regular types* to glide down…", with Regular types as the Thread and the Vector Coast tower as the Far Landmark. 52 of 217 in sight.
+- `sky-start-surface.png`: the surface before landing. The land around the plateau is explored, and every shrine is a grey silhouette.
+- `descent.png`: a scratch world (`build/sky-root/`, a copy of the world) with Regular types cleared *while the page was open*. The app switched itself to the surface with the toast "You glide down from the island: the ground is in plain sight now", and the plateau is revealed. After landing, the Horizon is the old fresh-map one: Tower: the Core Plateau, the Design tower, the Tick Canyon tower.
+
+**To review:**
+**Reviewed 2026-10-06:** Tiago swapped the opening shrine to *Zero-cost, verified* (done) and kept the glider earned by the first clear. The screenshots above predate the swap and show *Regular types*.
+1. Optional: `size: S` on `design-zero-cost` (it carries the default M).
+2. Try it: in the worktree, `npm run dev`, or `npm run stratum -- --root build/sky-root dev --port 5183` for the landed scratch world.
 
 ## M10: what was built and how it was checked (2026-10-05)
 

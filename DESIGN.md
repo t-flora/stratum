@@ -67,7 +67,7 @@ The world is deliberately larger than one term of study can cover. A partly expl
 
 ## 3. The core loop, as experienced
 
-1. Open the map (`stratum dev`). The **Horizon** panel shows three cards: *the thread* (continue nearby), *the vertical* (go up or down a layer), and *the far landmark* (a tall silhouette in unexplored territory).
+1. Open the map (`stratum dev`). A fresh map begins on a sky island, looking down at the land you'll explore (§6.6). The **Horizon** panel shows three cards: *the thread* (continue nearby), *the vertical* (go up or down a layer), and *the far landmark* (a tall silhouette in unexplored territory).
 2. Pick one and press **Set out**. That runs `stratum start <id>`, which scaffolds `work/<id>/` from a template and makes camp there on the map.
 3. Build. Commit as you go. Before stopping, write one line in `NEXT.md` ("where I left off"). The Horizon's camp card shows it next time.
 4. Write `WRITEUP.md`. Run `stratum clear <id>`, which validates the clear (§5) and stamps the date. Commit.
@@ -139,7 +139,7 @@ The world schema is documented in the header comment of `world/world-seed.yaml`.
 
 **Ridges.** A `default` height, plus `overrides: [{between: [a, b], h}]`.
 
-**Start.** `vantage: [x, y]` and `plateau: [ids]`. Plateau shrines are always revealed.
+**Start.** `vantage: [x, y]` and `plateau: [ids]`. Plateau shrines are always revealed once you've landed. Optional `sky: [ids]`: opening sky shrines, all on one island, where a fresh map begins (§6.6).
 
 **Loader validation** (`stratum lint`, and on every build):
 - Ids are unique across `world-seed.yaml` and `proposed.yaml`.
@@ -252,7 +252,8 @@ A shrine `s` with prominence `p` is:
 *(Revised in M4b; see docs/plans/unknown.md. The v1 formulas were `p > H` and `p ≥ H`, which showed over half the world from the start vantage.)*
 
 Overrides are applied in this order:
-1. Plateau shrines are revealed.
+0. Before a sky start has landed (§6.6), every surface shrine is at most a silhouette.
+1. Plateau shrines are revealed (silhouettes before landing).
 2. Cleared and in-progress shrines are revealed.
 3. Shrines in a region whose tower is cleared are at least silhouette.
 4. Towers are at least silhouette everywhere on the surface. Their prominence of 5 makes this mostly automatic, but guarantee it.
@@ -265,7 +266,7 @@ The effect: across the plateau's low (h=1) borders, p≥3 shrines peek over as s
 ### 6.3 Sky rule
 
 - Island outlines and names are always visible, both on the sky layer and as faint shadows on the surface.
-- A sky tower is always revealed.
+- A sky tower is always revealed, and so are the opening shrines of a sky start (§6.6).
 - A sky shrine is **revealed** if its island's tower is cleared, or if any shrine in its `links` (in either direction) is cleared or in progress. That linked shrine is its *launch point*.
 - Otherwise it is a **silhouette** if a launch point on another layer is revealed (you can see the updraft from the ground), and **hidden** if not. *(Revised in M4b: in v1 sky shrines were never hidden.)*
 - On the surface, a launch point (a shrine linked to a sky shrine) gets a small upward-draft marker.
@@ -283,6 +284,14 @@ The depths are dark.
 
 The search box only matches revealed shrines, and silhouettes with p ≥ 3 by title. Search never uncovers hidden shrines. Atlas mode (§9.5) is the escape hatch.
 
+### 6.6 The sky start: the descent
+
+*(Added 2026-10-06 at the owner's request.)* A world may begin on a sky island instead of the plateau, so the first shrine is a big idea and the practice comes after. `start.sky` lists the opening shrines; the seed opens on *Zero-cost, verified* on the Design Archipelago: one self-contained principle (an abstraction proved free with asm and benchmarks), linking down to the Template Highlands next to the plateau.
+- **On the island.** The opening shrines are revealed. You look down: the start vantage still sees and explores the land (the fog lifts as usual), but nothing on the surface is more than a silhouette, the plateau included. The depths are dark as always. The app opens on the sky layer, and the Horizon starts from the first opening shrine.
+- **The descent.** You've **landed** once an opening shrine is cleared: the glider is earned by a clear, not a start. From then on the map is exactly the plateau start (§6.2), and the Horizon's L is the start vantage, since that's where you came down. If the map is open, it switches to the surface with a short note.
+- **Never a lock.** Starting or clearing any surface shrine also counts as landing (you climbed down yourself), and silhouettes may be set out for as usual (§6.2).
+- A world without `start.sky` starts landed, as in v1.
+
 ---
 
 ## 7. The Horizon: three calls to adventure
@@ -290,7 +299,7 @@ The search box only matches revealed shrines, and silhouettes with p ≥ 3 by ti
 The Horizon panel always shows **at most three** cards. It is the main way the triangle rule reaches daily decisions. It is recomputed only when the state changes (a start, a clear or a pin) and is otherwise stable within an ISO week. There is **no reroll button**. Option-shopping is the failure mode this feature exists to prevent.
 
 Definitions:
-- `L` is the most recently cleared shrine. If there is none, it is the start vantage.
+- `L` is the most recently cleared shrine. If there is none, it is the start vantage, or the first opening shrine while a sky start hasn't landed. A cleared opening shrine counts as the start vantage (§6.6).
 - `Recent` is the last 3 cleared shrines.
 - Candidates are uncleared shrines and exclude temples with unmet needs.
 - Distances are measured in xy on the shared canvas, even across layers.

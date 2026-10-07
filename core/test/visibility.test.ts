@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  DEFAULT_CONFIG, Geometry, computeVisibility, loadWorld, maxRidgeCrossed, placeShrines, sightRadius, titleKnown,
+  DEFAULT_CONFIG, Geometry, computeVisibility, hasLanded, loadWorld, maxRidgeCrossed, placeShrines, sightRadius, titleKnown,
   type Region, type Shrine, type ShrineStatus, type Terrain, type Vec2, type World,
 } from '../src/index.ts';
 
@@ -33,7 +33,9 @@ const REGIONS: Region[] = [
 type Spec = Partial<Shrine> & { id: string; region: string; xy: Vec2 };
 
 /** A hand-built world plus positions; every shrine has an explicit position. */
-function scene(specs: Spec[], opts: { vantage?: Vec2; plateau?: string[] } = {}) {
+type StartOpts = { vantage?: Vec2; plateau?: string[]; sky?: string[] };
+
+function scene(specs: Spec[], opts: StartOpts = {}) {
   const regionById = new Map(REGIONS.map((r) => [r.id, r]));
   const shrines: Shrine[] = specs.map((s, order) => ({
     title: s.id, kind: 'shrine', p: 2, size: 'M', requires: [], after: [], links: [], needs: [], prompt: 'p', done: 'd',
@@ -41,7 +43,7 @@ function scene(specs: Spec[], opts: { vantage?: Vec2; plateau?: string[] } = {})
   }));
   const world: World = {
     canvas: { width: 1600, height: 1000 },
-    start: { vantage: opts.vantage ?? [300, 500], plateau: opts.plateau ?? [] },
+    start: { vantage: opts.vantage ?? [300, 500], plateau: opts.plateau ?? [], ...(opts.sky ? { sky: opts.sky } : {}) },
     regions: REGIONS,
     ridges: { default: 2, overrides: [] },
     shrines,
@@ -52,7 +54,7 @@ function scene(specs: Spec[], opts: { vantage?: Vec2; plateau?: string[] } = {})
   return { world, positions };
 }
 
-function see(specs: Spec[], statuses: Record<string, ShrineStatus> = {}, opts: { vantage?: Vec2; plateau?: string[] } = {}) {
+function see(specs: Spec[], statuses: Record<string, ShrineStatus> = {}, opts: StartOpts = {}) {
   const { world, positions } = scene(specs, opts);
   const res = computeVisibility(world, positions, (id) => statuses[id] ?? 'untouched', terrain, cfg);
   return { ...res, of: (id: string) => res.visibility.get(id) };
@@ -268,6 +270,48 @@ describe('silhouette titles', () => {
     expect(titleKnown('silhouette', 3, cfg)).toBe(true);
     expect(titleKnown('revealed', 1, cfg)).toBe(true);
     expect(titleKnown('hidden', 5, cfg)).toBe(false);
+  });
+});
+
+describe('§6.6 the sky start: the descent', () => {
+  const SKY: Spec[] = [
+    { id: 'opening', region: 'isle', xy: [800, 300] },
+    { id: 'other-sky', region: 'isle', xy: [850, 320] },
+    { id: 'near', region: 'west', xy: [400, 500] }, // in plain sight of the vantage at (300, 500)
+    { id: 'plat', region: 'west', xy: [350, 520], p: 1 },
+    { id: 'faraway', region: 'east', xy: [1300, 500] },
+  ];
+  const start = { sky: ['opening'], plateau: ['plat'] };
+
+  it('before landing: the opening shrine is revealed, and the ground is only seen from above', () => {
+    const v = see(SKY, {}, start);
+    expect([v.of('opening'), v.of('other-sky')]).toEqual(['revealed', 'hidden']);
+    expect([v.of('near'), v.of('plat'), v.of('faraway')]).toEqual(['silhouette', 'silhouette', 'hidden']);
+    expect(v.landed).toBe(false);
+    // The start vantage still looks down, so the fog lifts there as it would on the ground.
+    expect(v.vantages.map((x) => x.xy)).toEqual([[300, 500]]);
+  });
+
+  it('starting the opening shrine is not enough: the glider is earned by clearing it', () => {
+    const v = see(SKY, { opening: 'in-progress' }, start);
+    expect([v.landed, v.of('near')]).toEqual([false, 'silhouette']);
+  });
+
+  it('clearing an opening shrine lands you: the plateau and what the vantage sees are revealed', () => {
+    const v = see(SKY, { opening: 'cleared' }, start);
+    expect(v.landed).toBe(true);
+    expect([v.of('near'), v.of('plat'), v.of('faraway')]).toEqual(['revealed', 'revealed', 'hidden']);
+  });
+
+  it('working on any surface shrine also lands you, so the island is never a lock', () => {
+    const v = see(SKY, { near: 'in-progress' }, start);
+    expect([v.landed, v.of('plat'), v.of('opening')]).toEqual([true, 'revealed', 'revealed']);
+  });
+
+  it('a world without start.sky starts landed', () => {
+    const { world } = scene(SKY);
+    expect(hasLanded(world, () => 'untouched')).toBe(true);
+    expect(see(SKY, {}, { plateau: ['plat'] }).of('near')).toBe('revealed');
   });
 });
 

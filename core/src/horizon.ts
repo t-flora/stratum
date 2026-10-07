@@ -3,6 +3,7 @@ import type { Config } from './config.ts';
 import type { HorizonCard, HorizonRule, ShrineStatus, Visibility } from './mapdata.ts';
 import { hash32 } from './prng.ts';
 import type { Layer, RequireTag, Shrine, Vec2, World } from './types.ts';
+import { hasLanded } from './visibility.ts';
 
 /** What the Horizon needs to know about each shrine's state. */
 export interface HorizonShrineState {
@@ -59,14 +60,20 @@ export function computeHorizon(input: HorizonInput): HorizonCard[] {
   const pos = (id: string) => positions.get(id)!;
   const cleared = (id: string) => state(id).status === 'cleared';
 
-  // L: the most recently cleared shrine (ties: later in file order), else the start vantage on the surface.
+  // L: the most recently cleared shrine (ties: later in file order), else where you start: the first opening sky shrine
+  // before a sky start has landed (§6.6), the start vantage on the surface otherwise. Clearing an opening shrine is the
+  // descent, so it puts you at the landing (the start vantage), not back up on the island.
   const clears = world.shrines
     .filter((s) => cleared(s.id) && state(s.id).clearedAt)
     .sort((a, b) => state(a.id).clearedAt!.localeCompare(state(b.id).clearedAt!) || a.order - b.order);
   const last = clears.at(-1);
+  const opening = world.start.sky ?? [];
+  const landing = { xy: world.start.vantage, layer: 'surface' as Layer };
   const L: { xy: Vec2; layer: Layer; shrine?: Shrine } = last
-    ? { xy: pos(last.id), layer: last.layer, shrine: last }
-    : { xy: world.start.vantage, layer: 'surface' };
+    ? opening.includes(last.id) ? landing : { xy: pos(last.id), layer: last.layer, shrine: last }
+    : opening.length && !hasLanded(world, (id) => state(id).status)
+      ? { xy: pos(opening[0]!), layer: 'sky' }
+      : landing;
   const recent = new Set(clears.slice(-3).map((s) => s.id));
 
   // Candidates: uncleared, visible, not a sealed temple, and runnable on this machine.

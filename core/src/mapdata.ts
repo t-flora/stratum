@@ -160,7 +160,11 @@ export interface MapData {
   /** When map.json was built (ms since epoch). */
   builtAt: number;
   canvas: { width: number; height: number };
-  start: { vantage: Vec2; plateau: string[] };
+  /**
+   * Where a fresh map begins. `sky` lists the opening sky shrines (empty for a surface start); `landed` is false while
+   * a sky start is still looking down from its island (§6.6), and the app opens on the sky then.
+   */
+  start: { vantage: Vec2; plateau: string[]; sky: string[]; landed: boolean };
   regions: MapRegion[];
   shrines: MapShrine[];
   themes: MapTheme[];

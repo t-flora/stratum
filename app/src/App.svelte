@@ -120,10 +120,17 @@
     try {
       const res = await fetch('map.json', { cache: 'no-store' });
       if (!res.ok) throw new Error(await res.text());
+      const wasLanded = built?.start.landed;
       built = await res.json();
       error = null;
       const s = selectedId ? built?.shrines.find((x) => x.id === selectedId) : null;
       if (s && !params.get('layer')) layer = s.layer;
+      // §6.6: a sky start opens on its island, and the descent takes you down to the surface when it happens live.
+      else if (wasLanded === undefined && built && !built.start.landed && !params.get('layer')) layer = 'sky';
+      else if (wasLanded === false && built?.start.landed) {
+        if (layer === 'sky') layer = 'surface';
+        say('You glide down from the island: the ground is in plain sight now.');
+      }
     } catch (e) {
       error = (e as Error).message;
     }

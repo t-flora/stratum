@@ -194,7 +194,10 @@
     if (initialZoom !== 1) select(svg).call(z.scaleTo, initialZoom);
     else if (svg.clientWidth < 640) {
       // A phone sees the whole canvas at a quarter scale: open on the start instead, close enough to read (§13 M5).
-      select(svg).call(z.scaleTo, 2.4).call(z.translateTo, map.start.vantage[0], map.start.vantage[1]);
+      // Before a sky start lands, that's the opening shrine on its island (§6.6).
+      const opening = !map.start.landed && layer === 'sky' ? map.shrines.find((s) => s.id === map.start.sky[0]) : undefined;
+      const [cx, cy] = opening?.xy ?? map.start.vantage;
+      select(svg).call(z.scaleTo, 2.4).call(z.translateTo, cx, cy);
     }
   });
 </script>

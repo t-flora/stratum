@@ -25,8 +25,10 @@
 canvas: { width: 1600, height: 1000 }
 
 start:
-  vantage: [800, 500]            # the "plateau": the cpp-core centroid
-  plateau:                       # revealed from the very first day
+  sky:                           # you begin on this island, looking down; clearing one of these is the descent (§6.6)
+    - design-zero-cost
+  vantage: [800, 500]            # where you land, the "plateau": the cpp-core centroid
+  plateau:                       # revealed once you land
     - tower-cpp-core
     - cmake-modern
     - benchmark-methodology

@@ -15,14 +15,14 @@ const REGIONS: Region[] = [
 type Spec = Partial<Shrine> & { id: string; region: string; xy: Vec2; st?: Partial<HorizonShrineState> };
 
 /** A hand-built world with explicit positions and per-shrine state (default: untouched and revealed). */
-function horizon(specs: Spec[], opts: { pin?: string; available?: RequireTag[]; week?: string } = {}) {
+function horizon(specs: Spec[], opts: { pin?: string; available?: RequireTag[]; week?: string; sky?: string[] } = {}) {
   const regionById = new Map(REGIONS.map((r) => [r.id, r]));
   const shrines: Shrine[] = specs.map((s, order) => ({
     title: s.id, kind: 'shrine', p: 2, size: 'M', requires: [], after: [], links: [], needs: [], prompt: `Build ${s.id}. Then measure it.`,
     done: 'd', source: 'seed', order, ...s, layer: regionById.get(s.region)!.layer,
   }));
   const world: World = {
-    canvas: { width: 1600, height: 1000 }, start: { vantage: [100, 500], plateau: [] }, regions: REGIONS,
+    canvas: { width: 1600, height: 1000 }, start: { vantage: [100, 500], plateau: [], ...(opts.sky ? { sky: opts.sky } : {}) }, regions: REGIONS,
     ridges: { default: 2, overrides: [] }, shrines, regionById, shrineById: new Map(shrines.map((s) => [s.id, s])),
   };
   const states = new Map(specs.map((s) => [s.id, { status: 'untouched', visibility: 'revealed', ...s.st } as HorizonShrineState]));
@@ -75,6 +75,39 @@ describe('the Horizon (§7, §13 M4)', () => {
     expect(h.slot('far')!.teaser).toBeUndefined(); // a silhouette shows no prompt
     expect(h.slot('far')!.bearing).toBe(90);
     expect(h.slot('far')!.distance).toBe(800);
+  });
+
+  describe('§6.6 a sky start', () => {
+    // On the island at (300, 300), looking down: the ground is silhouettes until you land.
+    const ISLAND: Spec[] = [
+      { id: 'opening', region: 'isle', xy: [300, 300] },
+      { id: 'sky-b', region: 'isle', xy: [200, 250] },
+      { id: 'near', region: 'west', xy: [120, 500], st: silhouette },
+      { id: 'peak', region: 'east', xy: [1200, 500], p: 3, st: silhouette },
+    ];
+
+    it('starts from the opening shrine on the sky, not the surface vantage', () => {
+      const h = horizon(ISLAND, { sky: ['opening'] });
+      expect(h.cards.map((c) => [c.slot, c.id, c.rule])).toEqual([
+        ['thread', 'opening', 'nearest'],
+        ['far', 'peak', 'landmark'],
+      ]);
+      expect(h.slot('thread')!.distance).toBe(0);
+    });
+
+    it('clearing the opening shrine puts you at the landing: the Thread is on the ground near the vantage', () => {
+      const down = ISLAND.map((s) =>
+        s.id === 'opening' ? { ...s, st: cleared('2026-10-01') } : s.id === 'near' ? { ...s, st: {} } : s,
+      );
+      const h = horizon(down, { sky: ['opening'] });
+      expect([h.slot('thread')!.id, h.slot('thread')!.distance]).toEqual(['near', 20]);
+      expect(h.slot('vertical')!.id).toBe('sky-b');
+    });
+
+    it('starts from the surface vantage once you have landed without a clear (you set out from the ground)', () => {
+      const landed = ISLAND.map((s) => (s.id === 'near' ? { ...s, st: { status: 'in-progress' as const } } : s));
+      expect(horizon(landed, { sky: ['opening'] }).slot('far')!.distance).toBe(1100);
+    });
   });
 
   it('is deterministic for a given state and week', () => {

@@ -118,6 +118,36 @@ describe('planted errors carry file/line context', () => {
     expect(errs[0]).toMatchObject({ code: 'tower-count', line: lineOf(text, '- id: value-categories') });
   });
 
+  describe('start.sky (§6.6)', () => {
+    const START = '  sky:                           # you begin on this island, looking down; clearing one of these is the descent (§6.6)\n    - design-zero-cost\n';
+    const withSky = (items: string) => seedText.replace(START, `  sky: [${items}]\n`);
+
+    it('the seed opens on one sky shrine', () => {
+      expect(seedText).toContain(START);
+      expect(parseWorld(seed()).world!.start.sky).toEqual(['design-zero-cost']);
+    });
+
+    it('an unknown id, a surface shrine and a second island are each an error on the right line', () => {
+      const bad = [
+        ['design-zero-cos', 'unknown-start'],
+        ['value-categories', 'schema'],
+        ['design-zero-cost, theory-roofline', 'schema'],
+      ] as const;
+      for (const [items, code] of bad) {
+        const text = withSky(items);
+        const errs = errors(parseWorld(seed(text)).diagnostics);
+        expect(errs, items).toHaveLength(1);
+        expect(errs[0], items).toMatchObject({ code, line: lineOf(text, `  sky: [${items}]`) });
+      }
+    });
+
+    it('is optional, and an empty list is an error', () => {
+      expect(errors(parseWorld(seed(seedText.replace(START, ''))).diagnostics)).toEqual([]);
+      expect(parseWorld(seed(seedText.replace(START, ''))).world!.start.sky).toBeUndefined();
+      expect(errors(parseWorld(seed(withSky(''))).diagnostics)[0]).toMatchObject({ code: 'schema' });
+    });
+  });
+
   it('YAML syntax errors', () => {
     const text = seedText.replace('  title: RAII for everything', '  title: RAII: for: everything');
     const errs = errors(parseWorld(seed(text)).diagnostics);

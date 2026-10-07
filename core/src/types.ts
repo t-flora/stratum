@@ -61,7 +61,11 @@ export interface RidgeOverride {
 
 export interface World {
   canvas: { width: number; height: number };
-  start: { vantage: Vec2; plateau: string[] };
+  /**
+   * Where a fresh map begins. `vantage` is the surface start (the landing) and `plateau` is revealed there. With `sky`
+   * (opening sky shrines), you begin on that island and see the surface only from above until you land (§6.6).
+   */
+  start: { vantage: Vec2; plateau: string[]; sky?: string[] };
   regions: Region[];
   ridges: { default: number; overrides: RidgeOverride[] };
   shrines: Shrine[];

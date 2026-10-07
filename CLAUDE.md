@@ -63,7 +63,7 @@ core/src/          all game logic; pure TS, no DOM. Imported by cli and (types o
   progress.ts      §9.4 the trail, §10.3 hours, §10.2 region stats, §6.5 search text (pure)
   propose.ts       `stratum propose`: loose threads → proposal stub → proposed.yaml text (pure)
   pins.ts          state/pins.yaml read/write/validate
-  visibility.ts    §6 triangle rule: line of sight over ridges (peek margin), vantages, sky launch points, depths light (pure; Terrain injected)
+  visibility.ts    §6 triangle rule: line of sight over ridges (peek margin), vantages, sky launch points, depths light, the sky start (§6.6, hasLanded) (pure; Terrain injected)
   explore.ts       explored land (docs/plans/unknown.md): ray-traced from every place you've stood, stopped by high ridges (pure)
   geometry.ts      warped region classifier (2-unit grid), adjacency, biome elevation, noise
   landmass.ts      the generated continent (M6): lobes, coast noise, islets, lakes (pure)
@@ -79,7 +79,7 @@ templates/         WRITEUP.md, NEXT.md, cpp/ and python/ scaffolds for `stratum 
 world/             world-seed.yaml (content), proposed.yaml, positions.lock.json (committed)
 fixtures/          tiny/ (clean 3-region world), planted-errors/ (lint test)
 state/pins.yaml    the map pin (`pin: <id>` or null)
-docs/              status.md, decisions.md, private.md (gitignored), plans/ (template, treasure, world editing, reset: proposals; camps, unknown, geography: done)
+docs/              status.md, decisions.md, private.md (gitignored), plans/ (self-contained, template, treasure, world editing, reset: proposals; camps, unknown, geography: done)
 ```
 
 ## Architecture rules

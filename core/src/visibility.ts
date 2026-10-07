@@ -53,11 +53,24 @@ export interface VisibilityResult {
   glowing: Set<string>;
   /** Cleared depths shrines: centres of the light circles (§6.4). */
   lit: Set<string>;
+  /** §6.6: false while a sky start hasn't descended yet. */
+  landed: boolean;
 }
 
 const rank: Record<Visibility, number> = { hidden: 0, silhouette: 1, revealed: 2 };
 const atLeast = (v: Visibility, floor: Visibility): Visibility => (rank[v] >= rank[floor] ? v : floor);
 const atMost = (v: Visibility, cap: Visibility): Visibility => (rank[v] <= rank[cap] ? v : cap);
+
+/**
+ * §6.6 the descent. A world with `start.sky` begins on that island; you've landed once an opening shrine is cleared (the
+ * glider is earned), or once you've worked on any surface shrine (you climbed down yourself, so the sky is never a lock).
+ * A world without `start.sky` starts landed.
+ */
+export function hasLanded(world: World, status: (id: string) => ShrineStatus): boolean {
+  const sky = world.start.sky;
+  if (!sky?.length) return true;
+  return sky.some((id) => status(id) === 'cleared') || world.shrines.some((s) => s.layer === 'surface' && status(s.id) !== 'untouched');
+}
 
 /**
  * Surface visibility of one shrine from the vantage set (§6.2, before overrides).
@@ -102,14 +115,17 @@ export function computeVisibility(
   }
   const surveyed = new Set(world.shrines.filter((s) => s.kind === 'tower' && s.layer === 'surface' && cleared(s.id)).map((s) => s.region));
   const plateau = new Set(world.start.plateau);
+  const landed = hasLanded(world, status);
 
   const visibility = new Map<string, Visibility>();
 
-  // §6.2 surface, with the overrides applied in the order the spec lists them.
+  // §6.2 surface, with the overrides applied in the order the spec lists them. Before landing (§6.6) you look down from
+  // the sky: the start vantage still sees, but nothing on the ground is closer than a silhouette, the plateau included.
   for (const s of world.shrines) {
     if (s.layer !== 'surface') continue;
     let v = surfaceSight(s, pos(s.id), vantages, terrain, cfg);
-    if (plateau.has(s.id)) v = 'revealed';
+    if (!landed) v = atMost(v, 'silhouette');
+    if (plateau.has(s.id)) v = landed ? 'revealed' : 'silhouette';
     if (worked(s.id)) v = 'revealed';
     if (surveyed.has(s.region)) v = atLeast(v, 'silhouette');
     if (s.kind === 'tower') v = atLeast(v, 'silhouette');
@@ -141,16 +157,17 @@ export function computeVisibility(
     link(l, s.id);
   }
   const skyTowerCleared = new Set(world.shrines.filter((s) => s.kind === 'tower' && s.layer === 'sky' && cleared(s.id)).map((s) => s.region));
+  const opening = new Set(world.start.sky ?? []);
   for (const s of world.shrines) {
     if (s.layer !== 'sky') continue;
     const linked = [...(linkedTo.get(s.id) ?? [])];
-    const open = s.kind === 'tower' || worked(s.id) || skyTowerCleared.has(s.region) || linked.some(active);
+    const open = s.kind === 'tower' || opening.has(s.id) || worked(s.id) || skyTowerCleared.has(s.region) || linked.some(active);
     // You can see the updraft from the ground: a revealed launch point (on another layer) shows the sky shrine's outline.
     const seen = linked.some((l) => world.shrineById.get(l)?.layer !== 'sky' && visibility.get(l) === 'revealed');
     visibility.set(s.id, open ? 'revealed' : seen ? 'silhouette' : 'hidden');
   }
 
-  return { visibility, vantages, surveyed, glowing, lit };
+  return { visibility, vantages, surveyed, glowing, lit, landed };
 }
 
 /** Whether a silhouette's title may be shown (§6.2: landmarks, p ≥ silhouetteTitleMinP, are recognisable from afar). */

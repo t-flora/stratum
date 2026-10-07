@@ -115,7 +115,7 @@ export function parseWorld(seedSrc: Source, proposedSrc?: Source): LoadResult {
   }
 
   const startNode = get(top, 'start');
-  const start = { vantage: [canvas.width / 2, canvas.height / 2] as Vec2, plateau: [] as string[] };
+  const start: World['start'] = { vantage: [canvas.width / 2, canvas.height / 2] as Vec2, plateau: [] as string[] };
   if (!isMap(startNode)) {
     seed.report('error', 'schema', 'missing `start` mapping', startNode ?? top);
   } else {
@@ -126,6 +126,11 @@ export function parseWorld(seedSrc: Source, proposedSrc?: Source): LoadResult {
     if (pl === undefined) start.plateau = [];
     else if (isStringList(pl)) start.plateau = pl;
     else seed.report('error', 'schema', 'start.plateau must be a list of shrine ids', get(startNode, 'plateau'));
+    const sky = js(get(startNode, 'sky'));
+    if (sky === undefined) {
+      // A surface start (the default).
+    } else if (isStringList(sky) && sky.length) start.sky = sky;
+    else seed.report('error', 'schema', 'start.sky must be a non-empty list of sky shrine ids', get(startNode, 'sky'));
   }
 
   // ---- regions -------------------------------------------------------------------------
@@ -308,6 +313,17 @@ export function parseWorld(seedSrc: Source, proposedSrc?: Source): LoadResult {
     if (!s) seed.report('error', 'unknown-plateau', `start.plateau entry "${id}" is not a known shrine`, itemNode);
     else if (s.layer !== 'surface') seed.report('error', 'schema', `start.plateau entry "${id}" is not a surface shrine`, itemNode);
   });
+  // Opening sky shrines (§6.6): on one island, so the map has one place to open on.
+  const skyNode = isMap(startNode) ? get(startNode, 'sky') : null;
+  const islands = new Set<string>();
+  (start.sky ?? []).forEach((id, i) => {
+    const itemNode = isSeq(skyNode) ? (skyNode.items[i] as Node) : skyNode;
+    const s = shrineById.get(id);
+    if (!s) seed.report('error', 'unknown-start', `start.sky entry "${id}" is not a known shrine`, itemNode);
+    else if (s.layer !== 'sky') seed.report('error', 'schema', `start.sky entry "${id}" is not a sky shrine`, itemNode);
+    else islands.add(s.region);
+  });
+  if (islands.size > 1) seed.report('error', 'schema', `start.sky shrines must share one island (found ${[...islands].join(', ')})`, skyNode);
 
   // Exactly one tower per surface region / sky island; none in the depths.
   for (const r of regions) {

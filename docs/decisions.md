@@ -241,3 +241,15 @@ Built on the plan's defaults, since Tiago hadn't answered template.md's question
 - **Licence:** MIT, copyright Tiago Flora, 2026. `THIRD_PARTY.md` lists what the static build redistributes (MIT, ISC, BSD-2/3), what's only used at build time, and the three Google Fonts (OFL, loaded at runtime, not bundled). The plan's "MIT/ISC" was slightly off: highlight.js and d3-ease are BSD-3-Clause, entities is BSD-2-Clause, and lightningcss (build only) is MPL-2.0.
 - **README** rewritten for a stranger: what it is, the loop, a quick start, where things live and the licence. M16's first-hour guide will go further.
 - **Reviewed (2026-10-05).** Tiago kept *wellspring*, *trail* and MIT, and agreed that M16's template starts with fresh docs rather than shipping these logs.
+
+## The sky start: the descent (2026-10-06)
+
+Asked for by Tiago after M10: begin on a sky island with a high-level design principle, then come down to the surface, as some open-world games open on a floating island before you can glide down. Spec in DESIGN.md §6.6.
+- **The opening shrine is *Zero-cost, verified*** (`design-zero-cost`, Design Archipelago), chosen by Tiago at review (2026-10-06) as lighter than the first pick, *Regular types*. It's self-contained (strong typedefs for prices and quantities, proved with asm and benchmarks, nothing to fetch), its island sits right above the plateau, and it links down to `crtp-static-poly` and `policy-based-design` in the Template Highlands next door. It carries the default size M; an explicit `size: S` would be a structural edit for Tiago to approve. *Regular types* was set aside partly because its prompt needs an unspecified "reference-heavy API" (see the external-work audit). `start.sky` is a list if he wants more than one.
+- **Reviewed (2026-10-06):** the glider is earned by the first clear, as built.
+- **From the sky you see the ground but can't read it.** Before landing, the start vantage still explores and sees, but every surface shrine is capped at a silhouette, the plateau included. That keeps the fresh map's share where it was: 52 of 217 in sight (24%) on the island, 53 after landing (the plateau start, as before).
+- **The glider is earned by a clear** of an opening shrine, not by starting it. **Never a lock:** working on any surface shrine (start or clear) also lands you, so setting out for a silhouette below is a way down.
+- **The Horizon after the descent starts from the landing.** A cleared opening shrine counts as the start vantage for L, so the first post-landing Horizon is exactly the plateau start's (Tower: the Core Plateau, then the Design tower and a far tower) instead of keeping you on the island.
+- **No placement change.** Positions, the lockfile and the plateau are untouched; `start.sky` only changes visibility, the Horizon's L and the app's opening layer.
+- **App:** it opens on the sky while `start.landed` is false (map.json), the Horizon panel says how to get down, a phone centres on the opening shrine, and a live rebuild that lands you switches to the surface with a toast.
+- **Validation:** `start.sky` entries must be known sky shrines on a single island; an empty list is an error.
