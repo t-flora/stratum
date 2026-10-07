@@ -290,20 +290,23 @@ export function parseWorld(seedSrc: Source, proposedSrc?: Source): LoadResult {
     }
   }
 
-  // `after` must not form cycles (placement orders predecessors first).
-  const color = new Map<string, 0 | 1 | 2>();
-  const visit = (id: string, stack: string[]): void => {
-    color.set(id, 1);
-    for (const next of shrineById.get(id)?.after ?? []) {
-      if (!shrineById.has(next)) continue;
-      if (color.get(next) === 1) {
-        const r = firstSeen.get(id)!;
-        r.doc.report('error', 'after-cycle', `\`after\` cycle: ${[...stack.slice(stack.indexOf(next)), id, next].join(' → ')}`, get(r.node, 'after'));
-      } else if (!color.get(next)) visit(next, [...stack, id]);
-    }
-    color.set(id, 2);
-  };
-  for (const id of shrineById.keys()) if (!color.get(id)) visit(id, []);
+  // `after` must not form cycles (placement orders predecessors first), and neither may `needs` (a lock that waits on
+  // itself would never open, §5.4).
+  for (const field of ['after', 'needs'] as const) {
+    const color = new Map<string, 0 | 1 | 2>();
+    const visit = (id: string, stack: string[]): void => {
+      color.set(id, 1);
+      for (const next of shrineById.get(id)?.[field] ?? []) {
+        if (!shrineById.has(next)) continue;
+        if (color.get(next) === 1) {
+          const r = firstSeen.get(id)!;
+          r.doc.report('error', `${field}-cycle`, `\`${field}\` cycle: ${[...stack.slice(stack.indexOf(next)), id, next].join(' → ')}`, get(r.node, field));
+        } else if (!color.get(next)) visit(next, [...stack, id]);
+      }
+      color.set(id, 2);
+    };
+    for (const id of shrineById.keys()) if (!color.get(id)) visit(id, []);
+  }
 
   // Plateau ids.
   const plateauNode = isMap(startNode) ? get(startNode, 'plateau') : null;
@@ -420,7 +423,8 @@ function readShrine(doc: Doc, node: YAMLMap, source: Shrine['source'], order: nu
       doc.report('warning', 'schema', `"${id}": \`theme\` only applies to ordinary surface/sky shrines; ignored`, at('theme'));
     } else theme = themeV.trim();
   }
-  if (needs.length && kind !== 'temple') doc.report('error', 'schema', `"${id}": \`needs\` is only allowed on temples`, at('needs'));
+  if (needs.length && kind === 'tower') doc.report('error', 'schema', `"${id}": a tower can't have \`needs\` (towers are never locked)`, at('needs'));
+  if (needs.includes(id)) doc.report('error', 'schema', `"${id}" can't need itself`, at('needs'));
   if (kind === 'temple' && !needs.length) doc.report('warning', 'schema', `temple "${id}" has no \`needs\``, node);
 
   let below: string | undefined;

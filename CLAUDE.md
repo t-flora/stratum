@@ -76,7 +76,7 @@ cli/index.ts       commander CLI: lint, build, dev, start, clear, shelve, status
 cli/dev.ts         dev API Vite plugin: /api/{health,map,events,start,pin,shelve}, fs.watch rebuilds, SSE
 app/src/           Svelte 5 + Vite renderer of build/map.json (MapView, Glyph, DetailPanel, HorizonPanel, MapKey, SearchBox, AtlasTable, Geography; api.ts, camp.ts, markdown.ts)
 templates/         WRITEUP.md, NEXT.md, cpp/ and python/ scaffolds for `stratum start`
-world/             world-seed.yaml (content), proposed.yaml, positions.lock.json (committed)
+world/             world-seed.yaml (content), proposed.yaml, positions.lock.json (committed), kits/<id>/ (starter kits, content)
 fixtures/          tiny/ (clean 3-region world), planted-errors/ (lint test)
 state/pins.yaml    the map pin (`pin: <id>` or null)
 docs/              status.md, decisions.md, private.md (gitignored), plans/ (self-contained, template, treasure, world editing, reset: proposals; camps, unknown, geography: done)

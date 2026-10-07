@@ -10,10 +10,13 @@ import type { GitWorkInfo } from './git.ts';
 import type { ShrineStatus, Visibility } from './mapdata.ts';
 import { PINS_PATH, readPin, writePin } from './pins.ts';
 import type { Diagnostic, Shrine, World } from './types.ts';
+import { unmetNeeds } from './visibility.ts';
 import { parseWriteup } from './writeup.ts';
 
 export const WORK_DIR = 'work';
 export const TEMPLATES_DIR = 'templates';
+/** Per-shrine starter kits (docs/plans/self-contained.md): `world/kits/<id>/` replaces the code template on `start`. */
+export const KITS_DIR = 'world/kits';
 
 /** Everything read from one `work/<id>/` folder. */
 export interface WorkFolder {
@@ -81,6 +84,9 @@ function templateIndex(root: string): Map<string, TemplateName[]> {
 }
 
 function isTemplateCopy(root: string, index: Map<string, TemplateName[]>, shrine: Shrine, rel: string, content: Buffer): boolean {
+  // An untouched kit file is scaffold too: the learner's artefact has to be their own.
+  const kit = join(root, KITS_DIR, shrine.id, rel);
+  if (existsSync(kit) && readFileSync(kit).equals(content)) return true;
   for (const t of index.get(rel) ?? []) {
     const tpl = readFileSync(join(root, TEMPLATES_DIR, t, rel));
     if (tpl.equals(content)) return true;
@@ -97,7 +103,8 @@ export function readWorkFolder(root: string, shrine: Shrine, index = templateInd
   const files = listFiles(dir).map((path) => {
     const size = statSync(join(dir, path)).size;
     // Only small files can be template copies; don't read large results or binaries.
-    const templateCopy = size < 256 * 1024 && index.has(path) && isTemplateCopy(root, index, shrine, path, readFileSync(join(dir, path)));
+    const scaffold = index.has(path) || existsSync(join(root, KITS_DIR, shrine.id, path));
+    const templateCopy = size < 256 * 1024 && scaffold && isTemplateCopy(root, index, shrine, path, readFileSync(join(dir, path)));
     return { path, templateCopy };
   });
   return {
@@ -233,19 +240,20 @@ export interface StartOptions {
 }
 
 export type StartResult =
-  | { outcome: 'started'; template: TemplateName; created: string[] }
+  | { outcome: 'started'; template: TemplateName; created: string[]; kit?: boolean }
   | { outcome: 'already'; status: ShrineStatus; note: string | null }
   | { outcome: 'resumed' }
   | { outcome: 'refused'; reason: string };
 
 /** Copy a template directory, filling placeholders in text files. Never overwrites. */
-function copyTemplateDir(src: string, dest: string, values: Record<string, string>, created: string[], prefix: string) {
+/** Copy a template (filling `values`) or a kit (`values` null: copied byte for byte). Never overwrites. */
+function copyTemplateDir(src: string, dest: string, values: Record<string, string> | null, created: string[], prefix: string) {
   for (const rel of listFilesWithDotfiles(src)) {
     const to = join(dest, rel);
     if (existsSync(to)) continue;
     mkdirSync(dirname(to), { recursive: true });
     const buf = readFileSync(join(src, rel));
-    if (buf.includes(0)) copyFileSync(join(src, rel), to);
+    if (values === null || buf.includes(0)) copyFileSync(join(src, rel), to);
     else writeFileSync(to, fillTemplate(buf.toString('utf8'), values));
     created.push(`${prefix}/${rel}`);
   }
@@ -265,7 +273,7 @@ function listFilesWithDotfiles(dir: string, prefix = ''): string[] {
 
 /**
  * `stratum start <id>` (§11): scaffold `work/<id>/` and mark it in progress.
- * Refuses a hidden shrine or a locked temple without `--force`. Silhouettes may be started (§6.2), which reveals them.
+ * Refuses a hidden shrine, or a locked one (unmet `needs`, §5.4), without `--force`. Silhouettes may be started (§6.2), which reveals them.
  */
 export function startShrine(root: string, world: World, work: Map<string, ShrineWork>, id: string, opts: StartOptions = {}): StartResult {
   const shrine = world.shrineById.get(id);
@@ -284,9 +292,10 @@ export function startShrine(root: string, world: World, work: Map<string, Shrine
   if (opts.visibility?.get(id) === 'hidden' && !opts.force) {
     return { outcome: 'refused', reason: "it's hidden: you haven't seen it from anywhere yet (use --force to start anyway)" };
   }
-  if (shrine.kind === 'temple' && !opts.force) {
-    const missing = shrine.needs.filter((n) => work.get(n)?.status !== 'cleared');
-    if (missing.length) return { outcome: 'refused', reason: `temple is locked; not yet cleared: ${missing.join(', ')} (use --force to start anyway)` };
+  if (!opts.force) {
+    const missing = unmetNeeds(shrine, (n) => work.get(n)?.status === 'cleared');
+    const what = shrine.kind === 'temple' ? 'temple is sealed' : "it's locked";
+    if (missing.length) return { outcome: 'refused', reason: `${what}; it needs what you build in: ${missing.join(', ')} (use --force to start anyway)` };
   }
 
   const template = opts.template ?? defaultTemplate(shrine);
@@ -298,7 +307,11 @@ export function startShrine(root: string, world: World, work: Map<string, Shrine
   mkdirSync(dir, { recursive: true });
   // Only scaffold code into a new folder; an existing folder already holds the user's own files.
   // Code templates only get shrine-derived values, so untouched scaffolds can be recognised (they aren't artefacts).
-  if (fresh && existsSync(join(tdir, template))) copyTemplateDir(join(tdir, template), dir, templateValues(shrine), created, prefix);
+  // A starter kit, when the world ships one, takes the code template's place (it brings its own build files).
+  const kit = join(root, KITS_DIR, id);
+  const hasKit = existsSync(kit) && !opts.template;
+  if (fresh && hasKit) copyTemplateDir(kit, dir, null, created, prefix);
+  else if (fresh && existsSync(join(tdir, template))) copyTemplateDir(join(tdir, template), dir, templateValues(shrine), created, prefix);
   for (const name of ['WRITEUP.md', 'NEXT.md']) {
     const to = join(dir, name);
     if (existsSync(to)) continue;
@@ -308,7 +321,7 @@ export function startShrine(root: string, world: World, work: Map<string, Shrine
     writeFileSync(to, text);
     created.push(`${prefix}/${name}`);
   }
-  return { outcome: 'started', template, created };
+  return { outcome: 'started', template, created, ...(fresh && hasKit ? { kit: true } : {}) };
 }
 
 // ---------------------------------------------------------------------------------------------

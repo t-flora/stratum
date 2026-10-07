@@ -135,6 +135,16 @@ describe('the Horizon (§7, §13 M4)', () => {
     for (const c of horizon(FRESH).cards) expect(c.id).not.toBe('lurker');
   });
 
+  it('§5.4 leaves out a locked shrine until what it needs is cleared', () => {
+    const specs = (cleared_: boolean): Spec[] => [
+      { id: 'tool', region: 'west', xy: [400, 500], st: cleared_ ? cleared('2026-10-01') : {} },
+      { id: 'uses-tool', region: 'west', xy: [150, 500], needs: ['tool'] },
+    ];
+    expect(horizon(specs(false)).slot('thread')!.id).toBe('tool');
+    expect(horizon(specs(false)).cards.map((c) => c.id)).not.toContain('uses-tool');
+    expect(horizon(specs(true)).slot('thread')!.id).toBe('uses-tool');
+  });
+
   it('leaves out sealed temples and shrines this machine cannot run', () => {
     const h = horizon([
       { id: 'gpu-only', region: 'west', xy: [150, 500], requires: ['gpu'] },

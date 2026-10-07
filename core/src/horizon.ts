@@ -3,7 +3,7 @@ import type { Config } from './config.ts';
 import type { HorizonCard, HorizonRule, ShrineStatus, Visibility } from './mapdata.ts';
 import { hash32 } from './prng.ts';
 import type { Layer, RequireTag, Shrine, Vec2, World } from './types.ts';
-import { hasLanded } from './visibility.ts';
+import { hasLanded, unmetNeeds } from './visibility.ts';
 
 /** What the Horizon needs to know about each shrine's state. */
 export interface HorizonShrineState {
@@ -76,12 +76,12 @@ export function computeHorizon(input: HorizonInput): HorizonCard[] {
       : landing;
   const recent = new Set(clears.slice(-3).map((s) => s.id));
 
-  // Candidates: uncleared, visible, not a sealed temple, and runnable on this machine.
+  // Candidates: uncleared, visible, not locked (unmet `needs`, §5.4; sealed temples included), and runnable here.
   const hardwareOk = (s: Shrine) => s.requires.every((t) => available.includes(t));
   const candidates = world.shrines.filter((s) => {
     const st = state(s.id);
     if (st.status === 'cleared' || st.status === 'shelved' || st.visibility === 'hidden') return false;
-    if (s.kind === 'temple' && !s.needs.every(cleared)) return false;
+    if (unmetNeeds(s, cleared).length) return false;
     return hardwareOk(s);
   });
   const revealed = (s: Shrine) => state(s.id).visibility === 'revealed';

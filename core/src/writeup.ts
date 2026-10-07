@@ -71,6 +71,14 @@ export function parseWriteup(text: string, expectedId?: string): ParsedWriteup {
 /** Lint every work/<id>/ folder: the id must be a shrine, and a WRITEUP.md (if present) must parse. */
 export function lintWorkFolders(root: string, world: World): Diagnostic[] {
   const out: Diagnostic[] = [];
+  // Starter kits (world/kits/<id>/) must belong to a shrine, or `stratum start` would never use them.
+  const kitsDir = join(root, 'world', 'kits');
+  if (existsSync(kitsDir)) {
+    for (const id of readdirSync(kitsDir).sort()) {
+      if (id.startsWith('.') || !statSync(join(kitsDir, id)).isDirectory() || world.shrineById.has(id)) continue;
+      out.push({ severity: 'error', code: 'unknown-kit', message: `starter kit "${id}" does not match any shrine id`, file: `world/kits/${id}` });
+    }
+  }
   const workDir = join(root, 'work');
   if (!existsSync(workDir)) return out;
   for (const id of readdirSync(workDir).sort()) {

@@ -7,7 +7,7 @@ import { themeKey, themesByRegion } from './placement.ts';
 import { hash32, mulberry32 } from './prng.ts';
 import { trail, regionStats, searchText, shrineHours } from './progress.ts';
 import type { Region, RequireTag, Vec2, World } from './types.ts';
-import { titleKnown, type VisibilityConfig, type VisibilityResult } from './visibility.ts';
+import { titleKnown, unmetNeeds, type VisibilityConfig, type VisibilityResult } from './visibility.ts';
 import type { ShrineWork } from './work.ts';
 
 /** Grid step (world units) for region outlines and ridges. */
@@ -258,6 +258,8 @@ export function buildMapData(
       unavailable: state ? s.requires.filter((t) => !state.available.includes(t)) : [],
       committed: w?.committed ?? false, touches: w?.touches ?? [], remnote: w?.remnote ?? 0,
     };
+    const locked = unmetNeeds(s, (id) => work.get(id)?.status === 'cleared');
+    if (locked.length) out.locked = locked;
     if (s.below) out.below = s.below;
     if (s.from) out.from = s.from;
     if (s.theme) out.theme = s.theme;

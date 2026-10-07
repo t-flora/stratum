@@ -206,7 +206,7 @@ program
       if (res.note) console.log(`where you left off: ${res.note}`);
       return;
     }
-    console.log(`Set out for ${shrine.title} (${shrine.size}, ${res.template} template)\n`);
+    console.log(`Set out for ${shrine.title} (${shrine.size}, ${res.kit ? 'with its starter kit' : `${res.template} template`})\n`);
     for (const f of res.created) console.log(`  + ${f}`);
     console.log(`\nBuild:\n${indent(shrine.prompt)}\n\nDone when:\n${indent(shrine.done)}\n`);
     console.log(`Camp is here now. Before stopping, write where you left off on the first line of work/${id}/NEXT.md.`);

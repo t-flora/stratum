@@ -62,6 +62,14 @@ const atLeast = (v: Visibility, floor: Visibility): Visibility => (rank[v] >= ra
 const atMost = (v: Visibility, cap: Visibility): Visibility => (rank[v] <= rank[cap] ? v : cap);
 
 /**
+ * §5.4 locks: the shrine ids in `needs` that aren't cleared yet. A shrine (or temple) with any is locked: you can see it
+ * and read it, but you can't set out or clear it until you've built what it needs. Temples are also sealed (§6.2).
+ */
+export function unmetNeeds(s: Shrine, cleared: (id: string) => boolean): string[] {
+  return s.needs.filter((id) => !cleared(id));
+}
+
+/**
  * §6.6 the descent. A world with `start.sky` begins on that island; you've landed once an opening shrine is cleared (the
  * glider is earned), or once you've worked on any surface shrine (you climbed down yourself, so the sky is never a lock).
  * A world without `start.sky` starts landed.

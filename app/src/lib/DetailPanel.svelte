@@ -87,8 +87,15 @@
 
   /** A silhouette shows its glyph, size and region, not its prompt; its title only if p is high enough (§6.2). */
   const seen = $derived(shrine.visibility === 'revealed');
+  /** §5.4: the shrines it still needs, when it's locked. */
+  const lockedBy = $derived((shrine.locked ?? []).map((id) => byId.get(id)).filter((s) => s !== undefined));
   /** From afar you learn nothing about connections, except a sealed temple's needs (their constellation, §5.2). */
-  const shownRelations = $derived(seen ? relations : shrine.kind === 'temple' ? relations.filter((g) => g.label === 'Needs') : []);
+  const shownRelations = $derived(
+    seen
+      ? // The Locked notice already lists what it needs.
+        relations.filter((g) => !(g.label === 'Needs' && lockedBy.length && shrine.status !== 'cleared'))
+      : shrine.kind === 'temple' ? relations.filter((g) => g.label === 'Needs') : [],
+  );
   const chipLabel = (s: MapShrine) => (s.visibility !== 'hidden' && s.titleKnown ? s.title : '???');
 </script>
 
@@ -131,6 +138,23 @@
     </ul>
     {/if}
   </section>
+
+  {#if seen && lockedBy.length && shrine.status !== 'cleared'}
+    <section class="locked">
+      <h3>Locked</h3>
+      <p class="explain">
+        This one works on something you build elsewhere. Come back once you've cleared
+        {lockedBy.length === 1 ? 'it' : 'them'}; it opens by itself.
+      </p>
+      <div class="chips">
+        {#each lockedBy as s (s.id)}
+          <button class="chip {s.layer} {s.status}" disabled={s.visibility === 'hidden'} onclick={() => onselect(s.id)} title="{LAYER_NAME[s.layer]} · {regionOf(regionName, s)}">
+            <span class="chip-dot"></span>{chipLabel(s)}
+          </button>
+        {/each}
+      </div>
+    </section>
+  {/if}
 
   {#if seen}
     <section>
@@ -177,7 +201,9 @@
 
   {#if shrine.status !== 'cleared' && shrine.visibility !== 'hidden' && (onsetout || onpin)}
     <section class="go">
-      {#if (shrine.status === 'untouched' || shrine.status === 'shelved') && onsetout}
+      {#if (shrine.status === 'untouched' || shrine.status === 'shelved') && onsetout && lockedBy.length}
+        <button class="primary" disabled title="Clear what it needs first">Locked</button>
+      {:else if (shrine.status === 'untouched' || shrine.status === 'shelved') && onsetout}
         <button class="primary" onclick={() => onsetout(shrine.id)} title={live ? 'Run stratum start' : 'Copy the stratum start command'}>
           {shrine.status === 'shelved' ? 'Take off the shelf' : 'Set out'}
         </button>
@@ -441,6 +467,15 @@
     border-color: var(--ui-accent);
     background: var(--ui-accent);
     color: var(--ui-bg);
+  }
+  .go button.primary:disabled {
+    border-color: var(--ui-border);
+    background: transparent;
+    color: var(--ui-muted);
+    cursor: not-allowed;
+  }
+  .locked .chips {
+    margin-top: 6px;
   }
   .go button[aria-pressed='true'] {
     border-color: var(--ui-accent);

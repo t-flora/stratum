@@ -1,11 +1,11 @@
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   DEFAULT_CONFIG, NO_GIT, build, clearShrine, countWords, defaultTemplate, deriveWorkState, gitReader, isArtefact, loadWorld,
-  parseWorkLog, readGitWork, readWorkState, setFrontmatter, shelveShrine, startShrine, validateClear, writeupSections,
+  lintWorkFolders, parseWorkLog, readGitWork, readWorkFolder, readWorkState, setFrontmatter, shelveShrine, startShrine, validateClear, writeupSections,
   type ClearInput, type Shrine, type World,
 } from '../src/index.ts';
 
@@ -117,6 +117,13 @@ describe('validateClear (§5)', () => {
     expect(validateClear(base('tower-west', { files: [], proposals: 3 })).ok).toBe(true);
   });
 
+  it('§5.4 an ordinary shrine with needs clears only once they are cleared', () => {
+    const locked = { ...shrine(tinyWorld(), 'a-two'), needs: ['a-one'] };
+    const input = (cleared: boolean) => ({ ...base('a-two', { isCleared: () => cleared }), shrine: locked });
+    expect(validateClear(input(false)).checks.at(-1)).toMatchObject({ ok: false, detail: 'not yet: a-one' });
+    expect(validateClear(input(true)).ok).toBe(true);
+  });
+
   it('temples need their needs cleared', () => {
     const res = validateClear(base('temple-x', { isCleared: (id) => id === 'b-one' }));
     expect(res.ok).toBe(false);
@@ -176,6 +183,36 @@ describe('start and clear (§13 M2)', () => {
   it('refuses a locked temple unless forced', () => {
     expect(startShrine(dir, world, work(), 'temple-x')).toMatchObject({ outcome: 'refused' });
     expect(startShrine(dir, world, work(), 'temple-x', { force: true })).toMatchObject({ outcome: 'started' });
+  });
+
+  it('a starter kit replaces the code template; untouched kit files are scaffold, not artefacts', () => {
+    mkdirSync(join(dir, 'world', 'kits', 'a-one'), { recursive: true });
+    writeFileSync(join(dir, 'world', 'kits', 'a-one', 'api.hpp'), '// the API to redesign {{title}}\n');
+    const res = startShrine(dir, world, work(), 'a-one');
+    expect(res).toMatchObject({ outcome: 'started', kit: true });
+    if (res.outcome !== 'started') return;
+    expect(res.created).toEqual(expect.arrayContaining(['work/a-one/api.hpp', 'work/a-one/WRITEUP.md', 'work/a-one/NEXT.md']));
+    expect(res.created).not.toContain('work/a-one/src/main.cpp');
+    // Copied byte for byte: kits are content, not templates.
+    expect(readFileSync(join(dir, 'work/a-one/api.hpp'), 'utf8')).toBe('// the API to redesign {{title}}\n');
+    const files = () => readWorkFolder(dir, shrine(world, 'a-one')).files;
+    expect(files().find((f) => f.path === 'api.hpp')).toMatchObject({ templateCopy: true });
+    writeFileSync(join(dir, 'work/a-one/api.hpp'), '// redesigned around values\n');
+    expect(files().find((f) => f.path === 'api.hpp')).toMatchObject({ templateCopy: false });
+    // A kit must belong to a shrine.
+    mkdirSync(join(dir, 'world', 'kits', 'nope'), { recursive: true });
+    expect(lintWorkFolders(dir, world).map((d) => d.code)).toContain('unknown-kit');
+  });
+
+  it('§5.4 a shrine with unmet needs is locked: visible on the map, refused by start unless forced', () => {
+    const seed = join(dir, 'world', 'world-seed.yaml');
+    const text = readFileSync(seed, 'utf8');
+    writeFileSync(seed, text.replace('{ id: a-two,   title: "A2", region: west,  p: 3, prompt: p, done: d }', '{ id: a-two,   title: "A2", region: west,  p: 3, needs: [a-one], prompt: p, done: d }'));
+    world = loadWorld(dir).world!;
+    expect(mapShrine('a-two')).toMatchObject({ locked: ['a-one'], visibility: 'revealed' });
+    expect(mapShrine('a-one').locked).toBeUndefined();
+    expect(startShrine(dir, world, work(), 'a-two')).toMatchObject({ outcome: 'refused', reason: expect.stringContaining("it's locked") });
+    expect(startShrine(dir, world, work(), 'a-two', { force: true })).toMatchObject({ outcome: 'started' });
   });
 
   it('an invalid write-up fails with a checklist; the untouched scaffold is not an artefact', () => {

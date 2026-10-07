@@ -131,7 +131,7 @@ The world schema is documented in the header comment of `world/world-seed.yaml`.
 - `theme`: optional, surface and sky shrines only. A named sub-area of the region; shrines sharing a theme cluster together, and on the sky each theme is its own islet (see docs/decisions.md).
 - `after`: optional list of shrine ids this shrine follows up on. A same-region, same-theme follow-up is placed next to its predecessor.
 - `links`: optional list of shrine ids, treated as undirected for visibility purposes
-- `needs`: temples only. Shrine ids that must be cleared before the temple opens.
+- `needs`: shrine ids that must be cleared first. A temple is sealed until then (§5.2); an ordinary shrine is *locked* (§5.4). Not allowed on towers, and never in a cycle.
 - `prompt`: what to build
 - `done`: the shrine-specific clear condition
 - `xy`: optional manual placement `[x, y]`
@@ -202,7 +202,7 @@ For every shrine:
 2. The three sections *What I built*, *How it works* and *What I measured / what surprised me* are each non-empty.
 3. Together they contain at least `writeup.minWords` words. The default is 250 and it is configurable.
 4. There is at least one artefact: a non-Markdown file in `work/<id>/` (excluding NEXT.md), or a non-empty `code:` field.
-5. For a temple, every id in `needs` is cleared.
+5. Every id in `needs` is cleared (temples, and locked shrines, §5.4).
 
 On success it sets `status: cleared` and `cleared: <today>`, then prints the shrine's `done` text as a final self-check ("Did you: …?") and a suggested `git commit` command. It doesn't commit automatically. On failure it prints a checklist of what's missing.
 
@@ -218,6 +218,18 @@ A tower clears like a shrine, except that it has no artefact requirement. In add
 - makes every shrine in its region at least a silhouette,
 - turns the tower into a strong vantage point (§6.2), and
 - counts as the region "surveyed". Its terrain renders fully, with no fog wash.
+
+### 5.4 Locks: come back when you can
+
+*(Added 2026-10-07 at the owner's request: dependencies as a metroidvania element, as long as they aren't common.)* An ordinary shrine may have `needs` when its task works on something you build in another shrine: your hash map, your SAE, your agent loop. Until those are cleared it is **locked**:
+- It is **seen like any other shrine**: revealed by the usual rules, with its prompt and `done` readable. You can find it, see what it asks, and notice you don't have what it takes yet.
+- The map draws a small **padlock** beside it, and the detail panel says what it needs. **Set out is disabled** (the CLI refuses without `--force`), the **Horizon leaves it out**, and `stratum clear` refuses while a need is uncleared. **Pinning it is allowed**, since that's what a place to come back to is for.
+- When the last need is cleared it **opens by itself**, and a live map says so ("Unlocked: …").
+- **Keep them rare.** In the seed, 12 shrines (about 5%) are locked, beyond the 6 temples, each one directly on its predecessor's artefact. A dependency that a quick stand-in could satisfy is an `after` with the stand-in named in the prompt, not a lock.
+
+### 5.5 Starter kits
+
+When a shrine needs material to work on and no earlier shrine provides it, the world ships a **starter kit**: `world/kits/<id>/`. `stratum start` copies it into `work/<id>/` byte for byte, in place of the code template (a kit brings its own build files). An untouched kit file is scaffold, not an artefact: the clear still needs something of your own. `stratum lint` errors on a kit folder that matches no shrine. The seed ships three: a reference-heavy order-book API (*Regular types*), an OOP particle simulation (*Data-oriented design*) and a slow rolling median with tests and a benchmark (*A minimal agent loop*, the task the whole Agent Workshops region reuses). See docs/plans/self-contained.md.
 
 ---
 
@@ -301,7 +313,7 @@ The Horizon panel always shows **at most three** cards. It is the main way the t
 Definitions:
 - `L` is the most recently cleared shrine. If there is none, it is the start vantage, or the first opening shrine while a sky start hasn't landed. A cleared opening shrine counts as the start vantage (§6.6).
 - `Recent` is the last 3 cleared shrines.
-- Candidates are uncleared shrines and exclude temples with unmet needs.
+- Candidates are uncleared shrines and exclude any shrine with unmet needs (sealed temples and locked shrines, §5.4).
 - Distances are measured in xy on the shared canvas, even across layers.
 
 **Slot 1: the Thread** (continue)

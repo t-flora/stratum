@@ -57,6 +57,10 @@
         <dd><strong>Cairn</strong>: started work you stepped away from. Shelve it to set it aside.</dd>
       </div>
       <div>
+        <dt><svg viewBox="-5 -5 10 10"><path d="M-1.9,0 v-1.6 a1.9,1.9 0 0 1 3.8,0 v1.6" fill="none" stroke="#2b2216" stroke-width="0.9" /><rect x="-2.8" y="0" width="5.6" height="4.2" rx="0.8" fill="#efe6d2" stroke="#2b2216" stroke-width="0.9" /></svg></dt>
+        <dd><strong>Lock</strong>: it works on something you build elsewhere. Come back once you have it; it opens by itself.</dd>
+      </div>
+      <div>
         <dt><svg viewBox="-9 -6 12 12"><path d="M-8,2 C-6,0.1 -3,-0.1 -1,1.7 C-3.1,3.1 -5.9,3.3 -8,2 Z" fill="#2b2216" opacity="0.7" /></svg></dt>
         <dd>Chasm: a wellspring glows below this shrine</dd>
       </div>

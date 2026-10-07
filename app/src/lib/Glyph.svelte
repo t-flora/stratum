@@ -30,6 +30,10 @@
   const cairn = $derived(shrine.status === 'in-progress' && !shrine.camp?.current);
   const embers = $derived(camp && isEmbers(shrine.camp?.since ?? null, now));
   const uncommitted = $derived(shrine.status === 'cleared' && !shrine.committed);
+  /** §5.4: a revealed shrine that needs something you build elsewhere. Temples show their seal instead. */
+  const locked = $derived(
+    !!shrine.locked?.length && shrine.kind !== 'temple' && state === 'revealed' && (shrine.status === 'untouched' || shrine.status === 'shelved'),
+  );
   const flame = $derived(camp ? campBrightness(shrine.camp?.since ?? null, now) : 0);
   /** Halo radius for the selection ring and the dashed "not committed" outline. */
   const halo = $derived(shrine.kind === 'tower' ? 14 : shrine.kind === 'temple' ? 12 : 9.5);
@@ -43,6 +47,7 @@
       cairn ? `A cairn you left · ${shrine.camp?.note ?? 'no NEXT.md note'}` : '',
       shrine.status === 'shelved' ? 'Shelved' : '',
       uncommitted ? 'Cleared, not committed yet' : '',
+      locked ? 'Locked: it needs something you build elsewhere' : '',
     ]
       .filter(Boolean)
       .join(' · '),
@@ -102,6 +107,13 @@
   {#if shrine.marks.chasm}
     <!-- Chasm: an opening beside a shrine whose wellspring glows below (§6.4) -->
     <path class="chasm" d="M-13.5,6.5 C-11.5,4.6 -8.5,4.4 -6.5,6.2 C-8.6,7.6 -11.4,7.8 -13.5,6.5 Z" />
+  {/if}
+  {#if locked}
+    <!-- Lock: come back once you've built what it needs (§5.4) -->
+    <g class="lock" transform="translate(7,4.5)">
+      <path d="M-1.9,0 v-1.6 a1.9,1.9 0 0 1 3.8,0 v1.6" />
+      <rect x="-2.8" y="0" width="5.6" height="4.2" rx="0.8" />
+    </g>
   {/if}
   {#if shrine.marks.draft && state !== 'silhouette'}
     <!-- Updraft: a launch point to a sky shrine (§6.3) -->
@@ -258,6 +270,26 @@
   .glow-point {
     fill: var(--c, #fff);
     opacity: 0.85;
+  }
+
+  /* §5.4 the lock: drawn in each layer's ink */
+  .lock {
+    fill: none;
+    stroke: #2b2216;
+    stroke-width: 1.1;
+    opacity: 0.8;
+  }
+  .lock rect {
+    fill: var(--paper, #efe6d2);
+  }
+  .sky .lock {
+    stroke: var(--sky-ink);
+  }
+  .depths .lock {
+    stroke: #d8dee4;
+  }
+  .depths .lock rect {
+    fill: #101418;
   }
 
   /* Surface markers */

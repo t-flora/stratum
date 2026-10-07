@@ -121,6 +121,7 @@
       const res = await fetch('map.json', { cache: 'no-store' });
       if (!res.ok) throw new Error(await res.text());
       const wasLanded = built?.start.landed;
+      const wasLocked = new Set(built?.shrines.filter((x) => x.locked?.length).map((x) => x.id) ?? []);
       built = await res.json();
       error = null;
       const s = selectedId ? built?.shrines.find((x) => x.id === selectedId) : null;
@@ -130,6 +131,12 @@
       else if (wasLanded === false && built?.start.landed) {
         if (layer === 'sky') layer = 'surface';
         say('You glide down from the island: the ground is in plain sight now.');
+      }
+      // §5.4: a clear that gives you what a locked shrine needs opens it. Say so for the ones you've seen.
+      const opened = built?.shrines.filter((x) => wasLocked.has(x.id) && !x.locked?.length && x.visibility !== 'hidden') ?? [];
+      if (opened.length && !(wasLanded === false && built?.start.landed)) {
+        const names = opened.map((x) => (x.titleKnown ? x.title : 'a shrine you saw from afar'));
+        say(`Unlocked: ${names.slice(0, 2).join(' and ')}${names.length > 2 ? ` and ${names.length - 2} more` : ''}. You have what ${opened.length === 1 ? 'it needs' : 'they need'} now.`);
       }
     } catch (e) {
       error = (e as Error).message;

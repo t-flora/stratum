@@ -118,6 +118,22 @@ describe('planted errors carry file/line context', () => {
     expect(errs[0]).toMatchObject({ code: 'tower-count', line: lineOf(text, '- id: value-categories') });
   });
 
+  describe('needs on ordinary shrines (§5.4)', () => {
+    const ENTRY = '- id: move-semantics-vector\n  title: A vector that moves correctly\n  region: cpp-core\n';
+    it('is allowed on a shrine, an error on a tower, and an error in a cycle', () => {
+      expect(seedText).toContain(ENTRY);
+      const ok = seedText.replace(ENTRY, `${ENTRY}  needs: [value-categories]\n`);
+      expect(errors(parseWorld(seed(ok)).diagnostics)).toEqual([]);
+      expect(parseWorld(seed(ok)).world!.shrineById.get('move-semantics-vector')!.needs).toEqual(['value-categories']);
+
+      const tower = seedText.replace('- id: tower-cpp-core\n', '- id: tower-cpp-core\n  needs: [value-categories]\n');
+      expect(errors(parseWorld(seed(tower)).diagnostics).map((d) => d.code)).toEqual(['schema']);
+
+      const loop = ok.replace('- id: value-categories\n', '- id: value-categories\n  needs: [move-semantics-vector]\n');
+      expect(errors(parseWorld(seed(loop)).diagnostics).map((d) => d.code)).toEqual(['needs-cycle']);
+    });
+  });
+
   describe('start.sky (§6.6)', () => {
     const START = '  sky:                           # you begin on this island, looking down; clearing one of these is the descent (§6.6)\n    - design-zero-cost\n';
     const withSky = (items: string) => seedText.replace(START, `  sky: [${items}]\n`);

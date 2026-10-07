@@ -1,5 +1,6 @@
 // Clear validation (§5) and write-up helpers. Pure functions: the IO lives in work.ts.
 import type { Shrine } from './types.ts';
+import { unmetNeeds } from './visibility.ts';
 import { parseWriteup, type ParsedWriteup } from './writeup.ts';
 
 /** The three sections §5.1 requires, in template order. Matched case-insensitively, ignoring spacing. */
@@ -60,7 +61,7 @@ export interface ClearInput {
   writeup: string | null;
   files: WorkFile[];
   minWords: number;
-  /** Whether another shrine is cleared (for temple `needs`). */
+  /** Whether another shrine is cleared (for `needs`, §5.4). */
   isCleared: (id: string) => boolean;
   /** Number of `proposed.yaml` entries with `from: <shrine id>` (for towers). */
   proposals: number;
@@ -120,8 +121,8 @@ export function validateClear(input: ClearInput): ClearResult {
     checks.push(ok ? { ok, label } : { ok, label, detail: 'only Markdown or untouched template files so far' });
   }
 
-  if (shrine.kind === 'temple') {
-    const missing = shrine.needs.filter((id) => !input.isCleared(id));
+  if (shrine.needs.length) {
+    const missing = unmetNeeds(shrine, input.isCleared);
     const label = 'every shrine in `needs` is cleared';
     checks.push(missing.length ? { ok: false, label, detail: `not yet: ${missing.join(', ')}` } : { ok: true, label });
   }

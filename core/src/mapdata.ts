@@ -37,6 +37,8 @@ export interface MapShrine {
   charted: boolean;
   /** Surface markers: `chasm` beside a shrine whose wellspring glows; `draft` on a launch point to the sky (§6.3, §6.4). */
   marks: { chasm?: boolean; draft?: boolean };
+  /** §5.4 locks: `needs` not cleared yet. Set out and clear wait until they are; the Horizon leaves it out. */
+  locked?: string[];
   /** `requires` tags this machine lacks (§7 hardware filter): kept on the map, left out of the Horizon. */
   unavailable: RequireTag[];
   /** Derived work state (§4.4), from work/<id>/ and git. Dates are YYYY-MM-DD. */
