@@ -22,9 +22,9 @@
 | M7: expeditions (docs/plans/reset.md) | planned, optional; 4 questions open | |
 | M8: world editing (docs/plans/world-editing.md) | planned, optional; 4 questions open. **E1 (region weights) only before the first start** | |
 | M9: feature names (geography: generated) | planned, optional | |
-| M10: ready to share (renames, neutral docs, licence) | ✅ done, approved by Tiago (names and MIT kept) | `4d609d0` (branch `worktree-m10-ready-to-share`) |
-| (extra) The sky start: begin on an island, descend to the plateau (DESIGN.md §6.6) | ✅ done; Tiago chose *Zero-cost, verified* as the opening and kept "earned by the first clear" | same branch, uncommitted |
-| (extra) Self-contained shrines: locks, starter kits, rewordings, lockfile regenerated (docs/plans/self-contained.md) | ✅ built on Tiago's answers; **prose to review** (below) | same branch |
+| M10: ready to share (renames, neutral docs, licence) | ✅ done, approved by Tiago (names and MIT kept) | `4d609d0` |
+| (extra) The sky start: begin on an island, descend to the plateau (DESIGN.md §6.6) | ✅ done; Tiago chose *Zero-cost, verified* as the opening and kept "earned by the first clear" | `6de3836` |
+| (extra) Self-contained shrines: locks, starter kits, rewordings, lockfile regenerated (docs/plans/self-contained.md) | ✅ done; Tiago skimmed the prose and kept the 12 locks; the Agent Workshops task was hardened after review | `561c4d3` and later |
 | M11: treasure, secrets, total completion (docs/plans/treasure.md) | planned; 4 questions | |
 | M12: world packs (engine/world split, drift check, rename) | planned | |
 | M13: learning materials (notes, papers, cards, Anki export) | planned | |
@@ -39,15 +39,14 @@
 
 ## Open items waiting on Tiago
 
-1. **Read the reworded prompts** (below): 56 prompts and 9 `done`s changed, drafted for his review. `git show` on the commit "Self-contained shrines" shows them all.
-2. **Questions in the new plans.**
+1. **Questions in the new plans.**
    - `docs/plans/treasure.md`: GPU-gated content vs. the 75% rule, chest density, echo scope, when readings count.
    - `docs/plans/template.md`: whether his world ships publicly, sealed shrine prose for generated worlds, distribution. (Names, licence and fresh M16 docs were settled at the M10 review.)
    
    Each has a recommended default, so a session can proceed on those if he says so.
-3. **Optional:** is seed `20261005` a keeper, and are the drafted region `biome:` values right? He was happy to commit M6 as is. Changing either needs a lockfile regeneration, so do it before the first `stratum start`.
-4. **M8's region weights** (e.g. shrinking Vector Coast), if wanted, must happen **before setting out** on the first shrine.
-5. **Then: set out on the first real shrine.** After the first `stratum start`, the lockfile is frozen for good (CLAUDE.md).
+2. **Optional:** is seed `20261005` a keeper, and are the drafted region `biome:` values right? He was happy to commit M6 as is. Changing either needs a lockfile regeneration, so do it before the first `stratum start`.
+3. **M8's region weights** (e.g. shrinking Vector Coast), if wanted, must happen **before setting out** on the first shrine.
+4. **Then: set out on the first real shrine.** After the first `stratum start`, the lockfile is frozen for good (CLAUDE.md).
 
 ## Direction (2026-10-05)
 
@@ -74,7 +73,7 @@ Tiago answered the plan's questions: dependencies are welcome as a metroidvania 
 
 **Checked:** `npm test` (157 passed; new tests for locks in loader, Horizon, start and clear, and for kits), `npm run typecheck` (0 errors), `stratum lint` (0/0), and `stratum build` against the new lockfile (0 placed, unchanged). In the Atlas with *A cache-friendly LRU* selected (`build/debug/locked.png`, `locked-map.png` in the worktree), the panel shows "Locked … A flat hash map" with a disabled Locked button, and 12 padlocks are drawn. The fresh map is still 6 revealed and 46 silhouettes from the island. The three kits were built and run by the agent that wrote them.
 
-**To review:**
+**Reviewed 2026-10-07:** Tiago skimmed the prose (good), found the judgement calls reasonable, kept the 12 locks, and asked for the Agent Workshops task to be hardened against an agent that knows the textbook answer (decisions.md, "Agent Workshops…"). The original review list:
 1. **The prose.** Every change is in the commit diff for `world/world-seed.yaml`, and the voice is meant to be yours. Look especially at the reviewers' judgement calls (decisions.md): LevelDB as the "real codebase" for *Ownership architecture*, the Monte Carlo pricer fallback for *Amdahl*, part of speech only for *Linear probes*, and the rolling median as the Agent Workshops task.
 2. **The 12 locks:** too many, too few, or the wrong ones?
 3. **The kits:** `world/kits/*/`. They're content, so treat them like prose.

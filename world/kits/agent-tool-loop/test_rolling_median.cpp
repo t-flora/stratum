@@ -76,6 +76,26 @@ int main() {
         }
     }
 
+    // Price-shaped inputs like the benchmark's: a quiet tick walk, and the same with gaps and bad prints.
+    // A fast path tuned to quiet prices has to stay exact on both.
+    for (bool jumpy : {false, true}) {
+        std::mt19937_64 walk(jumpy ? 4242 : 2424);
+        std::uniform_int_distribution<int> step(-3, 3), one_in(0, 99);
+        std::uniform_int_distribution<std::int64_t> big(-1'000'000'000, 1'000'000'000);
+        V xs(700);
+        std::int64_t price = 1'000'000;
+        for (auto& x : xs) {
+            price += step(walk);
+            if (jumpy && one_in(walk) == 0) price += big(walk) / 100;  // a gap: the market reopens elsewhere
+            x = (jumpy && one_in(walk) < 2) ? price + big(walk) : price;  // a bad print that reverts at once
+        }
+        for (std::size_t w : {1u, 2u, 15u, 16u, 63u, 255u}) {
+            V got = run(xs, w), want = reference(xs, w);
+            CHECK(got == want);
+            if (got != want) std::fprintf(stderr, "  %s walk: w=%zu\n", jumpy ? "jumpy" : "calm", w);
+        }
+    }
+
     std::printf("%s: %d/%d checks passed\n", failures ? "FAIL" : "PASS", checks - failures, checks);
     return failures ? 1 : 0;
 }

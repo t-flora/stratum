@@ -1349,9 +1349,9 @@ shrines:
   p: 3
   after: [simd-intrinsics-dot]
   prompt: >-
-    Build a scoring harness for dot-product kernels, with a scalar dot as the reference:
-    differential correctness first, then speed with repetitions and a significance test, giving a
-    single verdict per candidate.
+    Build a scoring harness for kernels, first on dot-product candidates with a scalar dot as the
+    reference: differential correctness first, then speed with repetitions and a significance test,
+    giving a single verdict per candidate.
   done: >-
     The harness correctly ranks 5 hand-written candidates (e.g. the accumulator variants from The
     dot product, by hand), including one that is wrong but fast.
@@ -1377,10 +1377,12 @@ shrines:
   after: [agent-tool-loop, bench-as-oracle]
   needs: [agent-tool-loop, bench-as-oracle]
   prompt: >-
-    Let your agent (A minimal agent loop shrine) optimise the scalar dot product against your oracle
-    (The benchmark as oracle shrine) for N iterations, and log every attempt.
+    Let your agent (A minimal agent loop shrine) work on its rolling-median task for N iterations,
+    scored by your oracle (The benchmark as oracle shrine) on every input and window size in the
+    task's benchmark, and log every attempt.
   done: >-
-    A taxonomy of the attempts (wins, regressions, broken code) and the final speedup.
+    A taxonomy of the attempts (wins, regressions, broken code, wins on only some inputs) and the
+    final speedup per window size.
 
 - id: reward-hacking-guards
   title: Catching the agent cheating
@@ -1403,7 +1405,8 @@ shrines:
   needs: [agent-tool-loop]
   prompt: >-
     Run your agent loop (A minimal agent loop shrine) on its starter task with different context:
-    source only, source + perf counters, and source + asm + counters.
+    source only, source + perf counters (perf stat on the Linux server), and source + asm +
+    counters.
   done: >-
     Success rate and speedup per condition over several runs, and what you'd conclude.
 

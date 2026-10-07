@@ -289,3 +289,12 @@ What was done:
   MSan and perf c2c steps say "on the Linux server" rather than tagging whole shrines that otherwise run on the M2.
 - **`after` edges: 21 added.** Then the lockfile was regenerated (approved; nothing started), computed in a scratch root and swapped in with a rename. 19 of 267 entries moved (follow-ups leaning toward their new predecessors), only one by more than 80 units. The fresh map is unchanged: 6 revealed and 46 silhouettes from the island.
 - **GPU:** Tiago has a CUDA GPU in reach. The 15 `gpu` shrines stay as they are and open on whichever machine's `stratum setup` detects it.
+
+## Agent Workshops: a task a well-read agent can't just recall (2026-10-07)
+
+On review, Tiago agreed that the rolling median suits *A minimal agent loop*, but as a single benchmark it's a textbook problem ("sliding window median") that a current model solves from memory. That would make *What context helps the agent?* measure nothing. So, at his OK:
+- **The benchmark is a matrix:** two inputs × four windows (w = 15, 63, 255, 1023), scored by the geometric mean of the median times. One input is a calm tick walk. The other is a jumpy one with rare gaps (a halt, then a reopen far away) and bad prints (one wild tick that reverts at once).
+- **Measured on the M2, the textbook answer loses at small windows** (a scratch check, not shipped). A sorted window updated with binary search and memmove beats a `std::multiset` with a median iterator 2–3× at w ≤ 255. The multiset wins about 2× at w = 1023. The score is ≈ 13 ms for the textbook answer alone, ≈ 9 ms for the sorted window, ≈ 7.6 ms for picking by window, and 133 ms for the slow baseline. So recall alone is beaten, and there's room beyond a simple hybrid. Fast paths tuned to calm prices have to survive the jumpy input.
+- **The tests gained price-shaped differential cases** (calm and jumpy walks, w up to 255) against the independent reference, so a fast path that breaks on gaps or bad prints is caught (2,024 checks).
+- **One subject for the region:** *Letting the agent optimise a kernel* now runs on the rolling-median task, scored by the oracle on every input and window, instead of the scalar dot product, which an agent solves in one or two tries. *The benchmark as oracle* is now a harness "for kernels", still first exercised on dot-product candidates, because floating-point tolerances are worth learning there.
+- **Context packing** collects its perf counters with `perf stat` on the Linux server.
