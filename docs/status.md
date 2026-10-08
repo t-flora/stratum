@@ -1,6 +1,76 @@
 # Status
 
-*Last updated: 2026-10-08 (problems, not problem-posing; docs/world-design.md). Keep this current at the end of every work session and milestone.*
+*Last updated: 2026-10-08 (handoff after the 2026-10-05 → 10-08 session). Keep this current at the end of every work session and milestone.*
+
+## Start here: handoff for the next session (2026-10-08)
+
+**Where things stand.**
+- The engine's original milestones (M0–M6) and M10 are done. Since M10, a run of extras came out of Tiago's reviews and playtesting: the sky start, locks and starter kits, self-contained and specific prompts, the opening area as the tutorial, a spoiler-free public site, a sandbox, and the design guide.
+- **The world is ready to play, and nothing has been started yet.** So the lockfile can still be regenerated (with approval), and placement decisions are still cheap. After the first real `stratum start`, positions are frozen for good.
+- Everything below is on `main`, together with this handoff. Some of it isn't pushed yet (`git status -sb` shows how far ahead it is). Tiago pushes; **pushing redeploys the public site.**
+
+**This session, in commit order:**
+
+| Commit | What | Why |
+|---|---|---|
+| `4d609d0` | M10: wellspring/trail renames, neutral docs, MIT, `docs/private.md` | ready to share |
+| `6de3836` | The sky start (DESIGN.md §6.6): wake on an island, glide down by clearing the opening shrine | Tiago: a high-level principle as the start, as some open-world games open in the sky |
+| `5fed2af` | Locks (`needs` on ordinary shrines, §5.4) and starter kits (`world/kits/`, §5.5) | metroidvania dependencies, used rarely; material for shrines with nothing earlier to build on |
+| `561c4d3` | Self-contained prompts (56 rewritten), 16 tag fixes, 21 `after`s, 12 locks, 3 kits, lockfile regenerated | audit: 34 prompts needed outside material (`docs/plans/self-contained.md`) |
+| `28f44a5` | Agent Workshops' task benchmarked as a matrix (2 inputs × 4 windows) | a single benchmark was recall-solvable ("sliding window median") |
+| `8aa6397` | vitest timeout 20 s | fixture-building tests were flaky under the full suite |
+| `0ac1467` | `map.focus` (open where you are), `build --static --public`, newcomer guide | an explicit start; visitors always see the fresh view |
+| `8e8e8d4` | **The opening area is the tutorial** (a 13th lock on the plateau, a test pinning the opening's coverage), `stratum sandbox`, exact terminal hints in the panel and CLI | Tiago rejected a separate tutorial isle: teach by placement, not instruction |
+| `1eafb4b` | **Problems, not problem-posing:** 104 prompts and 28 `done`s made specific; **`docs/world-design.md`** | many prompts made the learner choose the problem; the lessons are written down for agents |
+
+**Waiting on Tiago** (also under "Open items" below):
+1. Skim the 104 specified prompts (`git show 1eafb4b -- world/world-seed.yaml`; the reviewers' choices are in decisions.md).
+2. Playtest the opening in `npm run sandbox -- --reset`.
+3. Set up the private journey repo (docs/guide.md) before his first real start, then push `main`.
+4. Two small offers, unanswered:
+   - `size: S` on the opening shrine (it carries the default M);
+   - whether 13 locks (6%) is fine, since he'd approved 12.
+
+**What to do next, in order:**
+1. **Act on his playtest feedback.** It's the most valuable input there is, and every pass so far started from one observation of his.
+2. **Before his first start:** the seed, biome and region-weight questions (Open items 4–5, M8 E1). This is the last cheap moment.
+3. **`stratum lint --design`, the cheap half of M14:**
+   - the audit phrasings from `docs/world-design.md` §5 (passes A and B);
+   - "your X" with no `after`/`needs` pointing at a shrine that builds it;
+   - the lock budget;
+   - the opening-area table (it already exists as a test in `core/test/explore.test.ts`; promote it to a lint).
+
+   Tower clears add proposals, so new content needs this check.
+4. **Small ideas raised but not built:**
+   - a Horizon rule that offers a newly unlocked shrine (today it's a toast, and the Thread finds it only if it's nearest);
+   - an optional per-shrine `check:` command that `stratum clear` runs (kits have tests);
+   - a CI job that runs tests and lint and builds the kits;
+   - stripping unexplored geometry from the public map.json.
+5. **Then the roadmap:** M11 (treasure) once there's real play to tune against, then M12 → M14 → M15 → M16 (template.md). M14's design guide is drafted (`docs/world-design.md`); its schemas, lint and simulator aren't.
+
+**How the work has gone here (learn from it):**
+- **Content passes:**
+  - Use parallel subagents with **one shared rubric file**, each returning JSON (`{id, prompt, done, note}`) for its batch: surface 60, surface 59, sky+depths 98.
+  - Apply the results with a script that edits world-seed.yaml as text, keeping comments and formatting. It replaces a block's `prompt: >-` folded scalar, re-wrapped at about 96 columns with a 4-space indent, and merges `[a, b]` lists in field order. The scripts lived in a temp dir, so recreate them.
+  - Tiago's standing pattern: "draft it, apply it, I'll skim the diff". The rubrics now live in `docs/world-design.md` §5.
+- **Structural fields** (tags, `after`, `needs`, `start`, `biome`, `size`) need his approval, which he gives per request. Locks: keep to about 5–6%, each with its key in sight.
+- **Lockfile regeneration** needs approval and only happens before the first start. Compute it in a scratch root and swap it in with a rename; never delete it while `npm run dev` runs (the watcher refills it).
+- **His design taste,** which has driven every pass:
+  - show, don't tell (BotW towers; the Half-Life 2 sawblade beside the one on the wall);
+  - no separate tutorial;
+  - dependencies as rare metroidvania beats;
+  - every shrine startable in five minutes: no outside material, no problem-posing, specific inputs and sizes;
+  - tasks that need doing, not recalling;
+  - finance flavour where it's natural.
+
+  All of it is now in `docs/world-design.md`. Read it before touching content.
+- **Git:** commits only when he asks. This session he asked each time ("commit", "merge to main"), and work was committed on a worktree branch, then fast-forwarded onto `main`. **If you use a worktree, base it on local `main`:** `origin/main` lagged far behind once. `main` can also move under you (he committed the Pages workflow mid-session); rebase your branch, never force.
+- **Servers:**
+  - He usually has a dev server running from the main checkout (5173 or 5181), so use other ports.
+  - Code changes need a restart (tsx doesn't hot-reload the CLI); world, work and state changes rebuild live.
+  - `npm run sandbox` serves on 5174.
+  - Screenshots: `STRATUM_URL=http://127.0.0.1:<port> scripts/screenshot.sh <layer> <zoom>`, or `node scripts/shot.mjs <url> <png> --eval "(async () => {...})()"` for interactions. Dispatch keys on `document.body`, not `window`.
+- **Verification** after every change: `npm test` (162), `npm run typecheck`, `npm run stratum -- lint` (0/0), and `npm run stratum -- build` (expect "placed 0 new shrine(s); lockfile unchanged"). For public-site changes, also run `build --static --public` and check that no hidden ids leak into `build/static/map.json`.
 
 ## Milestones (DESIGN.md §13)
 
@@ -202,10 +272,7 @@ All of DESIGN.md §13's original milestones (M0–M6) are done. What follows is 
 4. **Verify:** `npm test`, `npm run typecheck` and `npm run stratum -- lint`, plus screenshots for UI work (`scripts/screenshot.sh`).
 5. **Stop for Tiago's review** (CLAUDE.md). Update this file and `docs/decisions.md`. Commit only when asked.
 
-**Recommended order:**
-1. ~~M10~~ (done 2026-10-05).
-2. M11 (improves Tiago's world now; safe after the first start).
-3. M12 → M14 → M15 → M16, with M13 anywhere after M12.
+**Recommended order:** see "What to do next" in *Start here* at the top (updated 2026-10-08). In short: his playtest feedback, then the pre-start decisions, then `lint --design`, then M11 after some real use, then M12 → M14 → M15 → M16, with M13 anywhere after M12.
 
 M7 and M9 are independent. M8 E1 only before the first start.
 
@@ -218,7 +285,7 @@ M7 and M9 are independent. M8 E1 only before the first start.
 | treasure.md | Echo scope | own region or theme only |
 | treasure.md | When readings and cards count | as soon as they're opened |
 | template.md | Names for the depths node / the clear history | *wellspring* / *trail* (**answered**: kept) |
-| template.md | Licence; his world public? | MIT (**answered**: kept); his world stays private until he says otherwise (example packs come from the generator) |
+| template.md | Licence; his world public? | MIT (**answered**: kept); **his world is public** (answered 2026-10-07: public repo and Pages site; the site shows the fresh, spoiler-free view, and his playthrough goes in a private copy) |
 | template.md | Sealed shrine prose | on for generated worlds, off for Tiago's |
 | template.md | Distribution | a template repo, with `git pull upstream` for updates |
 
@@ -235,7 +302,7 @@ M7 and M9 are independent. M8 E1 only before the first start.
   
   Add the drift check and `stratum rename` (the modularity report's five cases make good tests). The scratch harness that found them was in `build/modularity.ts` (gitignored; recreate it if it's gone).
 - **M13, learning materials.** Coordinate `papers:` with M8 E1, whichever lands first. Export to Anki CSV only; no spaced repetition.
-- **M14, the world-design scaffold.** Generate JSON Schemas from the loader's types; write `docs/world-design.md` from Tiago's world; `lint --design`; `simulate`. Record his world's metrics as the baseline before changing anything.
+- **M14, the world-design scaffold.** `docs/world-design.md` is drafted (2026-10-08): extend it, don't restart it. Still to build: JSON Schemas generated from the loader's types; `lint --design` (start with its §5 audit phrasings, the lock budget and the opening-area check from `core/test/explore.test.ts`); and `simulate`. Record his world's metrics as the baseline before changing anything.
 - **M15, the generator.** A Claude Code skill (`.claude/skills/generate-world/`) driving subagents. Test on three unlike topics in scratch roots (`--root`), never on Tiago's world.
 - **M16, release.** A template repo, `stratum new` and `stratum doctor`, and a first-hour guide, timed on a clean clone.
 
@@ -246,4 +313,4 @@ M7 and M9 are independent. M8 E1 only before the first start.
 - **Cross-region `after` edges don't affect placement.** They're intended as a Horizon signal in M4.
 - **Stale lockfile entries** (removed ids) are kept on purpose; see decisions.
 - **Island ground shadows** on the surface are drawn from the archipelago outlines and look blotchy (fainter on unexplored paper since M5). Cosmetic.
-- **map.json still carries the full geometry** (Atlas needs it). The M5 static build might strip unexplored terrain.
+- **map.json still carries the full geometry** (the Atlas needs it). The public build (`--public`) strips hidden shrines but not unexplored terrain, so the land's shape is in the JSON even though the app masks it.

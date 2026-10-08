@@ -4,7 +4,7 @@ Stratum is a personal study map: a three-layer world (sky, surface, depths) of "
 
 ## Read first, in this order
 
-1. **`docs/status.md`** covers where the project is: milestones done, open review items, and what to do next.
+1. **`docs/status.md`**, starting with its **"Start here"** handoff: where the project is, what the last session changed and why, what's waiting on the owner, what to do next, and the working lessons.
 2. **`DESIGN.md`** is the spec. §0 (constraints) and §13 (milestones) are mandatory reading. Treat it as authoritative except where `docs/decisions.md` extends it.
 3. **`docs/decisions.md`** records every choice made where DESIGN.md is silent, plus agreed extensions (`theme`, `after`, archipelagos, the `x86` tag). Add a bullet there for any new choice.
 4. **`docs/world-design.md`** before writing or reviewing any world content: shrines, proposals, kits, a new world. It's the craft (what keeps a learner engaged, the rules for a shrine and for a world) and the audit passes to rerun after edits.
