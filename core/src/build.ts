@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 import { CONFIG_PATH, loadConfig, type Config } from './config.ts';
 import { computeExplored, exploredShare } from './explore.ts';
 import { buildGeometry, buildMapData } from './export.ts';
@@ -124,6 +124,21 @@ export interface BuildOptions {
   cache?: BuildCache;
   /** Ignore work/ and the pin: the map a newcomer sees (the public site, `build --static --public`). */
   fresh?: boolean;
+  /** Where the CLI runs from and its command prefix (e.g. `npm run stratum --`), for map.json's `terminal`. */
+  terminal?: { cwd: string; cli: string };
+}
+
+/**
+ * How to reach a world from a terminal: its absolute folder, and the command to run from `cwd`. A world elsewhere
+ * gets `--root` (relative when it's inside `cwd`, so commands stay short), so a copied command works as pasted.
+ */
+export function terminalFor(root: string, cwd: string, cli: string): NonNullable<MapData['terminal']> {
+  const abs = resolve(root);
+  const here = resolve(cwd);
+  const rel = relative(here, abs);
+  const where = rel === '' ? '' : !rel.startsWith('..') && !isAbsolute(rel) ? rel : abs;
+  const quoted = /^[\w./-]+$/.test(where) ? where : `'${where.replace(/'/g, `'\\''`)}'`;
+  return { root: abs, cwd: here, cli: where ? `${cli} --root ${quoted}` : cli };
 }
 
 /** Load, validate, place, and assemble map.json. Writes the lockfile and map unless `write` is false. */
@@ -173,6 +188,7 @@ export function build(root: string, opts: BuildOptions = {}): BuildResult {
     world, geo, placement.positions, placement.anchors,
     { work, sight, explored, exploredShare: exploredShare(world, geo, explored), config: config.visibility, available: config.hardware.available, horizon, pin, week }, now, geometry,
   );
+  if (opts.terminal) map.terminal = terminalFor(root, opts.terminal.cwd, opts.terminal.cli);
   if (opts.write !== false) {
     if (lockChanged) writeLock(root, placement.lock);
     mkdirSync(join(root, 'build'), { recursive: true });

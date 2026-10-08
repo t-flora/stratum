@@ -88,8 +88,11 @@
     }
   }
 
+  /** The CLI as the person should type it (map.terminal, set by the CLI), for the copy-a-command fallbacks. */
+  const cli = $derived(built?.terminal?.cli ?? 'stratum');
+
   async function setOut(id: string) {
-    if (!live) return copyCommand(`stratum start ${id}`);
+    if (!live) return copyCommand(`${cli} start ${id}`);
     const res = await post('/api/start', { id });
     if (!res.ok) return say(`Can't set out: ${res.error}`);
     say(`Camp is at ${map?.shrines.find((s) => s.id === id)?.title ?? id} now.`);
@@ -98,7 +101,7 @@
   }
 
   async function shelve(id: string) {
-    if (!live) return copyCommand(`stratum shelve ${id}`);
+    if (!live) return copyCommand(`${cli} shelve ${id}`);
     const res = await post('/api/shelve', { id });
     if (!res.ok) return say(`Can't shelve: ${res.error}`);
     say('Shelved. Setting out again takes it off the shelf.');
@@ -106,7 +109,7 @@
   }
 
   async function pin(id: string | null) {
-    if (!live) return copyCommand(id ? `stratum pin ${id}` : 'stratum pin --clear');
+    if (!live) return copyCommand(id ? `${cli} pin ${id}` : `${cli} pin --clear`);
     const res = await post('/api/pin', { id });
     if (!res.ok) return say(`Can't pin: ${res.error}`);
     await load();

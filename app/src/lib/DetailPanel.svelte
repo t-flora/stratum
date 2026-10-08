@@ -62,14 +62,15 @@
           ? `Shelved${shrine.startedAt ? ` · started ${shrine.startedAt}` : ''}`
           : 'Untouched',
   );
+  /** How to reach this world from a terminal (set by the CLI): the exact command, and the folder to run it in. */
+  const term = $derived(map.terminal);
+  const setOutNext = $derived(shrine.status === 'untouched' || shrine.status === 'shelved');
   const command = $derived(
-    shrine.status === 'untouched' || shrine.status === 'shelved'
-      ? `stratum start ${shrine.id}`
-      : shrine.status === 'in-progress'
-        ? `stratum clear ${shrine.id}`
+    setOutNext ? `${term?.cli ?? 'stratum'} start ${shrine.id}`
+      : shrine.status === 'in-progress' ? `${term?.cli ?? 'stratum'} clear ${shrine.id}`
         : null,
   );
-  const workPath = $derived(`work/${shrine.id}/`);
+  const workPath = $derived(term ? `${term.root}/work/${shrine.id}/` : `work/${shrine.id}/`);
   const writeupHtml = $derived(shrine.status === 'cleared' && shrine.writeup ? renderMarkdown(shrine.writeup) : null);
 
   let copied = $state<string | null>(null);
@@ -219,16 +220,30 @@
     </section>
   {/if}
 
+  {#if !map.public}
   <section class="work">
+    <h4>Your work goes in</h4>
     <button class="copy" onclick={() => copy(workPath)} title="Copy the work folder path">
       <code>{workPath}</code><span>{copied === workPath ? 'Copied' : 'Copy path'}</span>
     </button>
     {#if command}
+      <h4>
+        {setOutNext
+          ? live ? 'Or set out from a terminal' : 'Set out from a terminal'
+          : 'When the write-up is done, clear it from a terminal'}
+      </h4>
+      <p class="explain">
+        {term ? `Run it in ${term.cwd}.` : 'Run it from the folder that holds world/.'}
+        {setOutNext
+          ? 'It creates the folder above with a WRITEUP.md and a NEXT.md.'
+          : 'Clearing only happens there: it checks the write-up and your files, and the map never clears a shrine by click.'}
+      </p>
       <button class="copy" onclick={() => copy(command)} title="Copy the command">
         <code>{command}</code><span>{copied === command ? 'Copied' : 'Copy'}</span>
       </button>
     {/if}
   </section>
+  {/if}
 
   {#if writeupHtml}
     <section class="writeup">
@@ -485,6 +500,12 @@
     display: grid;
     gap: 6px;
   }
+  .work h4 {
+    margin: 6px 0 0;
+  }
+  .work .explain {
+    margin: 0;
+  }
   .copy {
     display: flex;
     align-items: center;
@@ -501,11 +522,11 @@
   .copy:hover {
     border-color: var(--ui-accent);
   }
+  /* Paths and commands wrap rather than truncate: the end of a path (work/<id>/) is the part that matters. */
   .copy code {
-    overflow: hidden;
     font-family: var(--font-mono);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    text-align: left;
+    overflow-wrap: anywhere;
   }
   .copy span {
     flex: none;

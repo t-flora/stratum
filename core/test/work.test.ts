@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   DEFAULT_CONFIG, NO_GIT, build, clearShrine, countWords, defaultTemplate, deriveWorkState, gitReader, isArtefact, loadWorld,
-  lintWorkFolders, parseWorkLog, publicView, readGitWork, readWorkFolder, readWorkState, setFrontmatter, shelveShrine, startShrine, validateClear, writeupSections,
+  lintWorkFolders, parseWorkLog, publicView, readGitWork, terminalFor, readWorkFolder, readWorkState, setFrontmatter, shelveShrine, startShrine, validateClear, writeupSections,
   type ClearInput, type Shrine, type World,
 } from '../src/index.ts';
 
@@ -115,6 +115,13 @@ describe('validateClear (§5)', () => {
   it('towers need three proposals instead of an artefact', () => {
     expect(validateClear(base('tower-west', { files: [], proposals: 2 })).ok).toBe(false);
     expect(validateClear(base('tower-west', { files: [], proposals: 3 })).ok).toBe(true);
+  });
+
+  it('terminal hints: the exact command to paste, from the engine folder', () => {
+    expect(terminalFor('/eng', '/eng', 'npm run stratum --')).toEqual({ root: '/eng', cwd: '/eng', cli: 'npm run stratum --' });
+    expect(terminalFor('/eng/build/sandbox', '/eng', 'npm run stratum --').cli).toBe('npm run stratum -- --root build/sandbox');
+    expect(terminalFor('/home/me/journey', '/eng', 'npm run stratum --').cli).toBe('npm run stratum -- --root /home/me/journey');
+    expect(terminalFor('/home/me/my map', '/eng', 'npm run stratum --').cli).toBe("npm run stratum -- --root '/home/me/my map'");
   });
 
   it('§5.4 an ordinary shrine with needs clears only once they are cleared', () => {

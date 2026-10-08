@@ -1,15 +1,16 @@
 #!/usr/bin/env -S npx tsx
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative, resolve, sep } from 'node:path';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { Command } from 'commander';
 import {
   CONFIG_PATH, Geometry, LAYERS, PROPOSED_PATH, appendProposal, looseThreads, parseWriteup, proposalStub, LOCAL_CONFIG_PATH, LOCK_PATH, MAP_PATH, PINS_PATH, TEMPLATES, build, clearShrine, gitReader,
   hasLocalConfig, lintClears, lintGeometry, lintPin, lintWorkFolders, loadConfig, loadWorld, readGitWork, readWorkState, setPin,
-  publicView, shelveShrine, startShrine, summarize, validateConfig,
+  publicView, shelveShrine, startShrine, summarize, terminalFor, validateConfig,
   type BuildResult, type ClearCheck, type Diagnostic, type MapData, type TemplateName, type World,
 } from '@stratum/core';
 import { stratumApi } from './dev.ts';
+import { TERMINAL } from './engine.ts';
 import { setup } from './setup.ts';
 
 /** Walk up from cwd to the directory containing world/world-seed.yaml. */
@@ -86,7 +87,7 @@ program
       return;
     }
     const t0 = performance.now();
-    const res = build(root(), { replace: opts.replace });
+    const res = build(root(), { replace: opts.replace, terminal: TERMINAL });
     const { errors } = printDiagnostics(res.diagnostics);
     if (!res.map || errors.length) {
       console.log(`build failed: ${errors.length} error(s)`);
@@ -141,41 +142,39 @@ program
   .action(async (opts: { port: string }) => serve(root(), Number(opts.port)));
 
 program
-  .command('tutorial')
-  .description('Play the tutorial world (examples/tutorial) in a throwaway copy under build/tutorial/; your world is untouched')
-  .option('--reset', 'start the tutorial over')
+  .command('sandbox')
+  .description('Play this world from a fresh start in a throwaway copy under build/sandbox/: try things without touching your progress')
+  .option('--reset', 'throw the sandbox away and start fresh')
   .option('--port <n>', 'port', '5174')
   .action(async (opts: { reset?: boolean; port: string }) => {
     const repo = root();
-    const src = join(repo, 'examples', 'tutorial');
-    const dest = join(repo, 'build', 'tutorial');
-    if (!existsSync(join(src, 'world', 'world-seed.yaml'))) {
-      console.log(`no tutorial world at ${src}`);
-      process.exitCode = 1;
-      return;
-    }
+    const dest = join(repo, 'build', 'sandbox');
     if (opts.reset) rmSync(dest, { recursive: true, force: true });
     if (!existsSync(dest)) {
-      // Copy the world (not its own build/ output) and the templates `start` scaffolds from.
-      cpSync(src, dest, { recursive: true, filter: (p) => !relative(src, p).split(sep).includes('build') });
-      cpSync(join(repo, 'templates'), join(dest, 'templates'), { recursive: true });
-      // Its own repository, so commits, hours and "not committed yet" behave as they do in a real world.
+      // The world as a newcomer gets it: world/, the templates and config, but no work/ and an empty pin.
+      for (const p of ['world', 'templates', 'stratum.config.yaml', LOCAL_CONFIG_PATH]) {
+        if (existsSync(join(repo, p))) cpSync(join(repo, p), join(dest, p), { recursive: true });
+      }
+      mkdirSync(join(dest, 'state'), { recursive: true });
+      writeFileSync(join(dest, PINS_PATH), 'pin: null\n');
+      // Its own repository, so commits, hours and "not committed yet" behave as they do for real.
       const vcs = (...args: string[]) => spawnSync('git', ['-C', dest, ...args], { encoding: 'utf8' });
       vcs('init', '-q');
       vcs('add', '-A');
-      if (vcs('commit', '-q', '-m', 'The Practice Isle').status !== 0) {
-        vcs('-c', 'user.name=Stratum', '-c', 'user.email=tutorial@example.invalid', 'commit', '-q', '-m', 'The Practice Isle');
+      if (vcs('commit', '-q', '-m', 'Sandbox: a fresh start').status !== 0) {
+        vcs('-c', 'user.name=Stratum', '-c', 'user.email=sandbox@example.invalid', 'commit', '-q', '-m', 'Sandbox: a fresh start');
       }
-      console.log('Set up the tutorial in build/tutorial/, with its own history. Your own world is untouched.');
-      console.log('CLI commands take --root: npm run stratum -- --root build/tutorial clear tut-first-steps');
-      console.log('Start over any time: npm run tutorial -- --reset\n');
-    } else console.log('Resuming the tutorial in build/tutorial/ (npm run tutorial -- --reset starts over)\n');
+      const t = terminalFor(dest, TERMINAL.cwd, TERMINAL.cli);
+      console.log(`A fresh copy of this world is in ${t.root}, with its own history. Your progress is untouched.`);
+      console.log(`Commands for it, from ${t.cwd}: ${t.cli} <command>   (the map's panels show the exact ones)`);
+      console.log('Throw it away and start over: npm run sandbox -- --reset\n');
+    } else console.log('Back in the sandbox (npm run sandbox -- --reset starts over)\n');
     await serve(dest, Number(opts.port));
   });
 
 /** Build, then serve the map with the dev API (localhost only) and live rebuilds. */
 async function serve(dir: string, port: number) {
-  const res = build(dir);
+  const res = build(dir, { terminal: TERMINAL });
   const { errors } = printDiagnostics(res.diagnostics);
   if (errors.length) {
     console.log(`build failed: ${errors.length} error(s)`);
@@ -258,8 +257,10 @@ program
     console.log(`Set out for ${shrine.title} (${shrine.size}, ${res.kit ? 'with its starter kit' : `${res.template} template`})\n`);
     for (const f of res.created) console.log(`  + ${f}`);
     console.log(`\nBuild:\n${indent(shrine.prompt)}\n\nDone when:\n${indent(shrine.done)}\n`);
-    console.log(`Camp is here now. Before stopping, write where you left off on the first line of work/${id}/NEXT.md.`);
-    console.log(`When the write-up is done: stratum clear ${id}`);
+    const t = terminalFor(dir, TERMINAL.cwd, TERMINAL.cli);
+    console.log(`Your work goes in ${join(t.root, 'work', id)}/ (WRITEUP.md, NEXT.md and your own files).`);
+    console.log(`Camp is here now. Before stopping, write where you left off on the first line of NEXT.md.`);
+    console.log(`When the write-up is done, clear it from a terminal (in ${t.cwd}):\n  ${t.cli} clear ${id}`);
   });
 
 program
@@ -288,7 +289,7 @@ program
         console.log(`\nCleared ${res.shrine.title} on ${res.date}.\n`);
         console.log(`Did you:\n${indent(res.shrine.done)}\n`);
         if (res.unpinned) console.log(`The pin was on ${id}; it's removed.\n`);
-        console.log(`If so, commit it (stratum never commits for you):\n  ${res.commit}`);
+        console.log(`If so, commit it (stratum never commits for you), in ${resolve(dir)}:\n  ${res.commit}`);
     }
   });
 

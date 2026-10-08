@@ -12,7 +12,7 @@
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit && npm run -w @stratum/app check",
     "dev": "tsx cli/index.ts dev",
-    "tutorial": "tsx cli/index.ts tutorial"
+    "sandbox": "tsx cli/index.ts sandbox"
   },
   "engines": {
     "node": ">=20"

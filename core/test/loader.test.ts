@@ -118,19 +118,6 @@ describe('planted errors carry file/line context', () => {
     expect(errs[0]).toMatchObject({ code: 'tower-count', line: lineOf(text, '- id: value-categories') });
   });
 
-  it('the tutorial world (examples/tutorial) lints clean and teaches every mechanic', () => {
-    const { world, diagnostics } = loadWorld(join(ROOT, 'examples', 'tutorial'));
-    expect(errors(diagnostics)).toEqual([]);
-    expect(diagnostics.filter((d) => d.severity === 'warning')).toEqual([]);
-    const w = world!;
-    expect(w.start.sky).toEqual(['tut-first-steps']);
-    const kinds = new Set(w.shrines.map((s) => s.kind));
-    expect([...kinds].sort()).toEqual(['shrine', 'temple', 'tower']);
-    expect(w.shrines.some((s) => s.kind === 'shrine' && s.needs.length)).toBe(true); // a lock
-    expect(w.shrines.some((s) => s.layer === 'depths')).toBe(true); // a wellspring
-    expect(w.ridges.overrides.some((r) => r.h >= 3)).toBe(true); // a ridge worth peeking over
-  });
-
   describe('needs on ordinary shrines (§5.4)', () => {
     const ENTRY = '- id: move-semantics-vector\n  title: A vector that moves correctly\n  region: cpp-core\n';
     it('is allowed on a shrine, an error on a tower, and an error in a cycle', () => {

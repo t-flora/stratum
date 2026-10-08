@@ -96,7 +96,8 @@ What a model needs to design a *good* world, not just a valid one.
    - a region over capacity (spacing would relax);
    - a hardware-gated share above 50% in any region;
    - a fresh-map discovery share outside 15–25%;
-   - a temple whose needs sit in a single theme.
+   - a temple whose needs sit in a single theme;
+   - an opening area that doesn't teach by sight (added 2026-10-08; docs/guide.md §3): after landing, no revealed tower, no revealed lock with its key seen, fewer than two start shrines with depths below, fewer than three p ≥ 4 landmarks beyond the start, or no temple in sight. There's no separate tutorial, so the opening area is the tutorial.
 4. **`stratum simulate`.** A synthetic learner plays the world: it takes Horizon cards (thread, vertical or far, in a seeded mix), starts and clears them, and opens what it finds. It reports:
    - the discovery curve (share of the world seen after n clears);
    - when each region is first seen;

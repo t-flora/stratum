@@ -8,7 +8,7 @@ A three-layer exploration map for deep study, inspired by open-world exploration
 
 ## Quick start
 
-Needs Node 20+ and git. **New here?** Play the tutorial first (`npm install && npm run tutorial`, about an hour), then follow [docs/guide.md](docs/guide.md) to make a map of your own.
+Needs Node 20+ and git. **New here?** Read [docs/guide.md](docs/guide.md): set out, play privately, or make a map of your own. There's no separate tutorial: the opening area teaches the game.
 
 ```sh
 npm install

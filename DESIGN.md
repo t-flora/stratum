@@ -485,7 +485,7 @@ Run the CLI with `npx tsx cli/index.ts`, aliased as `stratum`.
 |---|---|
 | `stratum lint` | Validate the world (§4.2) and every WRITEUP.md |
 | `stratum build [--replace <id>] [--static [--public [--link <url>]]]` | Compute positions (respecting the lockfile), derived state, visibility and Horizon, and write `build/map.json`. `--static` bundles the app into `build/static/`. `--public` makes that the public site's map: built fresh (no `work/`, no pin), with hidden shrines dropped and unrevealed prompts blanked, no Atlas, and a note linking to `--link` |
-| `stratum tutorial [--reset]` | Copy `examples/tutorial/` (the Practice Isle) into `build/tutorial/` with its own git history, and serve it like `dev` (port 5174) |
+| `stratum sandbox [--reset]` | Copy this world (no `work/`, empty pin) into `build/sandbox/` with its own git history, and serve it like `dev` (port 5174): a fresh start to playtest without touching your progress |
 | `stratum dev` | Vite dev server plus a local API (localhost only), with a file watcher that rebuilds on changes under `world/`, `work/` and `state/` and pushes updates over SSE |
 | `stratum start <id> [--force]` | Scaffold `work/<id>/` from a template (cpp or python, based on `region`, with a flag to override) and set `status: in-progress` and `started`. Copies `world/kits/<id>/` instead of the code template when a kit exists (§5.5). Refuses to start a hidden shrine or a locked one (§5.4) without `--force`. |
 | `stratum clear <id>` | Validate (§5), stamp the date, and print the checklist and suggested commit |

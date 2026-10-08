@@ -41,7 +41,7 @@ npm run stratum -- horizon       # the three Horizon cards
 npm run stratum -- pin <id>      # set the pin (--clear removes it)
 npm run stratum -- propose --from <id>  # list the write-up's loose threads; --thread <n> / --text appends a stub to world/proposed.yaml
 npm run dev                      # Vite + dev API at http://127.0.0.1:5173; rebuilds live on world/work/state changes
-npm run tutorial                 # the tutorial world (examples/tutorial) in a throwaway copy, build/tutorial/, on :5174; -- --reset starts over
+npm run sandbox                  # this world from a fresh start in a throwaway copy, build/sandbox/, on :5174; -- --reset starts over
 scripts/screenshot.sh sky 1      # headless screenshot of the running dev server → build/debug/sky-1.png (MOBILE=1 … 390x844 for a phone)
 ```
 
@@ -79,7 +79,6 @@ cli/dev.ts         dev API Vite plugin: /api/{health,map,events,start,pin,shelve
 app/src/           Svelte 5 + Vite renderer of build/map.json (MapView, Glyph, DetailPanel, HorizonPanel, MapKey, SearchBox, AtlasTable, Geography; api.ts, camp.ts, markdown.ts)
 templates/         WRITEUP.md, NEXT.md, cpp/ and python/ scaffolds for `stratum start`
 world/             world-seed.yaml (content), proposed.yaml, positions.lock.json (committed), kits/<id>/ (starter kits, content)
-examples/tutorial/ the Practice Isle: a 10-shrine tutorial world (played via `npm run tutorial`; also the format's worked example)
 fixtures/          tiny/ (clean 3-region world), planted-errors/ (lint test)
 state/pins.yaml    the map pin (`pin: <id>` or null)
 docs/              guide.md (the newcomer track), status.md, decisions.md, private.md (gitignored), plans/ (self-contained, template, treasure, world editing, reset: proposals; camps, unknown, geography: done)

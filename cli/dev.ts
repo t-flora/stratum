@@ -4,6 +4,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { join, sep } from 'node:path';
 import { build, loadWorld, setPin, shelveShrine, startShrine, type BuildCache, type MapData } from '@stratum/core';
 import type { Plugin } from 'vite';
+import { TERMINAL } from './engine.ts';
 
 /** Paths under these are noise (virtualenvs, build output, caches) or written by the build itself. */
 const IGNORE = [/(^|[\\/])(\.venv|node_modules|__pycache__|build|\.pytest_cache|\.git)([\\/]|$)/, /positions\.lock\.json$/, /~$|\.swp$/];
@@ -42,7 +43,7 @@ export function stratumApi(root: string, log: (msg: string) => void): Plugin {
 
   const rebuild = () => {
     const t0 = performance.now();
-    const res = build(root, { cache });
+    const res = build(root, { cache, terminal: TERMINAL });
     const errors = res.diagnostics.filter((d) => d.severity === 'error');
     if (res.map && !errors.length) {
       map = res.map;

@@ -134,6 +134,20 @@ describe('a fresh repo on the seed world (M4b acceptance)', () => {
     expect(others.size).toBeGreaterThanOrEqual(3);
   });
 
+  // The opening area is the tutorial (docs/guide.md): every mechanic is met by sight within reach of the landing,
+  // the way a tower or a lever left lying about teaches without a word.
+  it('after landing, the opening area shows each mechanic: tower, lock with its key in sight, glow source, landmarks, temple', () => {
+    const tower = world.shrines.find((s) => s.region === core && s.kind === 'tower')!;
+    expect(landed.get(tower.id)).toBe('revealed');
+    const locks = world.shrines.filter((s) => s.kind === 'shrine' && s.needs.length && landed.get(s.id) === 'revealed');
+    expect(locks.length, 'a padlock in plain sight').toBeGreaterThan(0);
+    expect(locks.some((l) => l.needs.every((n) => landed.get(n) !== 'hidden')), 'its key seen').toBe(true);
+    const glowSources = world.shrines.filter((s) => s.region === core && world.shrines.some((d) => d.below === s.id));
+    expect(glowSources.length, 'start shrines with depths below').toBeGreaterThanOrEqual(2);
+    expect(seenIn(landed).filter((s) => s.p >= 4 && s.region !== core).length, 'landmarks over the ridges').toBeGreaterThanOrEqual(3);
+    expect(seenIn(landed).some((s) => s.kind === 'temple'), 'a temple on the horizon').toBe(true);
+  });
+
   it('charts the start region and leaves most of the land unknown', () => {
     const share = exploredShare(world, geo, ex);
     expect(share.get(core)!.share).toBeGreaterThan(0.95);

@@ -177,6 +177,12 @@ export interface MapData {
   start: { vantage: Vec2; plateau: string[]; sky: string[]; landed: boolean };
   focus: MapFocus;
   /**
+   * Set by the CLI (never on the public site): how to reach this world from a terminal. `root` is the world's
+   * folder (work goes in `root/work/<id>/`), and `cli` is the command prefix to run from `cwd`, e.g.
+   * `npm run stratum -- --root build/sandbox`.
+   */
+  terminal?: { root: string; cwd: string; cli: string };
+  /**
    * Set on the public site's map (`build --static --public`): a fresh map with nothing you haven't seen in it.
    * Hidden shrines are left out, so `total` is the world's real size; the app has no Atlas then.
    */

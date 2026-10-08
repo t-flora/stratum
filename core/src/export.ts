@@ -354,8 +354,9 @@ export function publicView(map: MapData, link?: string): MapData {
     }
     return out;
   });
+  const { terminal: _local, ...rest } = map; // the build machine's paths mean nothing to a visitor
   return {
-    ...map,
+    ...rest,
     public: { total: map.shrines.length, ...(link ? { link } : {}) },
     shrines,
     themes: map.themes.map((t) => ({ ...t, members: only(t.members) })).filter((t) => t.members.length),

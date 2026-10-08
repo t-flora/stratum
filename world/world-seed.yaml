@@ -221,6 +221,7 @@ shrines:
   theme: "Errors & contracts"
   size: S
   after: [std-expected-errors, concepts-constraints]
+  needs: [concepts-constraints]
   prompt: >-
     Using GCC trunk on Compiler Explorer (P2900) or a documented emulation, add pre/post conditions
     to your numeric library (Concepts as contracts shrine) and compare the evaluation semantics
