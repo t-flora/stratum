@@ -83,7 +83,7 @@ The opening area is the tutorial, so design it the way good games do: show, don'
 | The triangle rule | Low ridges round the start, and a few p ≥ 4 landmarks just beyond them, so some things call from afar and the rest is hidden. |
 | Temples | One sealed capstone on the horizon, whose panel lists what opens it. |
 
-This repo's world is checked against that table by a test (`core/test/explore.test.ts`, "the opening area shows each mechanic"). Playtest your opening in `npm run sandbox`. A generator that interviews you and drafts a world is planned (`docs/plans/template.md`, M15); until then, a model like Claude does a good first draft if you give it this guide and `DESIGN.md`.
+The full craft, written for the agent (or person) designing a world, is [docs/world-design.md](world-design.md): what keeps a learner coming back, the rules for a single shrine (a specific problem, no outside material, needs doing rather than remembering), the world's shape, and the audit passes. This repo's world is checked against that table by a test (`core/test/explore.test.ts`, "the opening area shows each mechanic"). Playtest your opening in `npm run sandbox`. A generator that interviews you and drafts a world is planned (`docs/plans/template.md`, M15); until then, a model like Claude does a good first draft if you give it `docs/world-design.md`, this guide and `DESIGN.md`.
 
 ## Publishing your map
 

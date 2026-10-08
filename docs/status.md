@@ -1,6 +1,6 @@
 # Status
 
-*Last updated: 2026-10-08 (the opening area as the tutorial, the sandbox, terminal hints). Keep this current at the end of every work session and milestone.*
+*Last updated: 2026-10-08 (problems, not problem-posing; docs/world-design.md). Keep this current at the end of every work session and milestone.*
 
 ## Milestones (DESIGN.md §13)
 
@@ -26,6 +26,7 @@
 | (extra) The sky start: begin on an island, descend to the plateau (DESIGN.md §6.6) | ✅ done; Tiago chose *Zero-cost, verified* as the opening and kept "earned by the first clear" | `6de3836` |
 | (extra) Self-contained shrines: locks, starter kits, rewordings, lockfile regenerated (docs/plans/self-contained.md) | ✅ done; Tiago skimmed the prose and kept the 12 locks; the Agent Workshops task was hardened after review | `561c4d3` and later |
 | (extra) Where the map opens, a spoiler-free public site, the opening area as the tutorial, the sandbox and the newcomer track (docs/guide.md) | ✅ built, **awaiting review** | on `main` |
+| (extra) Problems, not problem-posing: 104 prompts made specific; `docs/world-design.md` (the craft, for agents; M14 item 2) | ✅ built, **prose to skim** | on `main` |
 | M11: treasure, secrets, total completion (docs/plans/treasure.md) | planned; 4 questions | |
 | M12: world packs (engine/world split, drift check, rename) | planned | |
 | M13: learning materials (notes, papers, cards, Anki export) | planned | |
@@ -40,7 +41,7 @@
 
 ## Open items waiting on Tiago
 
-1. **Playtest the opening** in `npm run sandbox` (a fresh copy; `-- --reset` starts over), and say what's rough. The opening area is the tutorial now: no separate isle. Then **set up the private journey repo** (docs/guide.md, "Play this world, privately") before the first real `stratum start`, so `work/` never lands in the public repo.
+1. **Skim the 104 specified prompts** (the latest commit's world-seed.yaml diff). The reviewers' problem choices are listed in decisions.md ("Problems, not problem-posing"). Then **playtest the opening** in `npm run sandbox -- --reset` (a fresh copy; `-- --reset` starts over), and say what's rough. The opening area is the tutorial now: no separate isle. Then **set up the private journey repo** (docs/guide.md, "Play this world, privately") before the first real `stratum start`, so `work/` never lands in the public repo.
 2. **Pushing `main` deploys the public site,** now the fresh, spoiler-free view (`build --static --public`).
 3. **Questions in the new plans.**
    - `docs/plans/treasure.md`: GPU-gated content vs. the 75% rule, chest density, echo scope, when readings count.

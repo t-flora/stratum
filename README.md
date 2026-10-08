@@ -33,7 +33,7 @@ npm run stratum -- status           # where you are
 - `world/world-seed.yaml` is the world: regions, ridges and shrines. `world/positions.lock.json` fixes where each shrine sits; commit it.
 - `work/<id>/` holds your work on each shrine, and `state/pins.yaml` the map pin.
 - `core/` has the game logic (pure TypeScript), `cli/` the `stratum` command, and `app/` the map (Svelte).
-- `DESIGN.md` is the spec, `docs/status.md` covers progress and next steps, `docs/decisions.md` records the choices made along the way, and `CLAUDE.md` is the guide for coding agents.
+- `docs/world-design.md` is the craft of designing a world (for agents and authors), `DESIGN.md` is the spec, `docs/status.md` covers progress and next steps, `docs/decisions.md` records the choices made along the way, and `CLAUDE.md` is the guide for coding agents.
 
 ## Development
 

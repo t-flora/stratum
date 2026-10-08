@@ -17,6 +17,7 @@ Stratum is a personal study world inspired by open-world exploration games. The 
   4. **Placement is stable.** A shrine's position never changes once assigned (§8.4). Spatial memory is part of how the map motivates.
 - Visual design must be **original**. No assets, logos, fonts, sounds, character names or motifs from any existing game. The *vocabulary* used here (shrine, tower, wellspring, sky island, depths, chasm, camp, cairn, trail) is generic and fine.
 - Where this document is silent, choose the simplest thing that preserves the constraints above, and record the decision in `docs/decisions.md`.
+- For world *content* (shrines, proposals, kits, new worlds), follow `docs/world-design.md`: this document specifies the engine, and that one the craft.
 
 ---
 

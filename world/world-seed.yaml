@@ -1,8 +1,8 @@
 # Stratum: seed world
 # ----------------------------------------------------------------------------
 # The starter world for Stratum. It is written by hand, and it is meant to be
-# pruned, reworded and extended. DESIGN.md §4 has the schema and §6 has the
-# visibility rules that use `p` (prominence).
+# pruned, reworded and extended. Before writing a shrine, read docs/world-design.md.
+# DESIGN.md §4 has the schema and §6 has the visibility rules that use `p` (prominence).
 #
 # Shrine fields:
 #   id        unique kebab-case slug (also the work folder name)
@@ -119,8 +119,9 @@ shrines:
   p: 3
   after: [value-categories]
   prompt: >-
-    Implement a minimal `vector<T>` (push_back, emplace_back, reserve) with the strong
-    exception guarantee, using std::move_if_noexcept during reallocation.
+    Implement a minimal `vector<T>` (push_back, emplace_back, reserve) with the strong exception
+    guarantee, using std::move_if_noexcept during reallocation. Benchmark N = 1e3…1e7 push_backs of
+    a std::string-holding type.
   done: >-
     A test showing that a type with a throwing move constructor gets copied on reallocation, and a
     benchmark of noexcept vs non-noexcept element types.
@@ -144,8 +145,8 @@ shrines:
   after: [raii-handles]
   prompt: >-
     Implement a simplified shared_ptr with a control block, plus make_shared with a single
-    allocation. Benchmark copy, move and destruction against unique_ptr and raw pointers
-    in a multi-threaded workload.
+    allocation. Benchmark copy, move and destruction against unique_ptr and raw pointers with 1, 2,
+    4 and 8 threads each copying and dropping one shared instance 1e7 times.
   done: >-
     Benchmark results that separate the cost of the atomic refcount from the cost of the allocation.
 
@@ -155,8 +156,9 @@ shrines:
   theme: "What it compiles to"
   size: S
   prompt: >-
-    Generate a CRC32 or 8-bit popcount lookup table at compile time with constexpr/consteval,
-    and verify that it lands in .rodata with no runtime initialisation.
+    Generate the CRC32 lookup table (polynomial 0xEDB88320) at compile time with
+    constexpr/consteval, check CRC32("123456789") == 0xCBF43926, and verify that the table lands in
+    .rodata with no runtime initialisation.
   done: >-
     Disassembly/objdump showing the table in .rodata and no static-init code.
 
@@ -165,8 +167,9 @@ shrines:
   region: cpp-core
   theme: "Lazy & async"
   prompt: >-
-    Rewrite a filter-transform-accumulate loop with std::ranges views. Then write a custom
-    view adaptor (e.g. `stride_by` or `chunk_sum`) that composes with `|`.
+    Rewrite a loop that sums the notional (price × qty) of buy fills over 1e6 fills with std::ranges
+    views (filter | transform, then accumulate). Then write a custom `chunk_sum(n)` view adaptor
+    that composes with `|`.
   done: >-
     A codegen and timing comparison with the hand-written loop at -O2, plus a working custom adaptor.
 
@@ -178,7 +181,8 @@ shrines:
   after: [ranges-pipelines]
   prompt: >-
     Implement `generator<T>` by hand (promise_type, coroutine_handle, iterator), then compare it
-    with std::generator (C++23; Homebrew GCC 14+, as Apple libc++ lacks it) on a lazy tokenizer.
+    with std::generator (C++23; Homebrew GCC 14+, as Apple libc++ lacks it) on a lazy tokenizer over
+    a generated 100 MB trades CSV: throughput and frame allocations.
   done: >-
     Both versions produce identical output. The write-up traces a coroutine's lifecycle from
     initial_suspend to final_suspend.
@@ -188,8 +192,9 @@ shrines:
   region: cpp-core
   theme: "Errors & contracts"
   prompt: >-
-    Write the same small parser twice, once with exceptions and once with std::expected
-    (C++23). Measure the happy-path and error-path costs at several error rates.
+    Write a parser for order lines like `B,100,101.25` twice, once with exceptions and once with
+    std::expected (C++23). Measure the cost per line on 1e6 lines at 0, 0.1, 1, 10 and 50% error
+    rates.
   done: >-
     A plot of time vs error rate for both versions, with the crossover explained.
 
@@ -198,8 +203,9 @@ shrines:
   region: cpp-core
   theme: "What it compiles to"
   prompt: >-
-    Model an order-event state machine twice, once with std::variant + std::visit and once
-    with a virtual hierarchy. Compare dispatch codegen and throughput.
+    Model an order lifecycle (New, PartiallyFilled, Filled, Cancelled, Rejected) twice, once with
+    std::variant + std::visit and once with a virtual hierarchy. Compare dispatch codegen and
+    throughput on 1e7 random Ack/Fill/Cancel/Reject events.
   done: >-
     Annotated disassembly of both dispatch paths (jump table vs indirect call) and a benchmark.
 
@@ -210,8 +216,8 @@ shrines:
   size: S
   prompt: >-
     Show what lambdas compile to: closure layout, captures by value/ref, and generic lambdas.
-    Compare std::function, a function_ref (C++26 or hand-rolled) and a template parameter
-    as callback carriers.
+    Compare std::function, a function_ref (C++26 or hand-rolled) and a template parameter as
+    callback carriers for a capturing comparator sorting 1e6 ints.
   done: >-
     A sizeof table, an allocation count for std::function, and a benchmark of the three carriers.
 
@@ -258,8 +264,9 @@ shrines:
   theme: "Static polymorphism"
   p: 3
   prompt: >-
-    Build a CRTP mixin (e.g. comparison operators or instrumentation) and a CRTP-based strategy.
-    Compare it with a virtual version in a tight loop.
+    Build a CRTP mixin deriving all six comparisons from `compare()`, and a CRTP pricing strategy
+    (`quote()` calling `Derived::fair_value()`). Compare the strategy with a virtual version over
+    1e8 quotes.
   done: >-
     A benchmark plus disassembly showing the inlined CRTP path versus the indirect call.
 
@@ -292,8 +299,8 @@ shrines:
   theme: "Erasure & expressions"
   p: 3
   prompt: >-
-    Write a vector type whose `a + b * c` builds an expression tree and evaluates it in one fused
-    loop without temporaries.
+    Write a vector-of-double type whose `a + b * c` builds an expression tree and evaluates it in
+    one fused loop without temporaries. Benchmark at N = 1e3…1e7.
   done: >-
     A benchmark against the naive version with temporaries, and a check that the fused loop vectorizes.
 
@@ -303,8 +310,8 @@ shrines:
   theme: "Static polymorphism"
   after: [crtp-static-poly]
   prompt: >-
-    Design a container or allocator with pluggable policies (locking, bounds checking,
-    growth) selected at compile time.
+    Build a `vector<T, Locking, Bounds, Growth>` with policies selected at compile time:
+    NoLock/SpinLock, Unchecked/Checked (throws), and Doubling/FixedStep growth.
   done: >-
     Three policy combinations, with proof that the unused policies cost nothing (sizeof + asm).
 
@@ -314,10 +321,11 @@ shrines:
   theme: "Erasure & expressions"
   p: 3
   prompt: >-
-    Implement Sean Parent-style runtime polymorphism (a `drawable`/`any_callable`) with a
-    small-buffer optimisation.
+    Implement Sean Parent-style runtime polymorphism (a value-type `instrument` over any type with
+    `double price() const`) with a small-buffer optimisation, tested on types of 8, 24 and 64 bytes.
   done: >-
-    Allocation counts with and without SBO, and a benchmark against a virtual hierarchy.
+    Allocation counts with and without SBO, and a benchmark against a virtual hierarchy pricing 1e6
+    mixed instruments.
 
 - id: static-reflection-26
   title: Static reflection (C++26)
@@ -336,8 +344,8 @@ shrines:
   theme: "Static polymorphism"
   size: S
   prompt: >-
-    Use if constexpr / tag dispatch to select SIMD vs scalar vs specialised paths by element type
-    and alignment traits.
+    Write one `sum(std::span<const T>)` using if constexpr / tag dispatch: a SIMD path for aligned
+    float, a scalar fallback, and a `uint8_t` path widening into uint32 accumulators.
   done: >-
     One entry point, three paths, verified by asm for each instantiation.
 
@@ -386,8 +394,9 @@ shrines:
   p: 4
   after: [cmake-modern]
   prompt: >-
-    Take a deliberately noisy microbenchmark and stabilise it: DoNotOptimize/ClobberMemory,
-    frequency scaling, turbo, warmup, repetitions, and reporting medians and intervals.
+    Benchmark summing a 4 MB std::vector<int> naively (one timed run, no warmup, no DoNotOptimize),
+    then stabilise it: DoNotOptimize/ClobberMemory, frequency scaling, turbo, warmup, repetitions,
+    and reporting medians and intervals.
   done: >-
     Coefficient of variation before vs after, and a checklist that you reuse for every later shrine.
 
@@ -410,8 +419,8 @@ shrines:
   size: S
   prompt: >-
     Plant five bugs (use-after-free, overflow, signed overflow, data race, uninitialised read) and
-    catch each one with ASan/UBSan/TSan, plus MSan on the Linux server (macOS has none). Measure the
-    slowdown of each sanitizer.
+    catch each one with ASan/UBSan/TSan, plus MSan on the Linux server (macOS has none). Measure
+    each sanitizer's slowdown on std::sort of 1e7 ints and on 1e7 std::unordered_map inserts.
   done: >-
     All five caught, plus an overhead table.
 
@@ -433,8 +442,9 @@ shrines:
   p: 3
   size: S
   prompt: >-
-    Pick 4 small functions and compare their output across -O0/-O2/-O3 and GCC vs Clang on
-    Compiler Explorer. Explain every difference.
+    Compare int64 `(bid + ask) / 2`, a float vs int array sum, an 8-case enum switch, and a 3-double
+    struct returned by value across -O0/-O2/-O3 and GCC vs Clang on Compiler Explorer. Explain every
+    difference.
   done: >-
     Annotated asm listings with one explanation per difference.
 
@@ -468,8 +478,8 @@ shrines:
   theme: "Benchmarking"
   after: [benchmark-methodology]
   prompt: >-
-    Run the repo's benchmarks in CI, compare them with a stored baseline, and flag statistically
-    significant regressions.
+    Run the repo's benchmarks in GitHub Actions (20 repetitions), compare them with a stored
+    baseline, and flag regressions significant under a Mann–Whitney U test (p < 0.01).
   done: >-
     A deliberately planted regression makes CI fail with a readable report.
 
@@ -491,8 +501,8 @@ shrines:
   theme: "Threads & locks"
   size: S
   prompt: >-
-    Write a parallel reduction over std::jthread with stop_token cancellation. Measure scaling
-    from 1 to N cores.
+    Write a parallel sum of 2^27 doubles (1 GiB) over std::jthread with stop_token cancellation.
+    Measure scaling from 1 to N cores.
   done: >-
     A scaling plot, with the deviation from linear explained.
 
@@ -504,9 +514,10 @@ shrines:
   after: [threads-and-jthread]
   prompt: >-
     Implement a TAS spinlock, a TTAS spinlock with pause/backoff, and a ticket lock. Benchmark them
-    against std::mutex at 1 to N threads.
+    against std::mutex at 1 to N threads, each incrementing one shared counter 1e6 times under the
+    lock.
   done: >-
-    Throughput and fairness plots for every lock type.
+    Throughput plots and fairness (per-thread acquisition counts) for every lock type.
 
 - id: memory-order-litmus
   title: Litmus tests
@@ -527,10 +538,11 @@ shrines:
   p: 4
   after: [memory-order-litmus]
   prompt: >-
-    Build a bounded single-producer single-consumer queue with acquire/release, cached
-    head/tail indices and cache-line padding. Optimise it step by step.
+    Build a bounded single-producer single-consumer queue, starting from a plain atomic version and
+    adding acquire/release, cached head/tail indices and cache-line padding one step at a time.
   done: >-
-    Throughput and latency after each optimisation, and TSan-clean tests.
+    Throughput (1e8 int64 messages through a 1024-slot queue) and round-trip latency after each
+    step, and TSan-clean tests.
 
 - id: mpmc-queue
   title: Vyukov's MPMC queue
@@ -538,7 +550,8 @@ shrines:
   theme: "Lock-free queues"
   after: [spsc-ring-buffer]
   prompt: >-
-    Implement Dmitry Vyukov's bounded MPMC queue with per-slot sequence numbers.
+    Implement Dmitry Vyukov's bounded MPMC queue with per-slot sequence numbers, at 1×1, 2×2 and 4×4
+    producers×consumers.
   done: >-
     A stress test under TSan and a throughput comparison against a mutex-protected deque.
 
@@ -562,8 +575,8 @@ shrines:
   p: 3
   size: L
   prompt: >-
-    Implement a thread pool with per-worker Chase–Lev deques and random stealing. Run
-    recursive fib/quicksort on it.
+    Implement a thread pool with per-worker Chase–Lev deques and random stealing. Run recursive
+    fib(35) (no cutoff) and parallel quicksort of 1e8 ints on it.
   done: >-
     A scaling comparison against a single-queue pool, with correctness under TSan.
 
@@ -596,8 +609,9 @@ shrines:
   theme: "Schedulers"
   p: 3
   prompt: >-
-    Build a small async pipeline with std::execution (C++26), via NVIDIA stdexec if your
-    compiler lacks it: schedule, then, when_all and a custom scheduler.
+    Compute per-symbol VWAP over 1e6 synthetic trades with std::execution (C++26), via NVIDIA
+    stdexec if your compiler lacks it: schedule 8 chunks on a custom thread-pool scheduler, then
+    partial sums, when_all, then merge.
   done: >-
     The pipeline runs on a thread pool, and the write-up compares it with futures and callbacks.
 
@@ -620,7 +634,8 @@ shrines:
   p: 3
   size: S
   prompt: >-
-    Write a particle update in AoS, SoA and AoSoA layouts, updating one field and then all fields.
+    Write a particle update for 1e6 particles with 8 float fields in AoS, SoA and AoSoA layouts,
+    updating one field and then all fields.
   done: >-
     A benchmark matrix (layout × access pattern), with the results explained by bytes moved.
 
@@ -630,10 +645,11 @@ shrines:
   theme: "Hash tables"
   p: 3
   prompt: >-
-    Implement an open-addressing hash map with linear probing and Robin Hood displacement.
-    Benchmark it against std::unordered_map.
+    Implement an open-addressing hash map with linear probing and Robin Hood displacement. Benchmark
+    it against std::unordered_map with 1e6 uint64 keys.
   done: >-
-    Lookup/insert/erase timings across load factors, plus a probe-length histogram.
+    Lookup (hit and miss)/insert/erase timings at load factors 0.5–0.95, plus a probe-length
+    histogram.
 
 - id: swiss-table-probe
   title: SIMD group probing
@@ -653,8 +669,8 @@ shrines:
   theme: "Nodes & containers"
   size: S
   prompt: >-
-    Write a bump/arena allocator and plug it into std::pmr (and monotonic_buffer_resource) for an
-    allocation-heavy workload such as parsing into a tree.
+    Write a bump/arena allocator and plug it into std::pmr (and monotonic_buffer_resource) for
+    parsing a generated 10 MB S-expression file into a tree.
   done: >-
     Time and allocation counts against the default allocator.
 
@@ -685,8 +701,8 @@ shrines:
   p: 4
   after: [intrusive-containers]
   prompt: >-
-    Implement a price-level order book: array levels near the touch, intrusive FIFO per level,
-    and O(1) cancel via an id→node map.
+    Implement a price-level order book: array levels near the touch, intrusive FIFO per level, and
+    O(1) cancel via an id→node map. Replay 1e7 synthetic events: 60% add, 35% cancel, 5% execute.
   done: >-
     p50/p99/p99.9 latency for add, cancel and execute on a replayed synthetic stream.
 
@@ -755,8 +771,9 @@ shrines:
   p: 3
   size: S
   prompt: >-
-    Write 6 loops, some that vectorize and some that don't. Read the -fopt-info-vec / -Rpass=loop-vectorize
-    remarks, then fix the loops that fail.
+    Write 6 loops: float sum, `a[i] = b[i] + c[i]` via raw pointers, conditional sum, out-of-line
+    call, `a[idx[i]] += x[i]`, early-exit search. Read the -fopt-info-vec / -Rpass=loop-vectorize
+    remarks, then fix those that can be fixed.
   done: >-
     The remarks before and after, with the reason each loop failed.
 
@@ -782,8 +799,8 @@ shrines:
   after: [simd-intrinsics-dot]
   needs: [simd-intrinsics-dot]
   prompt: >-
-    Port your dot product (The dot product, by hand shrine) and one more kernel to std::simd (C++26,
-    or GCC's std::experimental::simd).
+    Port your dot product (The dot product, by hand shrine) and a masked sum (x[i] where x[i] >
+    threshold) to std::simd (C++26, or GCC's std::experimental::simd).
   done: >-
     Performance parity (or not) with intrinsics, and asm comparison.
 
@@ -794,10 +811,11 @@ shrines:
   requires: [x86]
   after: [simd-intrinsics-dot]
   prompt: >-
-    Filter an int array by a predicate with SIMD: a compress instruction on AVX-512, or a shuffle
-    LUT on AVX2.
+    Filter an int32 array (N = 1e7, uniform random) by `x < t` with SIMD: a compress instruction on
+    AVX-512, or a shuffle LUT on AVX2.
   done: >-
-    Throughput vs selectivity, compared with a branchy scalar version and a branchless one.
+    Throughput vs selectivity (t set for 0–100% kept, in 10% steps), compared with a branchy scalar
+    version and a branchless one.
 
 - id: simd-parsing
   title: Parsing at gigabytes per second
@@ -805,10 +823,11 @@ shrines:
   theme: "SIMD algorithms"
   p: 3
   prompt: >-
-    Classify characters with SIMD (simdjson-style) to find delimiters/newlines in CSV,
-    and build a structural index.
+    Classify characters with SIMD (simdjson-style) to find delimiters/newlines in a 1 GB trades CSV
+    with quoted fields, and build a structural index.
   done: >-
-    GB/s throughput and comparison with a scalar splitter.
+    GB/s throughput and comparison with a scalar splitter, on a synthetic trades CSV (timestamp,
+    symbol, price, qty) where some quoted fields contain commas.
 
 - id: openmp-basics
   title: OpenMP, carefully
@@ -816,10 +835,11 @@ shrines:
   theme: "Multicore"
   size: S
   prompt: >-
-    Parallelise an irregular loop (Mandelbrot rows, or a triangular all-pairs loop) with OpenMP.
-    Compare the static, dynamic and guided schedules, and use reductions.
+    Parallelise the rows of a 4096×4096 Mandelbrot image over [−2, 1] × [−1.5, 1.5] (max 1,000
+    iterations) with OpenMP, summing the total iteration count with a reduction. Compare the static,
+    dynamic and guided schedules.
   done: >-
-    Scaling per schedule, with the load imbalance visualised.
+    Scaling per schedule from 1 thread to all cores, with the load imbalance visualised.
 
 - id: cpu-gemm-tiling
   title: CPU GEMM, climbing
@@ -842,9 +862,10 @@ shrines:
   size: S
   prompt: >-
     Use std::execution::par / par_unseq algorithms (TBB backend: Homebrew GCC + TBB on the Mac) for
-    sort, reduce and transform_reduce, and compare them with hand-rolled threads.
+    sort, reduce and transform_reduce (Σ price × qty) on N = 1e4…1e8 doubles (×10 steps), and
+    compare them with hand-rolled std::thread versions.
   done: >-
-    A scaling plot and a note on when par_unseq is legal.
+    A scaling plot (speedup vs N and vs thread count) and a note on when par_unseq is legal.
 
 # ---- Kernel Jungle (gpu-programming) -----------------------------------------
 - id: tower-gpu
@@ -867,10 +888,11 @@ shrines:
   size: S
   requires: [gpu]
   prompt: >-
-    Write vector add and SAXPY in CUDA. Measure achieved bandwidth against the card's
-    theoretical peak across launch configurations.
+    Write vector add and SAXPY in CUDA. Measure achieved bandwidth against the card's theoretical
+    peak across block sizes 32…1024 and N = 2^20…2^28.
   done: >-
-    A bandwidth vs launch-config table, with the best config explained.
+    A bandwidth vs launch-config table (also grid-stride vs one thread per element), with the best
+    config explained.
 
 - id: cuda-reduction
   title: The reduction ladder
@@ -904,7 +926,8 @@ shrines:
   requires: [gpu]
   after: [cuda-reduction]
   prompt: >-
-    Implement a Blelloch work-efficient scan and use it for stream compaction.
+    Implement a multi-block Blelloch work-efficient scan (up to 2^26 ints) and use it for stream
+    compaction.
   done: >-
     Correct on non-power-of-two sizes, with throughput compared against CUB.
 
@@ -930,9 +953,11 @@ shrines:
   requires: [gpu]
   after: [cuda-reduction]
   prompt: >-
-    Implement softmax as a naive 3-pass version and as a one-pass version with the online max/normaliser trick.
+    Implement softmax in CUDA as a naive 3-pass version and as a one-pass version with the online
+    max/normaliser trick.
   done: >-
-    Numerical equivalence tests (including large logits) and a bandwidth comparison.
+    Numerical equivalence tests (including large logits) and a bandwidth comparison over fp32 rows
+    of 256…32K.
 
 - id: flash-attention-mini
   title: FlashAttention, small
@@ -943,10 +968,11 @@ shrines:
   requires: [gpu]
   after: [online-softmax]
   prompt: >-
-    Write a tiled FlashAttention forward kernel for small head dims that uses online softmax and
-    never materialises the N×N matrix.
+    Write a tiled FlashAttention forward kernel in CUDA (fp32, head dim 64, non-causal) that uses
+    online softmax and never materialises the N×N matrix.
   done: >-
-    Matches naive attention within tolerance, with memory use and speed compared as N grows.
+    Matches naive attention within tolerance, with memory use and speed compared for N = 512…16K,
+    doubling.
 
 - id: triton-kernels
   title: Triton
@@ -955,8 +981,8 @@ shrines:
   p: 3
   requires: [gpu]
   prompt: >-
-    Write fused LayerNorm and fused softmax kernels in Triton, and compare them with PyTorch eager and
-    torch.compile.
+    Write fused LayerNorm and fused softmax kernels in Triton, and compare them with PyTorch eager
+    and torch.compile on fp16 [4096 × C] inputs, C = 512…16K.
   done: >-
     Benchmark table, and a note on what Triton decided for you (tiling, masking).
 
@@ -967,9 +993,11 @@ shrines:
   size: S
   requires: [gpu]
   prompt: >-
-    Overlap H2D copies, compute and D2H copies using multiple streams and pinned memory.
+    Overlap H2D copies, compute and D2H copies of a 1 GiB array in 2…32 chunks, using multiple
+    streams and pinned memory.
   done: >-
-    An Nsight Systems timeline showing the overlap, and the end-to-end speedup.
+    An Nsight Systems timeline showing the overlap, and the end-to-end speedup over one synchronous
+    stream, per chunk count.
 
 - id: pytorch-cpp-extension
   title: A custom PyTorch op
@@ -979,7 +1007,8 @@ shrines:
   requires: [gpu]
   after: [cuda-first-kernel]
   prompt: >-
-    Package one of your CUDA kernels as a PyTorch C++/CUDA extension with autograd support.
+    Package a fused bias + GELU CUDA kernel (forward and backward) as a PyTorch C++/CUDA extension
+    with autograd support.
   done: >-
     gradcheck passes, and the op is callable from Python with no copies.
 
@@ -1003,8 +1032,8 @@ shrines:
   requires: [gpu]
   after: [cuda-transpose]
   prompt: >-
-    Learn CuTe's layout algebra (shape, stride, composition, tiling) by expressing your
-    transpose and a GEMM tile with it.
+    Learn CuTe's layout algebra (shape, stride, composition, tiling) by expressing your transpose
+    and a 128×128 SGEMM block tile with it.
   done: >-
     Working kernels, and an explanation of a layout composition in your own words.
 
@@ -1039,8 +1068,9 @@ shrines:
   p: 4
   after: [activation-hooks]
   prompt: >-
-    Stream GPT-2 small activations over `NeelNanda/pile-10k` (the marsh's corpus) to disk as
-    memory-mapped bf16 shards, and write a shuffling loader for dictionary training.
+    Stream GPT-2 small's layer-6 residual stream (resid_pre) over `NeelNanda/pile-10k` (the marsh's
+    corpus, chunked into 128-token contexts) to disk as memory-mapped bf16 shards, and write a
+    shuffling loader for dictionary training.
   done: >-
     Write and read GB/s against the disk's peak, with the loader keeping a GPU (or CPU trainer) fed.
 
@@ -1051,9 +1081,11 @@ shrines:
   size: S
   after: [activation-hooks]
   prompt: >-
-    Implement the logit lens on GPT-2: decode each layer's residual stream through the unembedding.
+    Implement the logit lens on GPT-2 small: decode each layer's residual stream through the
+    unembedding, on 3 fixed prompts.
   done: >-
-    Plots for 3 prompts, and a discussion of where predictions crystallise.
+    Plots for a fact ('The Eiffel Tower is in the city of'), a repeated random-token sequence and a
+    line of Python, and a discussion of where predictions crystallise.
 
 - id: linear-probes
   title: Probes and controls
@@ -1073,10 +1105,11 @@ shrines:
   p: 4
   after: [activation-hooks]
   prompt: >-
-    Build a patching harness for an IOI-style task: clean/corrupted runs, patching per layer ×
-    position, batched efficiently.
+    Build a patching harness for IOI on GPT-2 small: clean/corrupted (a third name swapped in) runs,
+    residual stream patched per layer × position, batched efficiently.
   done: >-
-    A patching heatmap, and a harness that runs all patches in batched forward passes.
+    A logit-difference patching heatmap over 100 prompts, and a harness that runs all patches in
+    batched forward passes.
 
 - id: attribution-patching
   title: Attribution patching
@@ -1136,10 +1169,11 @@ shrines:
   requires: [gpu]
   after: [topk-sae]
   prompt: >-
-    Write a fused encoder (matmul + bias + top-k) and a sparse decoder that exploits k ≪ d,
-    as a Triton or CUDA kernel.
+    Write a fused encoder (matmul + bias + top-k) and a sparse decoder that exploits k ≪ d, as a
+    Triton or CUDA kernel, at your TopK SAE's shapes.
   done: >-
-    Speedup over dense PyTorch at several k, with a correctness check.
+    Speedup over dense PyTorch at k = 16, 32, 64 and 128 on 4,096-token batches, with a correctness
+    check.
 
 - id: feature-dashboard
   title: Feature dashboards
@@ -1162,9 +1196,11 @@ shrines:
   after: [sae-training]
   prompt: >-
     Build a contrastive steering vector (ActAdd's Love − Hate, GPT-2 small, layer 6) and SAE-feature
-    steering for the same behaviour with your SAE (Training an SAE shrine), and compare the two.
+    steering for the same behaviour with your SAE (Training an SAE shrine), and compare the two on
+    100 neutral prompts.
   done: >-
-    Generation samples at several coefficients, plus a simple quantitative effect measure.
+    Generation samples at several coefficients, plus, per coefficient, the rate of words from two
+    fixed 20-word love/hate lexicons and the perplexity cost on pile-10k.
 
 - id: transcoders
   title: Transcoders
@@ -1172,10 +1208,12 @@ shrines:
   theme: "Dictionary learning"
   after: [sae-training]
   prompt: >-
-    Train a transcoder that maps an MLP's input to its output through a sparse bottleneck, and compare its
-    interpretability and fidelity with an SAE on the same layer.
+    Train a transcoder that maps GPT-2 small's layer-6 MLP input to its output through a sparse
+    bottleneck, and compare its interpretability and fidelity with an SAE trained on that MLP's
+    output at matched L0.
   done: >-
-    Fidelity metrics, and 5 latents inspected in both.
+    Fidelity (reconstruction MSE and loss recovered when spliced in), and 5 latents inspected in
+    both via their top pile-10k contexts.
 
 - id: induction-heads
   title: Finding induction heads
@@ -1219,10 +1257,10 @@ shrines:
   theme: "The hot path"
   after: [spsc-ring-buffer]
   prompt: >-
-    Build an async binary logger: format args are captured raw into an SPSC buffer and formatted on
-    a background thread.
+    Build an async binary logger: format args (a format string, two int64, a double) are captured
+    raw into an SPSC buffer and formatted on a background thread.
   done: >-
-    p50/p99 impact on a hot loop compared with spdlog async and printf.
+    p50/p99 impact on a hot loop logging once per iteration, compared with spdlog async and printf.
 
 - id: core-pinning
   title: Pinning and spinning
@@ -1245,18 +1283,18 @@ shrines:
   requires: [linux]
   after: [binary-serialization]
   prompt: >-
-    Receive a synthetic UDP multicast feed with recvmmsg, detect sequence gaps, and decode
-    messages in place.
+    Receive a synthetic UDP multicast feed of your Flyweight codecs messages with recvmmsg, detect
+    sequence gaps, and decode messages in place.
   done: >-
-    Message rate and per-message latency, with gap handling tested.
+    Message rate and per-message latency, with gap handling tested by dropping packets on purpose.
 
 - id: binary-serialization
   title: Flyweight codecs
   region: low-latency
   theme: "The hot path"
   prompt: >-
-    Write an SBE-style flyweight codec (fixed layout, no allocation) and compare it with protobuf
-    and a naive struct memcpy.
+    Write an SBE-style flyweight codec (fixed layout, no allocation) for AddOrder, DeleteOrder,
+    Trade and NewOrder, and compare it with protobuf and a naive struct memcpy.
   done: >-
     Encode and decode ns/msg, with the aliasing/alignment issues and how you handled them.
 
@@ -1266,9 +1304,11 @@ shrines:
   theme: "Networking & IPC"
   requires: [linux]
   prompt: >-
-    Build an edge-triggered epoll TCP echo server with non-blocking sockets.
+    Build an edge-triggered epoll TCP echo server with non-blocking sockets, and a 64-byte-message
+    load generator.
   done: >-
-    Latency under load compared with a thread-per-connection version.
+    p50/p99 latency at 1, 100, 1,000 and 10,000 connections, compared with a thread-per-connection
+    version.
 
 - id: io-uring-server
   title: io_uring
@@ -1300,10 +1340,10 @@ shrines:
   size: S
   after: [binary-serialization]
   prompt: >-
-    Rewrite your flyweight codec's message-type dispatch (Flyweight codecs shrine), or a branchy
-    varint decoder you write first, to remove data-dependent branches.
+    Rewrite your flyweight codec's decode loop (Flyweight codecs shrine), over a stream of mixed
+    message types, to remove data-dependent branches on the type.
   done: >-
-    Branch-miss counts and latency, compared on random vs predictable inputs.
+    Branch-miss counts and ns/msg on 1M messages, with uniformly random vs repeating type sequences.
 
 - id: cache-warming
   title: Keeping the hot path warm
@@ -1312,10 +1352,11 @@ shrines:
   size: S
   after: [latency-measurement]
   prompt: >-
-    Model a trading loop that is idle most of the time. Show the cold-cache penalty on the first
-    event, then mitigate it with warm-up traffic or dummy work.
+    Model a trading loop that is idle most of the time, with a 1 MB working set. Show the cold-cache
+    penalty on the first event after an idle gap, then mitigate it with warm-up traffic or dummy
+    work.
   done: >-
-    First-event latency before and after warming.
+    First-event latency before and after warming, for idle gaps from 10 µs to 100 ms.
 
 # ---- Agent Workshops (agent-harness) -----------------------------------------
 - id: tower-agent-harness
@@ -1350,12 +1391,12 @@ shrines:
   p: 3
   after: [simd-intrinsics-dot]
   prompt: >-
-    Build a scoring harness for kernels, first on dot-product candidates with a scalar dot as the
-    reference: differential correctness first, then speed with repetitions and a significance test,
-    giving a single verdict per candidate.
+    Build a scoring harness for kernels, first on the dot-product variants from The dot product, by
+    hand, with a scalar dot as the reference: differential correctness first, then speed with
+    repetitions and a significance test, giving a single verdict per candidate.
   done: >-
-    The harness correctly ranks 5 hand-written candidates (e.g. the accumulator variants from The
-    dot product, by hand), including one that is wrong but fast.
+    The harness correctly ranks 5 candidates (the 1, 2, 4 and 8-accumulator variants, plus one you
+    write that is wrong but fast).
 
 - id: differential-testing
   title: Differential testing for kernels
@@ -1378,9 +1419,9 @@ shrines:
   after: [agent-tool-loop, bench-as-oracle]
   needs: [agent-tool-loop, bench-as-oracle]
   prompt: >-
-    Let your agent (A minimal agent loop shrine) work on its rolling-median task for N iterations,
-    scored by your oracle (The benchmark as oracle shrine) on every input and window size in the
-    task's benchmark, and log every attempt.
+    Let your agent (A minimal agent loop shrine) work on its rolling-median task for 20 iterations,
+    3 independent runs, scored by your oracle (The benchmark as oracle shrine) on every input and
+    window size in the task's benchmark, and log every attempt.
   done: >-
     A taxonomy of the attempts (wins, regressions, broken code, wins on only some inputs) and the
     final speedup per window size.
@@ -1405,11 +1446,11 @@ shrines:
   after: [agent-tool-loop]
   needs: [agent-tool-loop]
   prompt: >-
-    Run your agent loop (A minimal agent loop shrine) on its starter task with different context:
-    source only, source + perf counters (perf stat on the Linux server), and source + asm +
-    counters.
+    Run your agent loop (A minimal agent loop shrine) on its starter task with three contexts, 5
+    runs each at the same iteration budget: source only, source + perf counters (perf stat on the
+    Linux server), and source + asm + counters.
   done: >-
-    Success rate and speedup per condition over several runs, and what you'd conclude.
+    Success rate and speedup per condition, and what you'd conclude.
 
 - id: autotuner
   title: Classic autotuning
@@ -1433,7 +1474,8 @@ shrines:
   requires: [llm-api]
   prompt: >-
     Write a Claude Code skill or subagent for a "measure → hypothesise → change → re-measure"
-    workflow, and use it on one of your own shrines.
+    workflow, and use it to speed up lookups in your flat hash map (A flat hash map shrine) at load
+    factor 0.9.
   done: >-
     The skill in the repo, plus one real session it improved (or failed to), analysed.
 
@@ -1487,8 +1529,9 @@ shrines:
   needs: [agent-tool-loop, bench-as-oracle, reward-hacking-guards, llm-kernel-optimization]
   prompt: >-
     Build an agentic kernel optimiser that takes a kernel plus a reference and returns a verified
-    faster kernel with a report. Run it on 10 of your own kernels (Vector Coast's, plus Kernel
-    Jungle's given a GPU).
+    faster kernel with a report. Run it on 10 of your naive kernels: Vector Coast's dot, compaction,
+    CSV index, Mandelbrot, SGEMM; Kernel Jungle's reduction, transpose, scan, softmax, SGEMM (no
+    GPU: the first five again on the Linux server).
   done: >-
     Results over the 10 kernels (speedups, failures, cheats caught), written up as an essay.
 
@@ -1541,8 +1584,10 @@ shrines:
   p: 4
   links: [agent-tool-loop, bench-as-oracle]
   prompt: >-
-    Argue why performance work is unusually verifiable, and design a ladder of verification
-    strength (compiles → tests → differential → formal) with a prototype for two rungs.
+    Argue why performance work is unusually verifiable (the slow version is the spec), and design a
+    ladder of verification strength (compiles → tests → differential → formal). Prototype the
+    differential and formal rungs on one optimisation: a scalar uint32 array sum against its
+    4-accumulator unrolled version, with the formal rung a bounded equivalence check in CBMC.
   done: >-
     An essay-grade write-up and working prototypes for two rungs.
 
@@ -1554,8 +1599,9 @@ shrines:
   requires: [llm-api, gpu]
   links: [llm-kernel-optimization]
   prompt: >-
-    Reproduce a small slice of a public LLM kernel-generation benchmark (e.g. KernelBench level 1)
-    with a current model, and critique the benchmark's design.
+    Reproduce 10 KernelBench level 1 problems (every tenth: 1, 11, …, 91) with a current Claude
+    model, one-shot and then with 3 rounds of compile/correctness feedback, scored by fast_1
+    (correct and faster than PyTorch eager), and critique the benchmark's design.
   done: >-
     Your results, with the benchmark's blind spots identified.
 
@@ -1566,7 +1612,8 @@ shrines:
   requires: [llm-api]
   prompt: >-
     Propose a division of labour for HPC work: what to delegate, what to verify, and what to keep.
-    Test it with Claude Code on one real task from your coursework or a cleared shrine.
+    Test it with Claude Code on one task: a Black–Scholes pricer with delta and vega for 1e6
+    options, taken from a scalar reference to a vectorised, multithreaded version within 1e-9 of it.
   done: >-
     The framework, plus a retrospective on the test task.
 
@@ -1578,8 +1625,10 @@ shrines:
   links: [reward-hacking-guards]
   after: [forge-verifier-ladder]
   prompt: >-
-    Design an eval for "make this code faster without breaking it", covering task selection, scoring,
-    contamination and cheating, and implement 5 tasks.
+    Design an eval for "make this code faster without breaking it", covering task selection,
+    scoring, contamination and cheating, and implement 5 tasks: the rolling median from the "A
+    minimal agent loop" kit (world/kits/agent-tool-loop), a CSV tick parser, VWAP by symbol over 1e7
+    trades, an int64 histogram, and a float sum that tests your tolerance rule.
   done: >-
     5 tasks runnable end-to-end, with a documented scoring rule.
 
@@ -1591,8 +1640,11 @@ shrines:
   after: [agent-tool-loop]
   links: [memory-order-litmus]
   prompt: >-
-    Seed 10 low-level tasks (memory ordering, UB, numerical tolerance), run an agent on each (your
-    "A minimal agent loop", or Claude Code), and categorise the failure modes.
+    Seed 10 low-level bug-fix tasks, each with a test that exposes the bug: 4 memory ordering (SPSC
+    queue, seqlock, double-checked init, flag publish; run on the M2, whose weak ordering shows
+    them), 3 UB (signed-overflow check, type punning, uninitialised read), 3 numerical tolerance
+    (reassociated sum, one-pass variance, naive softmax). Run an agent on each (your "A minimal
+    agent loop", or Claude Code), and categorise the failure modes.
   done: >-
     At least 10 documented cases, a taxonomy, and one mitigation tested.
 
@@ -1604,9 +1656,11 @@ shrines:
   requires: [llm-api]
   after: [llm-kernel-optimization]
   prompt: >-
-    Model the economics: agent cost per verified speedup vs engineer time vs compute saved.
-    Calibrate the model on your own agent runs (the log from "Letting the agent optimise a kernel",
-    or 10 fresh logged runs).
+    Model the economics of automated optimisation as one question: how many core-hours a year must a
+    kernel burn before an agent run (API cost plus your review time per verified speedup) beats an
+    engineer-day, or leaving it alone? Calibrate the model on your own agent runs (the log from
+    "Letting the agent optimise a kernel", or 10 fresh logged runs on the rolling-median kit of "A
+    minimal agent loop").
   done: >-
     A parameterised model, with your data plugged in and the sensitivity discussed.
 
@@ -1651,8 +1705,9 @@ shrines:
   region: design-archipelago
   theme: "Values & ownership"
   prompt: >-
-    Draw the ownership and lifetime graph of LevelDB's core (DBImpl, VersionSet, MemTable,
-    TableCache), or a codebase of yours. Find one unclear ownership and fix it.
+    Draw the ownership and lifetime graph of LevelDB's core (DBImpl, VersionSet, Version, MemTable,
+    TableCache) at release 1.23. Find one unclear ownership (start from the manual Ref/Unref counts)
+    and fix it, keeping LevelDB's tests green.
   done: >-
     The diagram and the fix, with the principle it illustrates.
 
@@ -1675,8 +1730,10 @@ shrines:
   p: 3
   links: [crtp-static-poly, policy-based-design]
   prompt: >-
-    Design an abstraction that claims to be zero-overhead (e.g. strong typedefs for prices and
-    quantities) and prove it with asm and benchmarks.
+    Build `Price` and `Quantity` strong typedefs over int64 ticks that only allow unit-correct
+    arithmetic (Price × Quantity → Notional), and prove them zero-overhead against the raw `int64_t`
+    version: -O2 asm from Clang and GCC (Compiler Explorer) and a benchmark, on a VWAP over 1e6
+    fills.
   done: >-
     Identical asm to the raw version, and a list of what broke zero-cost along the way.
 
@@ -1685,8 +1742,10 @@ shrines:
   region: design-archipelago
   theme: "Abstraction & architecture"
   prompt: >-
-    Re-express 4 GoF patterns in modern C++ (visitor → variant, strategy → templates/lambdas,
-    observer → signals, factory → type erasure).
+    Re-express 4 GoF patterns in modern C++ on one order-handling example (visitor → variant over
+    order events, strategy → templates/lambdas for fee models, observer → signals for fill
+    notifications, factory → type erasure for venue adapters), with the classic version of each
+    alongside.
   done: >-
     Code for each one, and when the classic form is still better.
 
@@ -1697,9 +1756,12 @@ shrines:
   links: [soa-vs-aos]
   after: [design-dod]
   prompt: >-
-    Build a minimal ECS with archetype storage and run a simulation on it.
+    Build a minimal ECS with archetype storage and run the particle simulation from the
+    "Data-oriented design" kit on it (Projectile, Bouncer and Orbiter as component sets, N =
+    1e5…1e6), with 1% of entities adding or removing a component each step.
   done: >-
-    Iteration throughput compared with an OOP version, and the design trade-offs discussed.
+    Iteration throughput compared with the kit's OOP version (matching its checksum), and the design
+    trade-offs discussed.
 
 - id: design-hexagonal-trading
   title: Ports and adapters for trading
@@ -1747,8 +1809,9 @@ shrines:
   after: [linear-probes]
   links: [linear-probes, steering-vectors]
   prompt: >-
-    State the hypothesis precisely, then in GPT-2 small test a concept that looks linear (e.g.
-    sentiment) and one that doesn't (e.g. days of the week, which Engels et al. 2024 find circular).
+    State the hypothesis precisely, then in GPT-2 small test a concept that looks linear, sentiment
+    (SST-2 sentences), and one that doesn't, days of the week (in templated sentences; Engels et al.
+    2024 find them circular).
   done: >-
     Evidence for each case, and what would falsify the hypothesis.
 
@@ -1812,8 +1875,9 @@ shrines:
   links: [activation-store, theory-arith-intensity]
   prompt: >-
     Estimate the FLOPs, storage and bandwidth needed to train SAEs across all layers of a
-    frontier-scale model, calibrated against GPT-2 small measurements (from "Temple: the SAE
-    Engine", or a forward pass and SAE step timed here).
+    frontier-scale model (take a Llama-3-70B shape: 80 layers, d_model 8192, 32× dictionaries, 1B
+    tokens per layer), calibrated against GPT-2 small measurements (from "Temple: the SAE Engine",
+    or a forward pass and SAE step timed here).
   done: >-
     A parameterised back-of-envelope with sensitivity analysis, and where HPC engineering changes the answer.
 
@@ -1911,8 +1975,10 @@ shrines:
   theme: "Models"
   prompt: >-
     Trace compute vs memory bandwidth trends in hardware over two decades (Karl Rupp's
-    cpu-gpu-mic-comparison data, Gholami et al.'s "AI and Memory Wall") and argue what they imply
-    for algorithm design.
+    cpu-gpu-mic-comparison data, Gholami et al.'s "AI and Memory Wall") as the ridge point (peak
+    FLOP/s ÷ bandwidth) per year, and argue one claim from it: that recomputing beats storing
+    intermediates for more algorithms each year (activation checkpointing, kernel fusion,
+    FlashAttention), including where it fails.
   done: >-
     A data-backed essay with one chart built from sourced data.
 
@@ -1934,7 +2000,9 @@ shrines:
   theme: "Error & stability"
   p: 3
   prompt: >-
-    Analyse the error bounds of naive, pairwise and Kahan summation, and verify them empirically.
+    Analyse the error bounds of naive, pairwise and Kahan summation, and verify them empirically in
+    float32 for N = 1e3…1e8 on uniform [0,1], mixed-sign normal and ill-conditioned (sum ≈ 0)
+    inputs, against an exact reference (math.fsum).
   done: >-
     Theory vs measurement across input distributions.
 
@@ -1945,9 +2013,11 @@ shrines:
   p: 3
   requires: [gpu]
   prompt: >-
-    Compare fp32, tf32, bf16 and fp16 matmul error and speed, and explain loss scaling.
+    Compare fp32, tf32, bf16 and fp16 matmul error (against an fp64 reference) and speed on square N
+    = 1024…8192, and explain loss scaling.
   done: >-
-    An error/speed table, and a small training run with and without loss scaling.
+    An error/speed table, and an fp16 MLP trained on MNIST with and without loss scaling, counting
+    the gradients that underflow.
 
 - id: num-reproducibility
   title: Reproducible reductions
@@ -1956,8 +2026,9 @@ shrines:
   links: [parallel-stl]
   after: [num-fp-error]
   prompt: >-
-    Show that parallel reductions are nondeterministic, then build a reproducible sum
-    (fixed-order tree or exact accumulator).
+    Show that a parallel sum of 1e8 mixed-sign doubles (OpenMP or std::reduce with par) changes bits
+    with thread count, then build a reproducible sum two ways: a fixed-order tree and an exact
+    accumulator.
   done: >-
     Bitwise-identical results across thread counts, and the cost of that determinism.
 
@@ -1996,8 +2067,9 @@ shrines:
   below: godbolt-reading
   requires: [x86]
   prompt: >-
-    Write 3 functions in x86-64 assembly that are callable from C++ (ints, doubles, a struct by
-    value), respecting the System V ABI.
+    Write 3 functions in x86-64 assembly that are callable from C++, respecting the System V ABI: a
+    sum of 8 int64 arguments (two on the stack), `a * x + y` on doubles, and one taking a 24-byte
+    `{int64 price; int64 qty; int32 side}` struct by value.
   done: >-
     The functions work from C++, with register usage and stack alignment explained.
 
@@ -2007,7 +2079,9 @@ shrines:
   below: auto-vectorization
   size: S
   prompt: >-
-    Annotate every instruction of a vectorized loop and its remainder handling.
+    Annotate every instruction of Clang's -O3 output for a float saxpy (`y[i] += a * x[i]`, n known
+    only at run time) on your M2, including the runtime alias check, the vector body and its
+    remainder handling.
   done: >-
     A fully annotated listing, including the prologue and epilogue.
 
@@ -2027,9 +2101,10 @@ shrines:
   below: simd-stream-compaction
   requires: [avx512, x86]
   prompt: >-
-    Hand-write a masked filter using k-registers and vpcompressd.
+    Hand-write the int32 `x > t` filter from "SIMD filtering" using k-registers and vpcompressd.
   done: >-
-    A working kernel with the asm explained, compared with the AVX2 LUT version.
+    A working kernel with the asm explained, compared with the AVX2 LUT version at 1%, 50% and 99%
+    selectivity.
 
 - id: asm-atomics-codegen
   title: What atomics compile to
@@ -2048,7 +2123,9 @@ shrines:
   below: variant-visit
   size: S
   prompt: >-
-    Dump the vtable layout and the virtual call sequence, including multiple inheritance thunks.
+    Dump the vtable layout and the virtual call sequence of your order-event hierarchy from "Variant
+    vs virtual", plus a class deriving from two polymorphic bases to produce multiple inheritance
+    thunks.
   done: >-
     An annotated vtable dump and call sequence.
 
@@ -2057,7 +2134,8 @@ shrines:
   region: isa-assembly
   below: std-expected-errors
   prompt: >-
-    Trace a throw through .eh_frame, the personality routine and the landing pads.
+    Trace a throw from your exception-based parser ("Errors as values") through .eh_frame, the
+    personality routine and the landing pads, on the Linux server (macOS uses compact unwind).
   done: >-
     An explanation of why the happy path is free and the throw is expensive, backed by the metadata.
 
@@ -2089,7 +2167,9 @@ shrines:
   below: simd-intrinsics-dot
   p: 3
   prompt: >-
-    Predict a loop's throughput with llvm-mca or uiCA, then measure it. Identify the port bottleneck.
+    Predict the throughput of the inner loop of your 8-accumulator AVX2 dot product ("The dot
+    product, by hand") with llvm-mca or uiCA, then measure it on the Linux server. Identify the port
+    bottleneck.
   done: >-
     Predicted vs measured cycles/iteration, with the bottleneck named.
 
@@ -2121,7 +2201,9 @@ shrines:
   below: core-pinning
   size: S
   prompt: >-
-    Measure the latency impact of an SMT sibling running a noisy workload vs a separate physical core.
+    Measure the round-trip latency of your pinned SPSC ring ("Pinning and spinning") with a noisy
+    workload (a STREAM triad, then a tight FMA loop) on the consumer's SMT sibling vs on a separate
+    physical core vs none.
   done: >-
     Latency histograms for each placement.
 
@@ -2131,7 +2213,9 @@ shrines:
   below: benchmark-methodology
   requires: [x86]
   prompt: >-
-    Show a benchmark whose speed changes with code alignment alone (uop cache / DSB effects).
+    Show a benchmark whose speed changes with code alignment alone (uop cache / DSB effects): sweep
+    a small branchy hot loop (count `x[i] > t` over an L1-resident array) across 64 start offsets
+    with nop padding.
   done: >-
     A reproducible alignment-driven swing, and how to control for it.
 
@@ -2162,7 +2246,9 @@ shrines:
   region: memory-hierarchy
   below: eytzinger-search
   prompt: >-
-    Show power-of-two stride conflict misses from set associativity, and fix them with padding.
+    Show power-of-two stride conflict misses from set associativity by column-summing row-major
+    float matrices 1024…8192 wide (powers of two vs +16 floats) and in std::lower_bound on
+    2^k-element arrays, and fix both with padding.
   done: >-
     Slowdown at critical strides, with the set-index arithmetic explained.
 
@@ -2172,8 +2258,8 @@ shrines:
   below: open-addressing-hashmap
   requires: [linux]
   prompt: >-
-    Measure TLB misses on a large random-access hash table, then enable huge pages (THP or
-    explicit).
+    Measure TLB misses on your flat hash map ("A flat hash map") at 4 GiB with uniform random
+    lookups, then enable huge pages (THP or explicit).
   done: >-
     dTLB miss counts and lookup latency before and after.
 
@@ -2182,8 +2268,9 @@ shrines:
   region: memory-hierarchy
   below: swiss-table-probe
   prompt: >-
-    Characterise the hardware prefetchers (sequential vs strided vs random), then add software
-    prefetch to batched hash lookups.
+    Characterise the hardware prefetchers (ns per access for sequential, fixed strides 64 B…4 KiB,
+    and random order over a 1 GiB array), then add software prefetch to batched lookups (batches of
+    16) into your SwissTable ("SIMD group probing") at 1 GiB.
   done: >-
     Speedup from batched software prefetching, with the prefetch distance tuned.
 
@@ -2204,7 +2291,8 @@ shrines:
   requires: [linux, x86]
   prompt: >-
     On a multi-socket machine (e.g. a university cluster node), show first-touch placement and
-    remote-access penalties.
+    remote-access penalties with an OpenMP STREAM triad initialised serially then in parallel, and a
+    pointer chase pinned local vs remote with numactl.
   done: >-
     Bandwidth and latency local vs remote, and a first-touch fix.
 
@@ -2224,8 +2312,9 @@ shrines:
   requires: [x86]
   below: activation-store
   prompt: >-
-    Use streaming (non-temporal) stores for large buffer writes, and measure when they help and
-    when they hurt.
+    Write buffers of 1 MiB…4 GiB (a memset and a copy) with streaming (non-temporal) stores vs
+    normal stores, and measure when they help and when they hurt, including a buffer read back right
+    after.
   done: >-
     Crossover buffer size, with read-for-ownership explained.
 
@@ -2236,7 +2325,9 @@ shrines:
   below: lambdas-closures
   p: 3
   prompt: >-
-    Follow a function through clang -emit-llvm at -O0 and -O2, covering SSA, mem2reg, phi nodes and inlining.
+    Follow `count_above(const int* a, int n, int t)`, which calls a capturing lambda `[t](int x) {
+    return x > t; }` through a template, through clang -emit-llvm at -O0 and -O2, covering SSA,
+    mem2reg, phi nodes and inlining.
   done: >-
     An annotated IR diff, explained pass by pass (use -print-after-all for 3 passes).
 
@@ -2245,8 +2336,10 @@ shrines:
   region: compilers
   below: auto-vectorization
   prompt: >-
-    Show a loop that doesn't vectorize because of possible aliasing, then fix it with __restrict,
-    local copies, or runtime checks.
+    Show that a loop writing through `uint8_t* out` with its bound and scale read from a struct
+    (`p->n`, `p->k`) doesn't vectorize because of possible aliasing, then fix it with __restrict,
+    then with local copies, and show a `float* out` variant where the compiler adds runtime checks
+    instead.
   done: >-
     Vectorizer remarks and asm before and after, with the strict-aliasing rule explained.
 
@@ -2255,8 +2348,8 @@ shrines:
   region: compilers
   below: crtp-static-poly
   prompt: >-
-    Get the compiler to devirtualize with final, LTO and speculative devirtualization, and
-    document when it can't.
+    Get the compiler to devirtualize the virtual version of your CRTP benchmark ("CRTP and static
+    polymorphism") with final, LTO and speculative devirtualization, and document when it can't.
   done: >-
     asm evidence for each technique.
 
@@ -2287,8 +2380,8 @@ shrines:
   below: godbolt-reading
   size: L
   prompt: >-
-    Write an out-of-tree LLVM pass that instruments loads or counts loop trip counts, and run it on
-    your code.
+    Write an out-of-tree LLVM pass plugin that counts loop trip counts at run time (a histogram per
+    loop, printed at exit), and run it on a naive GEMM and on std::sort over random data.
   done: >-
     A working pass plugin, with its output on 2 programs.
 
@@ -2298,7 +2391,8 @@ shrines:
   below: template-instantiation-cost
   size: S
   prompt: >-
-    Measure how many identical instantiations the linker folds (ICF, COMDAT) in a template-heavy binary.
+    Measure how many identical instantiations the linker folds (ICF, COMDAT) in your 200-expression
+    binary from "What templates cost the build", linked with lld.
   done: >-
     Binary size with and without --icf, with symbol evidence.
 
@@ -2308,17 +2402,19 @@ shrines:
   below: constexpr-tables
   size: S
   prompt: >-
-    Probe the compiler's constexpr evaluator: step limits, what's allowed (allocation in C++20),
-    and compile-time cost.
+    Probe the compiler's constexpr evaluator: step limits, what's allowed (allocation in C++20), and
+    compile-time cost, timing a constexpr sieve of Eratosthenes for N = 1e4…1e6 under Clang and GCC.
   done: >-
-    The limits hit on purpose, and the compile time of a heavy constexpr computation.
+    The limits hit on purpose, and the sieve's compile time vs N on both compilers.
 
 - id: cc-vectorizer-cost-model
   title: The vectorizer's cost model
   region: compilers
   below: std-simd
   prompt: >-
-    Contrast the SLP and loop vectorizers, and find a case where the cost model makes the wrong call.
+    Contrast the SLP and loop vectorizers, then time the cost model's choice against forced widths
+    (vectorize_width pragmas) on an interleaved complex-float multiply, a stride-3 RGB-to-grey loop
+    and a 7-iteration loop, to find where it makes the wrong call.
   done: >-
     A mis-costed case, with its fix via pragmas or restructuring.
 
@@ -2340,7 +2436,9 @@ shrines:
   requires: [gpu]
   size: S
   prompt: >-
-    Measure the cost of intra-warp divergence as a function of the branch pattern.
+    Measure the cost of intra-warp divergence as a function of the branch pattern: two branch sides
+    of K FMAs each, split by lane as none, alternate lanes, half-warps, 1 of 32, and random per
+    element.
   done: >-
     Time vs divergence pattern, explained through SIMT execution.
 
@@ -2373,8 +2471,9 @@ shrines:
   below: cuda-reduction
   requires: [gpu]
   prompt: >-
-    Vary register and shared-memory usage, measure achieved occupancy, and find a case where
-    lower occupancy is faster.
+    Vary the register and shared-memory usage of your final reduction kernel ("The reduction
+    ladder") with __launch_bounds__, -maxrregcount and unused shared memory, measure achieved
+    occupancy, and find a case where lower occupancy is faster.
   done: >-
     The counterexample, with the reason (ILP) explained.
 
@@ -2419,7 +2518,8 @@ shrines:
   below: cuda-gemm-tiled
   requires: [gpu]
   prompt: >-
-    Pipeline global→shared loads with cp.async (Ampere+) double buffering. On Hopper, try TMA.
+    Pipeline global→shared loads in your shared-memory tiled SGEMM ("SGEMM, kernel by kernel") with
+    cp.async (Ampere+) double buffering, at N = 1024…8192. On Hopper, try TMA.
   done: >-
     Speedup from overlapping loads with compute, and the pipeline stages drawn.
 
@@ -2430,7 +2530,8 @@ shrines:
   requires: [gpu]
   size: S
   prompt: >-
-    Profile your Triton kernel with Nsight Compute and read the memory chart and warp stall reasons.
+    Profile your fused LayerNorm Triton kernel ("Triton") with Nsight Compute and read the memory
+    chart and warp stall reasons.
   done: >-
     Top stall reasons explained, and one change informed by them.
 
@@ -2440,7 +2541,8 @@ shrines:
   below: sae-encoder-kernel
   requires: [gpu]
   prompt: >-
-    Implement warp-level and block-level top-k selection (bitonic or radix-select) for small k.
+    Implement warp-level and block-level top-k selection (bitonic or radix-select) for k = 8…128
+    over 4096 rows of d = 4096…65536, the SAE encoder's shape.
   done: >-
     Throughput vs k and d, compared with torch.topk.
 
@@ -2486,8 +2588,8 @@ shrines:
   below: core-pinning
   requires: [linux]
   prompt: >-
-    Measure OS jitter on a busy-spinning thread (e.g. with a hiccup meter) under default, isolcpus
-    and nohz_full settings.
+    Measure OS jitter on a busy-spinning thread with a hiccup meter (a pinned loop recording every
+    TSC gap over 1 µs, for 10 minutes) under default, isolcpus and nohz_full settings.
   done: >-
     A jitter histogram per configuration, with the interrupts identified.
 
@@ -2531,7 +2633,8 @@ shrines:
   requires: [linux]
   below: mutex-contention
   prompt: >-
-    Implement a mutex directly on futex(2) (the Drepper design) and compare it with std::mutex.
+    Implement a mutex directly on futex(2) (the Drepper design) and compare it with std::mutex on
+    your lock benchmark from "Locks under contention", at 1 to N threads.
   done: >-
     A correct 3-state futex mutex, with benchmarks.
 
@@ -2576,7 +2679,8 @@ shrines:
   below: std-simd
   size: S
   prompt: >-
-    Show results changing with -ffp-contract=fast/on/off and -ffast-math, and why.
+    Show results changing with -ffp-contract=fast/on/off and -ffast-math, and why, on a dot product,
+    a Horner polynomial, and `x*y - x*y`.
   done: >-
     Bit-level differences, and a policy for your repo.
 
@@ -2586,7 +2690,8 @@ shrines:
   below: online-softmax
   size: S
   prompt: >-
-    Measure the slowdown of subnormal arithmetic on CPU, and the effect of FTZ/DAZ.
+    Measure the slowdown of subnormal arithmetic on CPU (a multiply-add loop over normal vs
+    subnormal float arrays, on the M2 and the x86 server), and the effect of FTZ/DAZ.
   done: >-
     Slowdown factor, with where subnormals arise in exp-heavy code.
 
@@ -2613,7 +2718,8 @@ shrines:
   region: numerics-bits
   below: binary-serialization
   prompt: >-
-    Study the Eisel–Lemire algorithm (as in fast_float / std::from_chars), and benchmark it against strtod.
+    Study the Eisel–Lemire algorithm (as in fast_float / std::from_chars), and benchmark it against
+    strtod on 1e6 random doubles printed at 17 digits and 1e6 tick prices like `101.25`.
   done: >-
     Throughput, and the algorithm's fast path explained.
 

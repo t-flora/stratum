@@ -323,3 +323,28 @@ Tiago asked for an explicit start at *Zero-cost, verified*: open on the sky the 
 
   Long paths wrap instead of being cut off. `stratum start` prints the same folder and exact clear command, and `clear` says which folder to commit in.
 - The opening shrine's prompt in the old tutorial said "run `stratum clear …`" with no context. That's the problem Tiago spotted, and it's why the hints are now derived rather than written into prose.
+
+## Problems, not problem-posing; the design doc for agents (2026-10-08)
+
+Tiago, on the opening shrine: the first pass removed the need for outside *material*, but many prompts still asked the learner to *pose* the problem ("design an abstraction (e.g. …)"). Choosing what to solve is a separate, open-ended task. So:
+- **Audit pass B over all 217:** 113 specific, 32 posing (the learner has to pick or invent the problem) and 72 loose (the problem is chosen, but the scope or measurement is left open). Three reviewer agents classified and drafted to one rubric (problem specific, solution open, voice kept, last pass's names and kits kept). That's 104 prompts and 28 `done`s changed, applied as text edits; no structural fields changed.
+- **The opening shrine** is now: `Price` and `Quantity` strong typedefs over int64 ticks with only unit-correct arithmetic (Price × Quantity → Notional), proven zero-overhead against raw `int64_t` with Clang and GCC -O2 asm and a VWAP benchmark over 1e6 fills.
+- **Choices worth Tiago's look** (the reviewers picked one problem among several):
+  - CRC32 for *Tables built by the compiler*;
+  - an order-line parser (`B,100,101.25`) for *Errors as values*, reused by fuzzing;
+  - a fixed order-book stream (1e7 events, 60/35/5 add/cancel/execute), reused by the profilers;
+  - a value-type `instrument` for type erasure;
+  - a fixed binary schema (AddOrder, DeleteOrder, Trade, NewOrder), inherited by the feed handler and the tick-to-trade temple;
+  - a Mandelbrot for OpenMP schedules;
+  - a fused bias + GELU kernel for the PyTorch extension;
+  - LevelDB 1.23 for *Ownership architecture*;
+  - a Black–Scholes pricer for *Human and agent, divided* (it loses the "your coursework" option);
+  - the 5 named eval tasks and 10 named failure-atlas tasks, which narrows those shrines' "task selection" part;
+  - an fp16 MLP on MNIST for mixed precision.
+- **`docs/world-design.md`** (M14's design guide, first version) crystallises the session's lessons for any agent designing a world:
+  - seven engagement forces: pull, few good choices, finishable units, payoff moments, continuity, curiosity gaps, no guilt;
+  - shrine rules: a specific problem; no outside material; needs doing, not remembering; a checkable `done`; honest hardware; no paths or commands in prose; personalised flavour;
+  - world rules: layers as levels, the opening area as the tutorial, shape and pacing, rare locks as abilities, spoiler safety;
+  - a process from interview to playtest, audit passes A–E as reusable rubrics, and before/after examples from this world.
+
+  CLAUDE.md, DESIGN.md §0, the guide, the README, M14's plan, and the headers of `world-seed.yaml` and `proposed.yaml` all point to it.

@@ -76,7 +76,7 @@ templates/            # starter files for `stratum start`, per task kind (moves 
 What a model needs to design a *good* world, not just a valid one.
 
 1. **JSON Schemas** for `pack.yaml`, `world-seed.yaml`, `treasure.yaml` and the write-up frontmatter, generated from the loader's types and published under `schema/`. The loader stays the authority; the schemas are its contract for tools.
-2. **`docs/world-design.md`, the craft, written for models.** It distils what made Tiago's world work, so a second world doesn't depend on its author's clarity:
+2. **`docs/world-design.md`, the craft, written for models.** *(First version written 2026-10-08 from the first world's audits and playtests: engagement forces, shrine and world rules, the opening area as the tutorial, audit passes and worked examples. Extend it as M14 adds the design lint and simulator.)* It distils what made Tiago's world work, so a second world doesn't depend on its author's clarity:
    - **Layers:** sky = frameworks and big ideas; surface = practice; depths = the mechanisms underneath. Each wellspring explains the machinery under the practice shrine above it.
    - **Shape:** 6–12 surface regions, 8–14 shrines each. One tower per region, with a survey prompt that generates proposals. 0–2 temples, each needing 3–4 shrines from different themes.
    - **Pacing with ridges and prominence:**

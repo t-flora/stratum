@@ -1,3 +1,4 @@
 # Shrines proposed by tower clears and loose threads (`stratum propose --from <id>`).
 # Same schema as world-seed.yaml shrines, plus `from: <proposing shrine id>`.
+# Write them to docs/world-design.md §2: a specific problem, no outside material, a checkable `done`.
 shrines: []

@@ -7,7 +7,8 @@ Stratum is a personal study map: a three-layer world (sky, surface, depths) of "
 1. **`docs/status.md`** covers where the project is: milestones done, open review items, and what to do next.
 2. **`DESIGN.md`** is the spec. §0 (constraints) and §13 (milestones) are mandatory reading. Treat it as authoritative except where `docs/decisions.md` extends it.
 3. **`docs/decisions.md`** records every choice made where DESIGN.md is silent, plus agreed extensions (`theme`, `after`, archipelagos, the `x86` tag). Add a bullet there for any new choice.
-4. **`docs/private.md`**, if it exists. It's gitignored and holds the owner's personal context: who they are, their background and their machines. Fresh clones, worktrees and cloud sessions won't have it, and the agreements below still apply.
+4. **`docs/world-design.md`** before writing or reviewing any world content: shrines, proposals, kits, a new world. It's the craft (what keeps a learner engaged, the rules for a shrine and for a world) and the audit passes to rerun after edits.
+5. **`docs/private.md`**, if it exists. It's gitignored and holds the owner's personal context: who they are, their background and their machines. Fresh clones, worktrees and cloud sessions won't have it, and the agreements below still apply.
 
 ## Working agreements (from the owner)
 
@@ -17,7 +18,7 @@ Stratum is a personal study map: a three-layer world (sky, surface, depths) of "
   - Clearing requires artefacts: nothing in the UI clears a shrine by click.
   - The triangle rule: the map never shows everything, except in Atlas mode.
   - Positions never change once assigned.
-- **The world content is the owner's.** Don't rewrite `world/world-seed.yaml` prose. Adding structural fields (tags, `theme`, `after`, `biome`) requires the owner's approval (see status for what's pending).
+- **The world content is the owner's.** Don't rewrite `world/world-seed.yaml` prose without being asked, and when asked, follow `docs/world-design.md`. Adding structural fields (tags, `theme`, `after`, `biome`) requires the owner's approval (see status for what's pending).
 - **`world/positions.lock.json` is committed and sacred.** Only regenerate it (delete and rebuild) with explicit approval, and never once any shrine has been started or cleared. Use `stratum build --replace <id>` for single moves.
 - **Commits:** only when asked. End commit messages with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Work on `main` unless told otherwise.
 - **Visual design must be original.** No assets, names, fonts or motifs from existing games.
@@ -81,7 +82,7 @@ templates/         WRITEUP.md, NEXT.md, cpp/ and python/ scaffolds for `stratum 
 world/             world-seed.yaml (content), proposed.yaml, positions.lock.json (committed), kits/<id>/ (starter kits, content)
 fixtures/          tiny/ (clean 3-region world), planted-errors/ (lint test)
 state/pins.yaml    the map pin (`pin: <id>` or null)
-docs/              guide.md (the newcomer track), status.md, decisions.md, private.md (gitignored), plans/ (self-contained, template, treasure, world editing, reset: proposals; camps, unknown, geography: done)
+docs/              guide.md (the newcomer track), world-design.md (the craft of a world, for agents), status.md, decisions.md, private.md (gitignored), plans/ (self-contained, template, treasure, world editing, reset: proposals; camps, unknown, geography: done)
 ```
 
 ## Architecture rules
