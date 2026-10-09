@@ -6,8 +6,8 @@ import { Command } from 'commander';
 import {
   CONFIG_PATH, Geometry, LAYERS, PROPOSED_PATH, appendProposal, looseThreads, parseWriteup, proposalStub, LOCAL_CONFIG_PATH, LOCK_PATH, MAP_PATH, PINS_PATH, TEMPLATES, build, clearShrine, gitReader,
   hasLocalConfig, lintClears, lintGeometry, lintPin, lintWorkFolders, loadConfig, loadWorld, readGitWork, readWorkState, setPin,
-  publicView, shelveShrine, startShrine, summarize, terminalFor, validateConfig,
-  type BuildResult, type ClearCheck, type Diagnostic, type MapData, type TemplateName, type World,
+  lintDesign, placeShrines, publicView, readLock, shelveShrine, startShrine, summarize, terminalFor, validateConfig,
+  type BuildResult, type DesignCheck, type ClearCheck, type Diagnostic, type MapData, type TemplateName, type World,
 } from '@stratum/core';
 import { stratumApi } from './dev.ts';
 import { TERMINAL } from './engine.ts';
@@ -47,13 +47,15 @@ const root = () => (program.opts().root as string | undefined) ?? findRoot();
 program
   .command('lint')
   .description('Validate the world and every WRITEUP.md')
-  .action(() => {
+  .option('--design', 'also report design properties from docs/world-design.md (advisory; never fails the lint)')
+  .action((opts: { design?: boolean }) => {
     const dir = root();
     const { world, diagnostics } = loadWorld(dir);
     const config = loadConfig(dir);
+    const geo = world ? new Geometry(world, config.world.seed) : null;
     if (world) diagnostics.push(...lintWorkFolders(dir, world), ...lintPin(dir, world));
     if (world && !diagnostics.some((d) => d.severity === 'error')) diagnostics.push(...lintClears(readWorkState(dir, world, config)));
-    if (world && !diagnostics.some((d) => d.severity === 'error')) diagnostics.push(...lintGeometry(world, new Geometry(world, config.world.seed)));
+    if (world && !diagnostics.some((d) => d.severity === 'error')) diagnostics.push(...lintGeometry(world, geo!));
     const configFile = hasLocalConfig(dir) ? LOCAL_CONFIG_PATH : CONFIG_PATH;
     for (const message of validateConfig(config)) {
       diagnostics.push({ severity: 'error', code: 'config', message, file: configFile });
@@ -71,7 +73,27 @@ program
     console.log(`${errors.length} error(s), ${warnings.length} warning(s)`);
     if (!hasLocalConfig(dir)) console.log(`note: no ${LOCAL_CONFIG_PATH} on this machine; run \`stratum setup\` to detect available hardware`);
     process.exitCode = errors.length ? 1 : 0;
+    if (opts.design) {
+      if (!world || errors.length) console.log('\ndesign: skipped until the lint is clean');
+      else {
+        const { positions, relaxed } = placeShrines(world, geo!, readLock(dir));
+        printDesign(lintDesign({ world, geo: geo!, positions, relaxed, config }));
+      }
+    }
   });
+
+/** The design report: one line per check, then what it found, indented. Review checks are heuristics, not verdicts. */
+function printDesign(checks: DesignCheck[]) {
+  console.log('\ndesign (docs/world-design.md; advisory)');
+  for (const c of checks) {
+    const mark = c.kind === 'review' ? (c.items.length ? '?' : '✓') : c.ok ? '✓' : '!';
+    console.log(`  ${mark} ${c.code.padEnd(15)} ${c.title}: ${c.summary}  [${c.rule}]`);
+    for (const i of c.items) console.log(`      ${i.file && i.line ? `${i.file}:${i.line}  ` : ''}${i.text}`);
+  }
+  const off = checks.filter((c) => c.kind === 'measure' && !c.ok).length;
+  const review = checks.filter((c) => c.kind === 'review').reduce((n, c) => n + c.items.length, 0);
+  console.log(`${checks.length - off - checks.filter((c) => c.kind === 'review').length} measure(s) in range, ${off} out of range, ${review} prompt(s) to review`);
+}
 
 program
   .command('build')

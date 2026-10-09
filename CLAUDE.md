@@ -31,6 +31,7 @@ npm install                      # workspaces: core, cli, app
 npm test                         # vitest (all core tests; pure functions of world/state/config)
 npm run typecheck                # tsc (core+cli) and svelte-check (app)
 npm run stratum -- lint          # validate world + write-ups + config
+npm run stratum -- lint --design # also the design report (docs/world-design.md): measures in range, prose to review; advisory
 npm run stratum -- build         # place shrines (respects lockfile) → build/map.json; --static also bundles the app → build/static/
 npm run stratum -- build --static --public  # the public site (Pages): a fresh, spoiler-free map; no work/, pin or Atlas
 npm run stratum -- setup         # one-time per machine: detect hardware tags
@@ -75,6 +76,7 @@ core/src/          all game logic; pure TS, no DOM. Imported by cli and (types o
   export.ts        map.json geometry: region outlines, ridges, contours, archipelagos, depths territory
   mapdata.ts       the map.json contract (types only; the app imports this via @stratum/core/mapdata)
   build.ts         load → validate → place → export pipeline; lintGeometry
+  design.ts        `lint --design`: the guide's measurable rules (discovery, opening, shape, themes, locks, temples, hardware) and §5 phrasing reviews (pure)
 cli/index.ts       commander CLI: lint, build, dev, start, clear, shelve, status, horizon, pin, propose, setup (setup.ts: hardware probe)
 cli/dev.ts         dev API Vite plugin: /api/{health,map,events,start,pin,shelve}, fs.watch rebuilds, SSE
 app/src/           Svelte 5 + Vite renderer of build/map.json (MapView, Glyph, DetailPanel, HorizonPanel, MapKey, SearchBox, AtlasTable, Geography; api.ts, camp.ts, markdown.ts)

@@ -87,7 +87,7 @@ What a model needs to design a *good* world, not just a valid one.
    - **Good tasks:** an S/M/L timebox; a `done` that can be checked without judging "understanding"; a mix of task kinds; hardware tags honest.
    - **Treasure:** which kinds suit which places, and how to write echoes that reward connecting ideas.
    - **Worked examples:** excerpts from Tiago's world, annotated.
-3. **`stratum lint --design`.** Warnings, not errors; each is a measurable property of good design:
+3. **`stratum lint --design`.** *(Built 2026-10-08, `core/src/design.ts`; see decisions.md. It also flags §5's A and B phrasings and "your X" with no `after`, and checks the lock budget, chains and key distance.)* Warnings, not errors; each is a measurable property of good design:
    - a theme with no S/M entry point;
    - a shrine with no links, follow-ups or depths (an island of content);
    - a `done` that looks unverifiable (heuristics such as "understand", "learn", "be familiar");

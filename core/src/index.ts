@@ -21,3 +21,4 @@ export * from './placement.ts';
 export * from './mapdata.ts';
 export * from './export.ts';
 export * from './build.ts';
+export * from './design.ts';

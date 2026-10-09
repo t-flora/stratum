@@ -50,6 +50,8 @@ export interface Shrine {
   source: 'seed' | 'proposed';
   /** Position in file order (seed first, then proposed). Placement depends on it (§8.3). */
   order: number;
+  /** Line of the entry in its file, for diagnostics that come after loading (`lint --design`). */
+  line?: number;
 }
 
 export interface RidgeOverride {

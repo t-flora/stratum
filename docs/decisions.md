@@ -348,3 +348,20 @@ Tiago, on the opening shrine: the first pass removed the need for outside *mater
   - a process from interview to playtest, audit passes A–E as reusable rubrics, and before/after examples from this world.
 
   CLAUDE.md, DESIGN.md §0, the guide, the README, M14's plan, and the headers of `world-seed.yaml` and `proposed.yaml` all point to it.
+
+## `stratum lint --design`, the cheap half of M14 (2026-10-08)
+
+The handoff's next step while Tiago's playtest was pending. It's built in `core/src/design.ts` (pure, tests in `core/test/design.test.ts`) and run as `stratum lint --design`, after the normal lint and only if that's clean.
+- **Advisory, never an error.** A world can have good reasons to break a design rule, and the report is where the author explains them. The exit code is the normal lint's.
+- **A report, not diagnostics.** Each check prints one line (✓ in range, ! out of range, ? to review) with its measurement and the guide section, then what it found with `file:line`. The 23 themes without an S would have been 23 lines of warnings otherwise. Shrines now carry their source `line` from the loader for this. It isn't exported to map.json.
+- **Two kinds.** *Measures* have a threshold from `docs/world-design.md` (the ranges are in `DESIGN_RULES`). *Reviews* are §5's phrasing heuristics (passes A and B, commands in prose, "your X" with no `after`/`needs`/`below`/`from`). They list prompts worth a second look, and a hit isn't necessarily wrong.
+- **Thresholds chosen where the guide is loose:**
+  - landmarks 1–3 p ≥ 4 per surface region (the start region needs none), with at least half its shrines at p ≤ 2;
+  - layer shares: sky and depths ≥ 10% each, surface ≥ 40%;
+  - locks ≤ 6% (13/217 passes), chains ≤ 2;
+  - a lock's key is "findable" if it's in the same region or a bordering one;
+  - "8–14 shrines" counts everything in a region but its tower.
+- **The theme entry point is S,** as in world-design.md §2.5, not "S/M" as template.md's first draft had it (no theme is all L, so that version would never fire).
+- **Hardware is judged against this machine's `hardware.available`,** since that's what decides whether a shrine can be started now. The report prints the tags it used.
+- **The opening-area check includes the opening shrine's size** (world-design.md §3.2 asks for a small one). It's the only opening item that fails on the seed: *Zero-cost, verified* is M, which is the pending `size: S` offer.
+- **Not yet:** JSON Schemas and `stratum simulate` (M14's other half), and pass D (recall), which needs judgement rather than a pattern.

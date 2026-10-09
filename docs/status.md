@@ -1,6 +1,6 @@
 # Status
 
-*Last updated: 2026-10-08 (handoff after the 2026-10-05 → 10-08 session). Keep this current at the end of every work session and milestone.*
+*Last updated: 2026-10-08 (`lint --design` added after the handoff). Keep this current at the end of every work session and milestone.*
 
 ## Start here: handoff for the next session (2026-10-08)
 
@@ -23,6 +23,8 @@
 | `8e8e8d4` | **The opening area is the tutorial** (a 13th lock on the plateau, a test pinning the opening's coverage), `stratum sandbox`, exact terminal hints in the panel and CLI | Tiago rejected a separate tutorial isle: teach by placement, not instruction |
 | `1eafb4b` | **Problems, not problem-posing:** 104 prompts and 28 `done`s made specific; **`docs/world-design.md`** | many prompts made the learner choose the problem; the lessons are written down for agents |
 
+**Since the handoff (2026-10-08, uncommitted until he asks):** `stratum lint --design`, the cheap half of M14, was built while his playtest was pending. See "lint --design: the baseline" below, and decisions.md. It found a few things worth his eye (item 5 below).
+
 **Waiting on Tiago** (also under "Open items" below):
 1. Skim the 104 specified prompts (`git show 1eafb4b -- world/world-seed.yaml`; the reviewers' choices are in decisions.md).
 2. Playtest the opening in `npm run sandbox -- --reset`.
@@ -30,17 +32,12 @@
 4. Two small offers, unanswered:
    - `size: S` on the opening shrine (it carries the default M);
    - whether 13 locks (6%) is fine, since he'd approved 12.
+5. The `lint --design` findings below that are judgement calls: the 14 unconnected shrines, the 23 themes without an S, the two locks with distant keys, and two prompts that say "your X" with no `after`.
 
 **What to do next, in order:**
 1. **Act on his playtest feedback.** It's the most valuable input there is, and every pass so far started from one observation of his.
 2. **Before his first start:** the seed, biome and region-weight questions (Open items 4–5, M8 E1). This is the last cheap moment.
-3. **`stratum lint --design`, the cheap half of M14:**
-   - the audit phrasings from `docs/world-design.md` §5 (passes A and B);
-   - "your X" with no `after`/`needs` pointing at a shrine that builds it;
-   - the lock budget;
-   - the opening-area table (it already exists as a test in `core/test/explore.test.ts`; promote it to a lint).
-
-   Tower clears add proposals, so new content needs this check.
+3. ~~**`stratum lint --design`, the cheap half of M14.**~~ Built 2026-10-08 (below). Tower clears add proposals, so run it after any content edit. What's left of M14 is the JSON Schemas and `stratum simulate`.
 4. **Small ideas raised but not built:**
    - a Horizon rule that offers a newly unlocked shrine (today it's a toast, and the Thread finds it only if it's nearest);
    - an optional per-shrine `check:` command that `stratum clear` runs (kits have tests);
@@ -70,7 +67,36 @@
   - Code changes need a restart (tsx doesn't hot-reload the CLI); world, work and state changes rebuild live.
   - `npm run sandbox` serves on 5174.
   - Screenshots: `STRATUM_URL=http://127.0.0.1:<port> scripts/screenshot.sh <layer> <zoom>`, or `node scripts/shot.mjs <url> <png> --eval "(async () => {...})()"` for interactions. Dispatch keys on `document.body`, not `window`.
-- **Verification** after every change: `npm test` (162), `npm run typecheck`, `npm run stratum -- lint` (0/0), and `npm run stratum -- build` (expect "placed 0 new shrine(s); lockfile unchanged"). For public-site changes, also run `build --static --public` and check that no hidden ids leak into `build/static/map.json`.
+- **Verification** after every change: `npm test` (171), `npm run typecheck`, `npm run stratum -- lint` (0/0), and `npm run stratum -- build` (expect "placed 0 new shrine(s); lockfile unchanged"). For public-site changes, also run `build --static --public` and check that no hidden ids leak into `build/static/map.json`.
+
+## lint --design: the baseline (2026-10-08)
+
+`npm run stratum -- lint --design` on the seed (this Mac, `available: arm, llm-api`) gives 8 measures in range, 7 out, and 7 prompts to review. Checked: `npm test` (171; 9 new in `core/test/design.test.ts`, with bad fixtures for a wall of ridges, a missing entry point, an orphan, a lock chain, a far key, one-theme and undersized temples, gated regions, and each prose heuristic), `npm run typecheck` (0), `stratum lint` (0/0), `stratum build` (lockfile unchanged; `line` doesn't reach map.json).
+
+**In range:**
+- discovery: 24.0% on the island, 24.9% after landing;
+- layers: 38 / 119 / 60;
+- capacity (no spacing relaxed);
+- theme sizes (50 themes, all 2–5);
+- locks: 13 (6.0%), longest chain 2;
+- temples (6, all 3–4 needs over ≥ 2 themes);
+- no vague `done`s, no commands in prose.
+
+**Out of range, each with an explanation or a question for Tiago:**
+
+| Check | Finding | Status |
+|---|---|---|
+| opening | *Zero-cost, verified* is M | the pending `size: S` offer |
+| shape | Activation Marsh has 15 besides its tower (want 8–14) | minor; M8's region weights are the related lever |
+| prominence | Atomic Steppes: only 40% at p ≤ 2 | 4 of its 10 are p = 3; could lower one or two |
+| theme-entry | 23 of 50 themes have no S | `size` is structural; needs his OK per theme |
+| connected | 14 shrines with no `after`, links, needs or depths | some may want an `after` (structural) |
+| lock-key | *Shared-memory IPC* (Tick Canyon) needs the SPSC ring (Atomic Steppes); *Autotuner* (Agent Workshops) needs the CPU GEMM (Vector Coast) | both approved locks; the keys are a long way off |
+| hardware | Kernel Jungle 12/12, Silicon Vein 11/11, Kernel-space Vein 9/9, Tick Canyon 6/10 gated on the Mac | by design (GPU and Linux topics on the server); explained |
+
+**To review (heuristics):**
+- `prose-posing`: 5 hits ("design a ladder…", "Design an eval…", "Investigate…", "(e.g. a university cluster node)", "Explore how shm_open…"). All read as specific on a skim; they're listed for his look.
+- `your-x`: *Claude Code skill* uses "your flat hash map" with no `after: [open-addressing-hashmap]`. *Error philosophy* refers to "your *Temple: Tick-to-Trade* ones, if built". The first is a likely missing `after`.
 
 ## Milestones (DESIGN.md §13)
 

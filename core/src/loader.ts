@@ -243,6 +243,8 @@ export function parseWorld(seedSrc: Source, proposedSrc?: Source): LoadResult {
           `duplicate shrine id "${s.id}" (first defined at ${prev.doc.src.file}:${prev.doc.lineOf(prev.node)})`, get(item, 'id'));
         continue;
       }
+      const line = doc.lineOf(item);
+      if (line) s.line = line;
       const raw = { shrine: s, doc, node: item };
       firstSeen.set(s.id, raw);
       raws.push(raw);

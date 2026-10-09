@@ -125,7 +125,7 @@ The learner is meant to discover the world. When you hand off a generated world,
 3. **Shrines, region by region.** Write each one to §2. Parallel agents work well here, each given the brief, this guide and its neighbours.
 4. **Links:** `after` paths, `below` for every depths shrine, `links` across layers (launch points), a few locks (§3.4), temples.
 5. **Audit passes** (§5). Run all of them. Each one found real problems in the first world after it was "finished".
-6. **Validate:** `stratum lint` must be clean; `stratum build`; and the opening-area check (§3.2).
+6. **Validate:** `stratum lint` must be clean; `stratum build`; then `stratum lint --design`, explaining every check out of range (the opening area, §3.2, is one of them).
 7. **Playtest the opening** in `npm run sandbox`: land, read the first three Horizon cards, open the panels. Every card should be startable without a question.
 8. **Hand off, spoiler-safe** (§3.5). Changes to placement are cheap only before the first `stratum start`; after that, positions are fixed for good.
 
@@ -154,7 +154,7 @@ They're cheap to rerun after any edit, and should be rerun after the world grows
 - Does every depths shrine sit under something an early learner would start?
 - Is there an island of content with no links, follow-ups or depths?
 
-A proposed `stratum lint --design` and `stratum simulate` will measure these (`docs/plans/template.md`, M14).
+`stratum lint --design` measures most of these, and flags §5 A and B phrasings for review: run it after every pass. A proposed `stratum simulate` will measure the discovery curve and reachability (`docs/plans/template.md`, M14).
 
 ## 6. Worked examples
 
